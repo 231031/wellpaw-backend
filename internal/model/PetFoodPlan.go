@@ -4,10 +4,10 @@ import "time"
 
 type PetFoodPlan struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	PetID     uint      `json:"pet_id"`
-	Name      string    `gorm:"type:varchar(255)" json:"name"`
-	Active    bool      `json:"active"`
-	CreatedAt time.Time `json:"created_at"`
+	PetID     uint      `gorm:"not null" json:"pet_id"`
+	Name      string    `gorm:"not null;type:varchar(255)" json:"name"`
+	Active    bool      `gorm:"not null" json:"active"`
+	CreatedAt time.Time `gorm:"not null" json:"created_at"`
 
 	// Relationships
 	// Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`

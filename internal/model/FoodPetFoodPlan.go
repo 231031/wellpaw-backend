@@ -2,8 +2,8 @@ package model
 
 type FoodPetFoodPlan struct {
 	ID            uint `gorm:"primaryKey;autoIncrement" json:"id"`
-	PetFoodPlanID uint `json:"pet_food_plan_id"`
-	FoodID        uint `json:"food_id"`
+	PetFoodPlanID uint `gorm:"not null" json:"pet_food_plan_id"`
+	FoodID        uint `gorm:"not null" json:"food_id"`
 
 	// Relationships
 	// PetFoodPlan       *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`

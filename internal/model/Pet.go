@@ -4,15 +4,15 @@ import "time"
 
 type Pet struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID    uint      `json:"user_id"`
+	UserID    uint      `gorm:"not null" json:"user_id"`
 	ImagePath string    `gorm:"type:varchar(512)" json:"image_path"`
-	Name      string    `gorm:"type:varchar(255)" json:"name"`
-	Type      int       `json:"type"`
-	Breed     string    `gorm:"type:varchar(255)" json:"breed"`
-	SexType   SexType   `json:"sex_type"`
-	BirthDate time.Time `gorm:"type:date" json:"birth_date"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `gorm:"not null;type:varchar(255)" json:"name"`
+	Type      PetType   `gorm:"not null" json:"type"`
+	Breed     string    `gorm:"not null;type:varchar(255)" json:"breed"`
+	SexType   SexType   `gorm:"not null" json:"sex_type"`
+	BirthDate time.Time `gorm:"not null;type:date" json:"birth_date"`
+	CreatedAt time.Time `gorm:"not null" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null" json:"updated_at"`
 
 	// Relationships
 	// User           *User                 `gorm:"foreignKey:UserID" json:"user,omitempty"`

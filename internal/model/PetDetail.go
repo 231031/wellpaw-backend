@@ -4,19 +4,19 @@ import "time"
 
 type PetDetail struct {
 	ID                 uint          `gorm:"primaryKey;autoIncrement" json:"id"`
-	PetID              uint          `json:"pet_id"`
-	Weight             float64       `json:"weight"`
-	ActivityLevel      ActivityLevel `json:"activity_level"`
-	BCS                BcsType       `json:"bcs"` // Body Condition Score
-	IsAdult            bool          `json:"is_adult"`
-	Lactation          bool          `json:"lactation"`
-	Gestation          bool          `json:"gestation"`
+	PetID              uint          `gorm:"not null" json:"pet_id"`
+	Weight             float64       `gorm:"not null" json:"weight"`
+	ActivityLevel      ActivityLevel `gorm:"not null" json:"activity_level"`
+	BCS                BcsType       `gorm:"not null" json:"bcs"` // Body Condition Score
+	IsAdult            bool          `gorm:"not null" json:"is_adult"`
+	Lactation          bool          `gorm:"default:false;not null" json:"lactation"`
+	Gestation          bool          `gorm:"default:false;not null" json:"gestation"`
 	GestationStartDate time.Time     `gorm:"type:date" json:"gestation_startdate"`
-	Neutered           bool          `json:"neutered"`
-	Energy             float64       `json:"energy"`
-	Protein            float64       `json:"protein"` // Fixed typo from 'protien'
-	Fat                float64       `json:"fat"`
-	CreatedAt          time.Time     `json:"created_at"`
+	Neutered           bool          `gorm:"default:false;not null" json:"neutered"`
+	Energy             float64       `gorm:"not null" json:"energy"`
+	Protein            float64       `gorm:"not null" json:"protein"` // Fixed typo from 'protien'
+	Fat                float64       `gorm:"not null" json:"fat"`
+	CreatedAt          time.Time     `gorm:"not null" json:"created_at"`
 
 	// Relationships
 	// Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`

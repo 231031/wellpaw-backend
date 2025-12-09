@@ -4,17 +4,18 @@ import "time"
 
 type User struct {
 	ID            uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Email         string    `gorm:"type:varchar(255)" json:"email"`
-	Password      string    `gorm:"type:varchar(255)" json:"password"`
-	NotiFood      bool      `json:"noti_food"`
-	NotiCalendars bool      `json:"noti_calendars"`
-	ProfileFree   int       `json:"profile_free"`
-	FoodFree      int       `json:"food_free"`
-	FoodPlanFree  int       `json:"food_plan_free"`
-	MainFree      int       `json:"main_free"`
-	PaymentPlan   TierType  `json:"payment_plan"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	Email         string    `gorm:"unique;not null;type:varchar(255)" json:"email"`
+	Password      string    `gorm:"not null;type:varchar(255)" json:"password"`
+	NotiFood      bool      `gorm:"default:true;not null" json:"noti_food"`
+	NotiCalendars bool      `gorm:"default:true;not null" json:"noti_calendars"`
+	ProfileFree   int       `gorm:"default:0;not null" json:"profile_free"`
+	FoodFree      int       `gorm:"default:0;not null" json:"food_free"`
+	FoodPlanFree  int       `gorm:"default:0;not null" json:"food_plan_free"`
+	BcsFree       int       `gorm:"default:0;not null" json:"bcs_free"`
+	DiseaseFree   int       `gorm:"default:0;not null" json:"disease_free"`
+	PaymentPlan   TierType  `gorm:"default:0;not null" json:"payment_plan"`
+	CreatedAt     time.Time `gorm:"not null" json:"created_at"`
+	UpdatedAt     time.Time `gorm:"not null" json:"updated_at"`
 
 	// Relationships
 	Pets     []Pet     `gorm:"foreignKey:UserID" json:"pets,omitempty"`
