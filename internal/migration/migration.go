@@ -25,6 +25,7 @@ func NewMigrationManager(db *gorm.DB) *MigrationManager {
 		&model.Pet{},
 		&model.PetDetail{},
 		&model.Food{},
+		&model.CupFoodPet{},
 		&model.PetFoodPlan{},
 		&model.FoodPetFoodPlan{},
 		&model.PetFoodPlanDetail{},
@@ -49,7 +50,7 @@ func (m *MigrationManager) MigrateToDB() error {
 
 		modelsToMigrate = append(modelsToMigrate, m.models[i])
 	}
-	applogger.LogInfo("migrating new model to db", migrateLevel)
+	applogger.LogInfo(fmt.Sprintln("migrating new model to db : ", len(modelsToMigrate)), migrateLevel)
 
 	if err := m.DB.AutoMigrate(modelsToMigrate...); err != nil {
 		applogger.LogError(fmt.Sprintln("failed to migrate to db : ", err), migrateLevel)

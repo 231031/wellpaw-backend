@@ -6,6 +6,7 @@ type User struct {
 	ID            uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Email         string    `gorm:"unique;not null;type:varchar(255)" json:"email"`
 	Password      string    `gorm:"not null;type:varchar(255)" json:"password"`
+	DeviceToken   string    `gorm:"not null;type:varchar(512)" json:"device_token"`
 	NotiFood      bool      `gorm:"default:true;not null" json:"noti_food"`
 	NotiCalendars bool      `gorm:"default:true;not null" json:"noti_calendars"`
 	ProfileFree   int       `gorm:"default:0;not null" json:"profile_free"`

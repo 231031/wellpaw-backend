@@ -7,6 +7,7 @@ type PetFoodPlan struct {
 	PetID     uint      `gorm:"not null" json:"pet_id"`
 	Name      string    `gorm:"not null;type:varchar(255)" json:"name"`
 	Active    bool      `gorm:"not null" json:"active"`
+	Unit      UnitType  `gorm:"default:0;not null" json:"unit"`
 	CreatedAt time.Time `gorm:"not null" json:"created_at"`
 
 	// Relationships
