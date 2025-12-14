@@ -11,7 +11,8 @@ import (
 func CreateRoute(router fiber.Router, db *gorm.DB, cfg *Cfg) {
 	userRepo := repository.NewUserRepository(db)
 
-	authService := service.NewAuthService(userRepo)
+	tokenService := service.NewTokenService()
+	authService := service.NewAuthService(userRepo, tokenService)
 	authController := controller.NewAuthController(authService)
 
 	authRoute := router.Group("/auth")

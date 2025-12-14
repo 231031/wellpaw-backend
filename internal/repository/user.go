@@ -4,9 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/231031/pethealth-backend/internal/applogger"
 	"github.com/231031/pethealth-backend/internal/model"
 	"github.com/231031/pethealth-backend/internal/utils"
 	"gorm.io/gorm"
+)
+
+var (
+	repositoryLog = "[REPOSITORY LOGGER]"
 )
 
 type UserRepository interface {
@@ -36,7 +41,8 @@ func (r *userRepository) CreateUser(ctx context.Context, u *model.User) error {
 
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user *model.User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(user).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+		applogger.LogError(fmt.Sprintln("failed to get user by email:", err), repositoryLog)
 		return nil, fmt.Errorf("failed to get user by email : %w", err)
 	}
 
@@ -50,7 +56,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User,
 			"noti_food", "noti_calendars",
 			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
 			"payment_plan").
-		First(user, id).Error
+		First(&user, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by id : %w", err)
 	}
