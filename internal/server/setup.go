@@ -33,12 +33,6 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	}
 	applogger.LogInfo("database migration completed", serverLog)
 
-	client, err := ConnectRedis(cfg.REDIS_HOST, cfg.REDIS_PORT, cfg.REDIS_PASSWORD)
-	if err != nil {
-		applogger.LogError(fmt.Sprintln("failed to connect to Redis:", err), serverLog)
-	}
-	applogger.LogInfo("connected to Redis", serverLog)
-
 	// helath check
 	app.Get("health", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
@@ -47,7 +41,7 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	// Swagger documentation
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	api := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain"))
-	CreateRoute(api, db, client, cfg)
+	router := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain", "image/*"))
+	CreateRoute(router, db, cfg)
 
 }
