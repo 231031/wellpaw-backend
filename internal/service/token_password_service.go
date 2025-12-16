@@ -121,7 +121,7 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 		uint64Val, err := strconv.ParseUint(identical[1], 10, 64)
 
 		if err != nil {
-			fmt.Printf("error during conversion: %v\n", err)
+			applogger.LogError(fmt.Sprintln("failed to convert string to uint", err), serviceLog)
 			return nil, utils.ErrUnauth
 		}
 
@@ -216,18 +216,15 @@ func (s *tokenService) ValidateRefreshToken(refreshTokenStr string) (*model.Refr
 		return []byte(s.RefreshSecret), nil
 	})
 	if err != nil {
-		applogger.LogError(fmt.Sprintln("failed to parse with claims refresh token", err), serviceLog)
 		return nil, err
 	}
 
 	if !refreshToken.Valid {
-		applogger.LogError(fmt.Sprintln("the refresh token is invalid with token : ", refreshToken), serviceLog)
 		return nil, utils.ErrUnauth
 	}
 
 	claims, ok := refreshToken.Claims.(*model.RefreshTokenClaims)
 	if !ok {
-		applogger.LogError("the token's valid but failed to parse claims", serviceLog)
 		return nil, utils.ErrUnauth
 	}
 
@@ -242,7 +239,6 @@ func (s *tokenService) HandleRefreshToken(ctx context.Context, refreshToken stri
 
 	_, err = uuid.Parse(claims.Id)
 	if err != nil {
-		applogger.LogError(fmt.Sprintln("failed to parse claims token uuid", err), serviceLog)
 		return nil, err
 	}
 
