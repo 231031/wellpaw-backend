@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/231031/pethealth-backend/internal/model"
 	"github.com/231031/pethealth-backend/internal/repository"
 	"github.com/231031/pethealth-backend/internal/utils"
+	"gorm.io/gorm"
 )
 
 var (
@@ -14,8 +16,8 @@ var (
 )
 
 type AuthService interface {
-	CreateUser(ctx context.Context, user *model.User) utils.HTTPResponse
-	LoginUser(ctx context.Context, payload *model.LoginPayload) utils.HTTPResponse
+	CreateUser(ctx context.Context, user *model.User) *utils.HTTPResponse
+	LoginUser(ctx context.Context, payload *model.LoginPayload) *utils.HTTPResponse
 }
 
 type authService struct {
@@ -30,10 +32,10 @@ func NewAuthService(userRepo repository.UserRepository, tokenService TokenServic
 	}
 }
 
-func (s *authService) CreateUser(ctx context.Context, user *model.User) utils.HTTPResponse {
+func (s *authService) CreateUser(ctx context.Context, user *model.User) *utils.HTTPResponse {
 	hashed, err := s.tokenService.HashPassword(user.Password)
 	if err != nil {
-		return utils.HTTPResponse{
+		return &utils.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "user",
 		}
@@ -42,23 +44,30 @@ func (s *authService) CreateUser(ctx context.Context, user *model.User) utils.HT
 	user.Password = hashed
 	err = s.userRepo.CreateUser(ctx, user)
 	if err != nil {
-		return utils.HTTPResponse{
+		return &utils.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "user",
 		}
 	}
 
 	user.Password = ""
-	return utils.HTTPResponse{
+	return &utils.HTTPResponse{
 		Status: http.StatusCreated,
 		Data:   user,
 	}
 }
 
-func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload) utils.HTTPResponse {
+func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload) *utils.HTTPResponse {
 	user, err := s.userRepo.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
-		return utils.HTTPResponse{
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &utils.HTTPResponse{
+				Status:  http.StatusUnauthorized,
+				Message: "email not found",
+			}
+		}
+
+		return &utils.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "user",
 		}
@@ -66,27 +75,30 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 
 	valid, err := s.tokenService.VerifyPassword(payload.Password, user.Password)
 	if err != nil || !valid {
-		return utils.HTTPResponse{
+		return &utils.HTTPResponse{
 			Status:  http.StatusUnauthorized,
-			Message: "invalid email or password",
+			Message: "invalid password",
 		}
 	}
 
-	// generate token
-	// set token in response
+	userAuth := &model.UserAuth{
+		ID:   user.ID,
+		Tier: user.PaymentPlan,
+	}
+	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
+	if err != nil {
+		return &utils.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to login",
+		}
+	}
 
 	user.Password = ""
-	return utils.HTTPResponse{
+	return &utils.HTTPResponse{
 		Status: http.StatusOK,
-		Data:   user,
+		Data: map[string]interface{}{
+			"user":  user,
+			"token": tokenPairs,
+		},
 	}
-}
-
-func (s *authService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	user, err := s.userRepo.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
 }

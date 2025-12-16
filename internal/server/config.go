@@ -3,12 +3,15 @@ package server
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/231031/pethealth-backend/internal/applogger"
+	"github.com/231031/pethealth-backend/internal/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/golang-jwt/jwt"
 )
 
 var (
@@ -25,6 +28,9 @@ type Cfg struct {
 	REDIS_HOST     string
 	REDIS_PORT     string
 	REDIS_PASSWORD string
+	SECRET_KEY     string
+	FILE_PUB_PATH  string
+	FILE_PRI_PATH  string
 }
 
 func getAllENV() *Cfg {
@@ -38,6 +44,9 @@ func getAllENV() *Cfg {
 		"REDIS_HOST",
 		"REDIS_PORT",
 		"REDIS_PASSWORD",
+		"SECRET_KEY",
+		"FILE_PUB_PATH",
+		"FILE_PRI_PATH",
 	}
 
 	allValue := make(map[string]string)
@@ -59,6 +68,9 @@ func getAllENV() *Cfg {
 		REDIS_HOST:     allValue[allKey[6]],
 		REDIS_PORT:     allValue[allKey[7]],
 		REDIS_PASSWORD: allValue[allKey[8]],
+		SECRET_KEY:     allValue[allKey[9]],
+		FILE_PUB_PATH:  allValue[allKey[10]],
+		FILE_PRI_PATH:  allValue[allKey[11]],
 	}
 
 	return cfg
@@ -84,4 +96,38 @@ func InitLogger(app *fiber.App) *os.File {
 	app.Use(logger.New(loggerConfig))
 
 	return file
+}
+
+func ConfigGenerateKey(cfg *Cfg) *model.TokenConfig {
+	tokenCfg := &model.TokenConfig{
+		AccessTokenExpirationSecs: 1 * 3600,
+		RefreshExpirationSecs:     48 * 3600,
+		RefreshSecret:             cfg.SECRET_KEY,
+	}
+
+	priv, err := ioutil.ReadFile(cfg.FILE_PRI_PATH)
+	if err != nil {
+		fmt.Sprintln("failed to read private pem file", err)
+		return tokenCfg
+	}
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(priv)
+	if err != nil {
+		fmt.Sprintln("failed to parse private pem to rsa", err)
+		return tokenCfg
+	}
+	tokenCfg.PrivateKey = privateKey
+
+	pub, err := ioutil.ReadFile(cfg.FILE_PUB_PATH)
+	if err != nil {
+		fmt.Sprintln("failed to read public pem file", err)
+		return tokenCfg
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(pub)
+	if err != nil {
+		fmt.Sprintln("failed to parse public pem to rsa", err)
+		return tokenCfg
+	}
+	tokenCfg.PublicKey = publicKey
+
+	return tokenCfg
 }

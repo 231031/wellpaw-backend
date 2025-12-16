@@ -1,9 +1,15 @@
 package controller
 
 import (
+	"time"
+
 	"github.com/231031/pethealth-backend/internal/model"
 	"github.com/231031/pethealth-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
+)
+
+var (
+	defaultTimeout = 3 * time.Second
 )
 
 type AuthController interface {
@@ -31,7 +37,10 @@ func (c *authController) CreateUser(ctx *fiber.Ctx) error {
 
 	// validate fields
 
-	response := c.authService.CreateUser(ctx.Context(), &user)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.CreateUser(ctxWithTimeOut, &user)
 	return ctx.Status(response.Status).JSON(response)
 }
 
@@ -45,6 +54,9 @@ func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 
 	// validate fields
 
-	response := c.authService.LoginUser(ctx.Context(), &payload)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.LoginUser(ctxWithTimeOut, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
