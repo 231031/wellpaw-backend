@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/231031/pethealth-backend/internal/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -110,6 +112,9 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 		key := fmt.Sprintf("refresh_token:%s", prevToken)
 		value, err := s.tokenRepo.GetandDelRefreshToken(ctx, key)
 		if err != nil {
+			if errors.Is(err, redis.Nil) {
+				return nil, utils.ErrUnauth
+			}
 			return nil, err
 		}
 
@@ -119,10 +124,9 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 		}
 
 		uint64Val, err := strconv.ParseUint(identical[1], 10, 64)
-
 		if err != nil {
 			applogger.LogError(fmt.Sprintln("failed to convert string to uint", err), serviceLog)
-			return nil, utils.ErrUnauth
+			return nil, err
 		}
 
 		user, err := s.userRepo.GetUserByID(ctx, uint(uint64Val))
@@ -130,6 +134,7 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 			return nil, utils.ErrUnauth
 		}
 		userAuth.ID = user.ID
+		userAuth.Tier = user.PaymentPlan
 	}
 
 	// generate new token - login, refresh token
@@ -144,7 +149,7 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 	}
 
 	key := fmt.Sprintf("refresh_token:%s", newRefresh.SS)
-	val := fmt.Sprintf("%s:%s", string(userAuth.Tier), userAuth.ID)
+	val := fmt.Sprintf("%s:%s", strconv.Itoa(int(userAuth.Tier)), strconv.Itoa(int(userAuth.ID)))
 	err = s.tokenRepo.SetRefreshToken(ctx, key, val, newRefresh.ExpiresIn)
 	if err != nil {
 		return nil, err

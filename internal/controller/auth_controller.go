@@ -15,6 +15,7 @@ var (
 type AuthController interface {
 	CreateUser(ctx *fiber.Ctx) error
 	LoginUser(ctx *fiber.Ctx) error
+	RefreshToken(ctx *fiber.Ctx) error
 }
 
 type authController struct {
@@ -58,5 +59,20 @@ func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.authService.LoginUser(ctxWithTimeOut, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+func (c *authController) RefreshToken(ctx *fiber.Ctx) error {
+	var payload model.TokenPair
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.RefreshToken(ctxWithTimeOut, payload.RefreshToken)
 	return ctx.Status(response.Status).JSON(response)
 }

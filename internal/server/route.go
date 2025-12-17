@@ -29,6 +29,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, cf
 	authRoute := router.Group("/auth")
 	authRoute.Post("/register", authController.CreateUser)
 	authRoute.Post("/login", authController.LoginUser)
+	authRoute.Post("/refreshtoken", authController.RefreshToken)
 
 	userRoute := router.Group("/user", authMiddlware.AuthorizeUser())
 	userRoute.Get("/", userController.GetUserAllInfo)

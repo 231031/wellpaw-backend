@@ -18,6 +18,7 @@ var (
 type AuthService interface {
 	CreateUser(ctx context.Context, user *model.User) *utils.HTTPResponse
 	LoginUser(ctx context.Context, payload *model.LoginPayload) *utils.HTTPResponse
+	RefreshToken(ctx context.Context, refreshToken string) *utils.HTTPResponse
 }
 
 type authService struct {
@@ -100,5 +101,27 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 			"user":  user,
 			"token": tokenPairs,
 		},
+	}
+}
+
+func (s *authService) RefreshToken(ctx context.Context, refreshToken string) *utils.HTTPResponse {
+	var userAuth model.UserAuth
+	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, &userAuth, refreshToken)
+	if err != nil {
+		if errors.Is(err, utils.ErrUnauth) {
+			return &utils.HTTPResponse{
+				Status:  http.StatusUnauthorized,
+				Message: err.Error(),
+			}
+		}
+		return &utils.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToCreateMsg + "new token",
+		}
+	}
+
+	return &utils.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   tokenPairs,
 	}
 }
