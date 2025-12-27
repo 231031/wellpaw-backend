@@ -7,6 +7,7 @@ import (
 	"time"
 
 	// _ "github.com/231031/pet-health/docs"
+	_ "github.com/231031/wellpaw-backend/doc"
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -16,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func Run() {
@@ -54,6 +56,8 @@ func Run() {
 			},
 		},
 	))
+
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// setup fiber logger
 	file := InitLogger(app)

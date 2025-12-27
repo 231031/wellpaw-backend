@@ -20,10 +20,10 @@ var (
 )
 
 type AuthService interface {
-	CreateUser(ctx context.Context, user *model.User) *utils.HTTPResponse
-	LoginUser(ctx context.Context, payload *model.LoginPayload) *utils.HTTPResponse
-	LoginUserWithGoogle(ctx context.Context, payload *model.LoginGooglePayload) *utils.HTTPResponse
-	RefreshToken(ctx context.Context, refreshToken string) *utils.HTTPResponse
+	CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse
+	LoginUser(ctx context.Context, payload *model.LoginPayload) *model.HTTPResponse
+	LoginUserWithGoogle(ctx context.Context, payload *model.LoginGooglePayload) *model.HTTPResponse
+	RefreshToken(ctx context.Context, refreshToken string) *model.HTTPResponse
 }
 
 type authService struct {
@@ -40,10 +40,10 @@ func NewAuthService(userRepo repository.UserRepository, tokenService TokenServic
 	}
 }
 
-func (s *authService) CreateUser(ctx context.Context, user *model.User) *utils.HTTPResponse {
+func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
 	hashed, err := s.tokenService.HashPassword(user.Password)
 	if err != nil {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "user",
 		}
@@ -52,37 +52,37 @@ func (s *authService) CreateUser(ctx context.Context, user *model.User) *utils.H
 	user.Password = hashed
 	err = s.userRepo.CreateUser(ctx, user)
 	if err != nil {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "user",
 		}
 	}
 
 	user.Password = ""
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data:   user,
 	}
 }
 
-func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload) *utils.HTTPResponse {
+func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusUnauthorized,
 				Message: "email not found",
 			}
 		}
 
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "user",
 		}
 	}
 
 	if user.Password == "" {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,
 			Message: "user not register with app, please login with google",
 		}
@@ -90,7 +90,7 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 
 	valid, err := s.tokenService.VerifyPassword(payload.Password, user.Password)
 	if err != nil || !valid {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusUnauthorized,
 			Message: "invalid password",
 		}
@@ -102,14 +102,14 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login",
 		}
 	}
 
 	user.Password = ""
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"user":  user,
@@ -118,46 +118,46 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 	}
 }
 
-func (s *authService) RefreshToken(ctx context.Context, refreshToken string) *utils.HTTPResponse {
+func (s *authService) RefreshToken(ctx context.Context, refreshToken string) *model.HTTPResponse {
 	var userAuth model.UserAuth
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, &userAuth, refreshToken)
 	if err != nil {
 		if errors.Is(err, utils.ErrUnauth) {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusUnauthorized,
 				Message: err.Error(),
 			}
 		}
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "new token",
 		}
 	}
 
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   tokenPairs,
 	}
 }
 
-func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.LoginGooglePayload) *utils.HTTPResponse {
+func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.LoginGooglePayload) *model.HTTPResponse {
 	token, err := s.googleOauthConfig.Exchange(ctx, payload.AuthCode)
 	if err != nil {
 		if rErr, ok := err.(*oauth2.RetrieveError); ok {
 			if rErr.ErrorCode == "invalid_grant" {
-				return &utils.HTTPResponse{
+				return &model.HTTPResponse{
 					Status:  http.StatusUnauthorized,
 					Message: "Token expired or invalid",
 				}
 			}
 			if rErr.ErrorCode == "invalid_request" {
-				return &utils.HTTPResponse{
+				return &model.HTTPResponse{
 					Status:  http.StatusBadRequest,
 					Message: "Invalid request parameters",
 				}
 			}
 		}
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login with google",
 		}
@@ -165,7 +165,7 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 
 	userInfo, err := s.getUserInfo(ctx, token)
 	if err != nil {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login with google",
 		}
@@ -182,13 +182,13 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 			}
 			err = s.userRepo.CreateUser(ctx, user)
 			if err != nil {
-				return &utils.HTTPResponse{
+				return &model.HTTPResponse{
 					Status:  http.StatusInternalServerError,
 					Message: utils.FailedToCreateMsg + "user",
 				}
 			}
 		} else {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusInternalServerError,
 				Message: utils.FailedToGetMsg + "user",
 			}
@@ -201,14 +201,14 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login",
 		}
 	}
 
 	user.Password = ""
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"user":  user,
@@ -217,14 +217,14 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 	}
 }
 
-func (s *authService) RevokeRefreshTokenWithGoogle(ctx context.Context, refreshToken string) *utils.HTTPResponse {
-	return &utils.HTTPResponse{
+func (s *authService) RevokeRefreshTokenWithGoogle(ctx context.Context, refreshToken string) *model.HTTPResponse {
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 	}
 }
 
-func (s *authService) LogoutUser(ctx context.Context, refreshToken string) *utils.HTTPResponse {
-	return &utils.HTTPResponse{
+func (s *authService) LogoutUser(ctx context.Context, refreshToken string) *model.HTTPResponse {
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 	}
 }

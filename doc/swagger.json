@@ -1,0 +1,760 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "WellPaw API is a RESTful API for managing and tracking pet health",
+        "title": "WellPaw API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "fiber@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:50001",
+    "basePath": "/api",
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "description": "register a new user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register User",
+                "parameters": [
+                    {
+                        "description": "Register payload",
+                        "name": "RegisterPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_231031_wellpaw-backend_internal_model.ActivityLevel": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "INACTIVE",
+                "SOMEACTIVE",
+                "ACTIVE",
+                "VERYACTIVE"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.BcsType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "VERYTHIN",
+                "THIN",
+                "IDEAL",
+                "OVERWEIGHT",
+                "OBESITY"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "VACCINE",
+                "DRUG",
+                "APPOINTMENT"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CupFoodPet": {
+            "type": "object",
+            "properties": {
+                "food_pet_food_plan_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "unit_type": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.DiseaseType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "RINGWORM",
+                "SCABIES",
+                "HEALTHY",
+                "DEMODICOSIS",
+                "PYODERMA"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.Food": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "food_pet_food_plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "moist": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "protein": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType"
+                },
+                "user": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
+                        }
+                    ]
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan": {
+            "type": "object",
+            "properties": {
+                "cup_food_pet": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CupFoodPet"
+                    }
+                },
+                "food": {
+                    "description": "Relationships\nPetFoodPlan       *PetFoodPlan       `gorm:\"foreignKey:PetFoodPlanID\" json:\"pet_food_plan,omitempty\"`",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                        }
+                    ]
+                },
+                "food_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pet_food_plan_detail": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"
+                    }
+                },
+                "pet_food_plan_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "DRY",
+                "WET",
+                "TREATS",
+                "SUPPLEMENTS"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FrequentlyType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "NOT",
+                "DAY",
+                "WEEK",
+                "MONTH",
+                "YEAR"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.HTTPResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.Payment": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentStatusType"
+                },
+                "stripe_payment_id": {
+                    "type": "string"
+                },
+                "subscription_period_end": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
+                        }
+                    ]
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PaymentStatusType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "PENDING",
+                "SUCCEEDED",
+                "FAILED"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.Pet": {
+            "type": "object",
+            "properties": {
+                "activity_events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar"
+                    }
+                },
+                "birth_date": {
+                    "type": "string"
+                },
+                "breed": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pet_details": {
+                    "description": "Relationships\nUser           *User                 `gorm:\"foreignKey:UserID\" json:\"user,omitempty\"`",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
+                    }
+                },
+                "pet_food_plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan"
+                    }
+                },
+                "pet_skin_images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage"
+                    }
+                },
+                "sex_type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SexType"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "pet": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                        }
+                    ]
+                },
+                "pet_calendar": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar"
+                },
+                "pet_calendar_id": {
+                    "type": "integer"
+                },
+                "pet_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetCalendar": {
+            "type": "object",
+            "properties": {
+                "activity_events": {
+                    "description": "Relationships",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "frequently": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FrequentlyType"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notation": {
+                    "type": "string"
+                },
+                "start_datetime": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarType"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetDetail": {
+            "type": "object",
+            "properties": {
+                "activity_level": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel"
+                },
+                "bcs": {
+                    "description": "Body Condition Score",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.BcsType"
+                        }
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "gestation": {
+                    "type": "boolean"
+                },
+                "gestation_startdate": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_adult": {
+                    "type": "boolean"
+                },
+                "lactation": {
+                    "type": "boolean"
+                },
+                "neutered": {
+                    "type": "boolean"
+                },
+                "pet_food_plan_details": {
+                    "description": "Relationships\nPet                *Pet                 `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"`",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"
+                    }
+                },
+                "pet_food_plan_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                    }
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "protein": {
+                    "description": "Fixed typo from 'protien'",
+                    "type": "number"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlan": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "food_pet_food_plans": {
+                    "description": "Relationships\nPet                *Pet                 `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"`",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pet_food_plan_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                    }
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "unit": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "energy_intake": {
+                    "type": "number"
+                },
+                "fat_intake": {
+                    "type": "number"
+                },
+                "food_pet_food_plan": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan"
+                        }
+                    ]
+                },
+                "food_pet_food_plan_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pet_detail_id": {
+                    "type": "integer"
+                },
+                "protein_intake": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pet_detail_id": {
+                    "type": "integer"
+                },
+                "pet_food_plan_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetSkinImage": {
+            "type": "object",
+            "properties": {
+                "confident": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_evidence": {
+                    "type": "string"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "labeled": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType"
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "predicted": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "DOG",
+                "CAT"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.SexType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "FEMALE",
+                "MALE"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.TierType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "FREE",
+                "WEEKS",
+                "MONTHS",
+                "YEARS"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.UnitType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "GRAM",
+                "CUP"
+            ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.User": {
+            "type": "object",
+            "properties": {
+                "bcs_free": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "device_token": {
+                    "type": "string"
+                },
+                "disease_free": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "food_free": {
+                    "type": "integer"
+                },
+                "food_plan_free": {
+                    "type": "integer"
+                },
+                "foods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "noti_calendars": {
+                    "type": "boolean"
+                },
+                "noti_food": {
+                    "type": "boolean"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "payment_plan": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType"
+                },
+                "payments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Payment"
+                    }
+                },
+                "pets": {
+                    "description": "Relationships",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                    }
+                },
+                "profile_free": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

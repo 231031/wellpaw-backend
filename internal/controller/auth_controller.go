@@ -29,6 +29,16 @@ func NewAuthController(authService service.AuthService) AuthController {
 	}
 }
 
+// @Summary Register User
+// @Description register a new user
+// @tags Authentication
+// @Param   RegisterPayload body model.User true "Register payload"
+// @Accept application/json
+// @Produce application/json
+// @Success 201 {object} model.User
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/register [post]
 func (c *authController) CreateUser(ctx *fiber.Ctx) error {
 	var user model.User
 	if err := ctx.BodyParser(&user); err != nil {

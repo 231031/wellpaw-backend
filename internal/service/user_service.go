@@ -12,9 +12,9 @@ import (
 )
 
 type UserService interface {
-	GetUserByID(ctx context.Context, id uint) *utils.HTTPResponse
-	GetUserAllInfoByID(ctx context.Context, id uint) *utils.HTTPResponse
-	UpdateUser(ctx context.Context, u *model.User) *utils.HTTPResponse
+	GetUserByID(ctx context.Context, id uint) *model.HTTPResponse
+	GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse
+	UpdateUser(ctx context.Context, u *model.User) *model.HTTPResponse
 }
 
 type userService struct {
@@ -27,64 +27,64 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	}
 }
 
-func (s *userService) GetUserByID(ctx context.Context, id uint) *utils.HTTPResponse {
+func (s *userService) GetUserByID(ctx context.Context, id uint) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
 			}
 		}
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "user",
 		}
 	}
 
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   user,
 	}
 }
 
-func (s *userService) GetUserAllInfoByID(ctx context.Context, id uint) *utils.HTTPResponse {
+func (s *userService) GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserAllInfo(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
 			}
 		}
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "user",
 		}
 	}
 
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   user,
 	}
 }
 
-func (s *userService) UpdateUser(ctx context.Context, user *model.User) *utils.HTTPResponse {
+func (s *userService) UpdateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
 	err := s.userRepo.UpdateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, utils.ErrNoRowsUpdated) {
-			return &utils.HTTPResponse{
+			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
 			}
 		}
-		return &utils.HTTPResponse{
+		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToUpdateMsg + "user",
 		}
 	}
 
-	return &utils.HTTPResponse{
+	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   user,
 	}

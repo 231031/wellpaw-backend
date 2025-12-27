@@ -1,6 +1,6 @@
 services:
-  pethealth_backend:
-    container_name: pethealth-api
+  wellpaw_backend:
+    container_name: wellpaw-api
     build: .
     env_file:
       - .env
@@ -11,15 +11,15 @@ services:
       - ./public:/app/go/public
       - ./:/app/go
     depends_on:
-      pethealth_db:
+      wellpaw_db:
         condition: service_healthy
     networks:
-      - pethealth-nw
+      - wellpaw-nw
 
-  pethealth_db:
+  wellpaw_db:
     image: postgres:17-alpine
     restart: unless-stopped
-    container_name: pethealth-db
+    container_name: wellpaw-db
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -29,18 +29,18 @@ services:
     env_file:
       - .env
     volumes:
-      - pethealth_db_volumes:/var/lib/postgresql/data
+      - wellpaw_db_volumes:/var/lib/postgresql/data
     networks:
-      - pethealth-nw
+      - wellpaw-nw
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
   
-  pethealth_redis:
+  wellpaw_redis:
     image: redis:8.0.2-alpine
-    container_name: pethealth-redis
+    container_name: wellpaw-redis
     env_file:
       - .env
     ports:
@@ -49,16 +49,16 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     restart: unless-stopped
     volumes:
-      - pethealth_cache:/data
+      - wellpaw_cache:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     networks:
-      - pethealth-nw
+      - wellpaw-nw
 
 networks:
-  pethealth-nw:
+  wellpaw-nw:
     driver: bridge
 volumes:
-  pethealth_db_volumes:
-  pethealth_cache:
+  wellpaw_db_volumes:
+  wellpaw_cache:

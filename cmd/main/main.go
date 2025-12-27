@@ -1,13 +1,13 @@
 package main
 
 import (
-	// _ "github.com/231031/wellpaw-backend/docs"
+	_ "github.com/231031/wellpaw-backend/doc"
 	"github.com/231031/wellpaw-backend/internal/server"
 )
 
-// @title PetHealth API
+// @title WellPaw API
 // @version 1.0
-// @description PetHealth API is a RESTful API for managing and tracking pet health
+// @description WellPaw API is a RESTful API for managing and tracking pet health
 // @termsOfService http://swagger.io/terms/
 // @contact.name API Support
 // @contact.email fiber@swagger.io
