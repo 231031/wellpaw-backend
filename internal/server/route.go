@@ -11,13 +11,14 @@ import (
 )
 
 func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, cfg *Cfg) {
-	tokenCfg := ConfigGenerateKey(cfg)
-
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewTokenRepository(redisClient)
 
+	tokenCfg := ConfigGenerateKey(cfg)
 	tokenService := service.NewTokenService(tokenRepo, userRepo, tokenCfg)
-	authService := service.NewAuthService(userRepo, tokenService)
+
+	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
+	authService := service.NewAuthService(userRepo, tokenService, googleOauthConfig)
 	authController := controller.NewAuthController(authService)
 
 	userService := service.NewUserService(userRepo)
@@ -29,6 +30,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, cf
 	authRoute := router.Group("/auth")
 	authRoute.Post("/register", authController.CreateUser)
 	authRoute.Post("/login", authController.LoginUser)
+	authRoute.Post("/login/google", authController.LoginUserWithGoogle)
 	authRoute.Post("/refreshtoken", authController.RefreshToken)
 
 	userRoute := router.Group("/user", authMiddlware.AuthorizeUser())

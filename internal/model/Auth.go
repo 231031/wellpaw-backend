@@ -49,3 +49,12 @@ type RefreshTokenData struct {
 	ID        string
 	ExpiresIn time.Duration
 }
+
+type GoogleUserInfo struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	FirstName     string `json:"given_name"`
+	LastName      string `json:"family_name"`
+	Picture       string `json:"picture"`
+}

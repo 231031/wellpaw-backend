@@ -15,6 +15,7 @@ var (
 type AuthController interface {
 	CreateUser(ctx *fiber.Ctx) error
 	LoginUser(ctx *fiber.Ctx) error
+	LoginUserWithGoogle(ctx *fiber.Ctx) error
 	RefreshToken(ctx *fiber.Ctx) error
 }
 
@@ -59,6 +60,23 @@ func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.authService.LoginUser(ctxWithTimeOut, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+func (c *authController) LoginUserWithGoogle(ctx *fiber.Ctx) error {
+	var payload model.LoginGooglePayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+
+	// validate fields
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.LoginUserWithGoogle(ctxWithTimeOut, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
 
