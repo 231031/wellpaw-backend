@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/231031/pethealth-backend/internal/model"
-	"github.com/231031/pethealth-backend/internal/utils"
+	"github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"gorm.io/gorm"
 )
 

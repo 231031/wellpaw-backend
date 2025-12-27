@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/231031/pethealth-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
 )
 

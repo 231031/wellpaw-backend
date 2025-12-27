@@ -3,8 +3,8 @@ package middleware
 import (
 	"strings"
 
-	"github.com/231031/pethealth-backend/internal/service"
-	"github.com/231031/pethealth-backend/internal/utils"
+	"github.com/231031/wellpaw-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	// _ "github.com/231031/pethealth-backend/docs"
-	"github.com/231031/pethealth-backend/internal/server"
+	// _ "github.com/231031/wellpaw-backend/docs"
+	"github.com/231031/wellpaw-backend/internal/server"
 )
 
 // @title PetHealth API

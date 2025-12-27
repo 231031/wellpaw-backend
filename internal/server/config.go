@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/231031/pethealth-backend/internal/applogger"
-	"github.com/231031/pethealth-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/golang-jwt/jwt"

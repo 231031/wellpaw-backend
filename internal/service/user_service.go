@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/231031/pethealth-backend/internal/model"
-	"github.com/231031/pethealth-backend/internal/repository"
-	"github.com/231031/pethealth-backend/internal/utils"
+	"github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/repository"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"gorm.io/gorm"
 )
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/231031/pethealth-backend/internal/applogger"
-	"github.com/231031/pethealth-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"gorm.io/gorm"
 )
 

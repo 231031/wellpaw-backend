@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/231031/pethealth-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/redis/go-redis/v9"
 )
 

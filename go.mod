@@ -1,4 +1,4 @@
-module github.com/231031/pethealth-backend
+module github.com/231031/wellpaw-backend
 
 go 1.25.4
 

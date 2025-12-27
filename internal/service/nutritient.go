@@ -1,6 +1,6 @@
 package service
 
-import "github.com/231031/pethealth-backend/internal/model"
+import "github.com/231031/wellpaw-backend/internal/model"
 
 func getNutritientCat(rangeAge model.AgeType) (float64, float64) {
 	protienMap := map[model.AgeType]float64{

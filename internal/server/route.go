@@ -1,10 +1,10 @@
 package server
 
 import (
-	"github.com/231031/pethealth-backend/internal/controller"
-	"github.com/231031/pethealth-backend/internal/middleware"
-	"github.com/231031/pethealth-backend/internal/repository"
-	"github.com/231031/pethealth-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/controller"
+	"github.com/231031/wellpaw-backend/internal/middleware"
+	"github.com/231031/wellpaw-backend/internal/repository"
+	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

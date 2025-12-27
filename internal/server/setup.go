@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/231031/pethealth-backend/internal/applogger"
-	"github.com/231031/pethealth-backend/internal/middleware"
-	"github.com/231031/pethealth-backend/internal/migration"
+	"github.com/231031/wellpaw-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/middleware"
+	"github.com/231031/wellpaw-backend/internal/migration"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 )

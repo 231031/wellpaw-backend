@@ -3,7 +3,7 @@ package service
 import (
 	"math"
 
-	"github.com/231031/pethealth-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/model"
 )
 
 type RerOperation func(bw float64) float64

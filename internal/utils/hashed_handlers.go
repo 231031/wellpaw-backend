@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/231031/pethealth-backend/internal/applogger"
-	"github.com/231031/pethealth-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/model"
 )
 
 var (

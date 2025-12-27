@@ -7,7 +7,7 @@ import (
 	"time"
 
 	// _ "github.com/231031/pet-health/docs"
-	"github.com/231031/pethealth-backend/internal/applogger"
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
