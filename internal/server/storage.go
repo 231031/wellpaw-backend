@@ -21,7 +21,7 @@ func ConnectPostgres(dsn string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func ConnectRedis(host, port, password string) (*redis.Client, error) {
+func connectRedis(host, port, password string) (*redis.Client, error) {
 	addr := fmt.Sprintf("%s:%s", host, port)
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,

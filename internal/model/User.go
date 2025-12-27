@@ -5,8 +5,10 @@ import "time"
 type User struct {
 	ID            uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Email         string    `gorm:"unique;not null;type:varchar(255)" json:"email"`
-	Password      string    `gorm:"not null;type:varchar(255)" json:"password"`
+	Password      string    `gorm:"not null;type:varchar(255)" json:"password,omitempty"`
 	DeviceToken   string    `gorm:"not null;type:varchar(512)" json:"device_token"`
+	FirstName     string    `gorm:"not null;type:varchar(255)" json:"first_name"`
+	LastName      string    `gorm:"not null;type:varchar(255)" json:"last_name"`
 	NotiFood      bool      `gorm:"default:true;not null" json:"noti_food"`
 	NotiCalendars bool      `gorm:"default:true;not null" json:"noti_calendars"`
 	ProfileFree   int       `gorm:"default:0;not null" json:"profile_free"`
