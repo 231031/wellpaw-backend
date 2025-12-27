@@ -88,8 +88,8 @@ REDIS_PASSWORD=your_redis_password
 JWT_SECRET=your_jwt_secret
 
 # Google OAuth (optional)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_WEB_CLIENT_ID=your_google_client_id
+GOOGLE_WEB_CLIENT_SECRET=your_google_client_secret
 ```
 
 ### 3. Generate RSA Key Pair
