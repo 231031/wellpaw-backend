@@ -90,6 +90,9 @@ JWT_SECRET=your_jwt_secret
 # Google OAuth
 GOOGLE_WEB_CLIENT_ID=your_google_client_id
 GOOGLE_WEB_CLIENT_SECRET=your_google_client_secret
+
+# Google Vision API, Google Cloud Storage, Firebase
+GOOGLE_APPLICATION_CREDENTIALS=your_google_application_credentials
 ```
 
 ### 3. Generate RSA Key Pair
