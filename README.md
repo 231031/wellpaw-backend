@@ -87,7 +87,7 @@ REDIS_PASSWORD=your_redis_password
 # JWT Configuration
 JWT_SECRET=your_jwt_secret
 
-# Google OAuth (optional)
+# Google OAuth
 GOOGLE_WEB_CLIENT_ID=your_google_client_id
 GOOGLE_WEB_CLIENT_SECRET=your_google_client_secret
 ```
