@@ -10,9 +10,9 @@ type LoginGooglePayload struct {
 	DeviceToken string `json:"device_token"`
 }
 
-type FoodDetailResponse struct {
-	Energy  float64 `json:"energy"`
-	Protein float64 `json:"protein"`
-	Fat     float64 `json:"fat"`
-	Moist   float64 `json:"moist"`
+type PetFoodAnalysisResponse struct {
+	Energy   *float64 `json:"energy,omitempty"`
+	Protein  *float64 `json:"protein,omitempty"`
+	Fat      *float64 `json:"fat,omitempty"`
+	Moisture *float64 `json:"moisture,omitempty"`
 }

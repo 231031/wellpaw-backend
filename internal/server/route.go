@@ -6,6 +6,7 @@ import (
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/generative-ai-go/genai"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -28,7 +29,7 @@ func RouteOcr(router fiber.Router, ocrController controller.OcrController, authM
 	ocrRoute.Post("/request", ocrController.ProcessOcrRequest)
 }
 
-func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, cfg *Cfg) {
+func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, cfg *Cfg) {
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
@@ -47,7 +48,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, cf
 	userController := controller.NewUserController(userService)
 	RouteUser(router, userController, authMiddlware)
 
-	ocrService := service.NewOcrService()
+	ocrService := service.NewOcrService(geminiClient)
 	ocrController := controller.NewOcrController(ocrService)
 	RouteOcr(router, ocrController, authMiddlware)
 }

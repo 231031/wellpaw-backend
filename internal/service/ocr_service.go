@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 
-	vision "cloud.google.com/go/vision/apiv1"
-	"cloud.google.com/go/vision/v2/apiv1/visionpb"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/generative-ai-go/genai"
 )
 
 type OcrService interface {
@@ -15,64 +15,75 @@ type OcrService interface {
 }
 
 type ocrService struct {
+	geminiClient *genai.Client
 }
 
-func NewOcrService() OcrService {
-	return &ocrService{}
+func NewOcrService(geminiClient *genai.Client) OcrService {
+	return &ocrService{geminiClient: geminiClient}
 }
 
 func (s *ocrService) ProcessOcrRequest(ctx context.Context, file io.Reader) *model.HTTPResponse {
-	client, err := vision.NewImageAnnotatorClient(ctx)
+	if s.geminiClient == nil {
+		return &model.HTTPResponse{
+			Status:  fiber.StatusInternalServerError,
+			Message: "extraction service is not ready",
+		}
+	}
+
+	geminiModel := s.geminiClient.GenerativeModel("gemini-2.5-flash")
+
+	schema := &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"protein":  {Type: genai.TypeNumber, Description: "Crude Protein percentage. -1 if not found."},
+			"fat":      {Type: genai.TypeNumber, Description: "Crude Fat percentage. -1 if not found."},
+			"moisture": {Type: genai.TypeNumber, Description: "Moisture percentage. -1 if not found."},
+			"energy":   {Type: genai.TypeNumber, Description: "Metabolizable Energy in kcal/100g. -1 if not found."},
+		},
+		Required: []string{"protein", "fat", "moisture", "energy"},
+	}
+
+	geminiModel.ResponseMIMEType = "application/json"
+	geminiModel.ResponseSchema = schema
+
+	imgData, err := io.ReadAll(file)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  fiber.StatusInternalServerError,
-			Message: "Failed to create OCR client",
-		}
-	}
-	defer client.Close()
-
-	image, err := vision.NewImageFromReader(file)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  fiber.StatusBadRequest,
-			Message: "Failed to create image from file",
+			Message: "failed to read image file",
 		}
 	}
 
-	annotations, err := client.DetectDocumentText(ctx, image, nil)
+	prompt := []genai.Part{
+		genai.ImageData("jpeg", imgData),
+		genai.Text("Analyze this pet food label. Extract the guaranteed analysis. Use -1 for missing values."),
+	}
+
+	resp, err := geminiModel.GenerateContent(ctx, prompt...)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  fiber.StatusInternalServerError,
-			Message: "Failed to detect text",
+			Message: "failed to extract text from image",
 		}
 	}
 
-	if annotations == nil || annotations.Text == "" {
-		return &model.HTTPResponse{
-			Status:  fiber.StatusOK,
-			Message: "No text found in image",
-			Data:    fiber.Map{"text": ""},
-		}
-	}
-
-	// extract keywords
-	_, err = s.ExtractKeywords(annotations)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  fiber.StatusInternalServerError,
-			Message: "Failed to extract keywords",
+	var result *model.PetFoodAnalysisResponse
+	if len(resp.Candidates) > 0 {
+		part := resp.Candidates[0].Content.Parts[0]
+		if txt, ok := part.(genai.Text); ok {
+			err := json.Unmarshal([]byte(txt), &result)
+			if err != nil || result == nil {
+				return &model.HTTPResponse{
+					Status:  fiber.StatusInternalServerError,
+					Message: "failed to extract text from image",
+				}
+			}
 		}
 	}
 
 	return &model.HTTPResponse{
 		Status:  fiber.StatusOK,
 		Message: "Text extracted successfully",
-		Data: fiber.Map{
-			"text": annotations.Text,
-		},
+		Data:    result,
 	}
-}
-
-func (s *ocrService) ExtractKeywords(annotations *visionpb.TextAnnotation) (*model.FoodDetailResponse, error) {
-	return &model.FoodDetailResponse{}, nil
 }
