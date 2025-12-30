@@ -93,6 +93,9 @@ GOOGLE_WEB_CLIENT_SECRET=your_google_client_secret
 
 # Google Vision API, Google Cloud Storage, Firebase
 GOOGLE_APPLICATION_CREDENTIALS=your_google_application_credentials
+
+# Gemini API from goole ai studio
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ### 3. Generate RSA Key Pair
