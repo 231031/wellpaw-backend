@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/http"
+	"strings"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/gofiber/fiber/v2"
@@ -54,8 +56,18 @@ func (s *ocrService) ProcessOcrRequest(ctx context.Context, file io.Reader) *mod
 		}
 	}
 
+	mimeType := http.DetectContentType(imgData)
+	all := strings.Split(mimeType, "/")
+	if len(all) < 2 {
+		return &model.HTTPResponse{
+			Status:  fiber.StatusBadRequest,
+			Message: "invalid image type",
+		}
+	}
+	mimeType = all[1]
+
 	prompt := []genai.Part{
-		genai.ImageData("jpeg", imgData),
+		genai.ImageData(mimeType, imgData),
 		genai.Text("Analyze this pet food label. Extract the guaranteed analysis. Use -1 for missing values."),
 	}
 
