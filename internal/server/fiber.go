@@ -25,12 +25,13 @@ func Run() {
 	cfg := getAllENV()
 
 	app := fiber.New(fiber.Config{
-		AppName:       "PetHealth API",
+		AppName:       "WellPaw API",
 		CaseSensitive: true,
 		ServerHeader:  "Fiber",
 		ReadTimeout:   5 * time.Second,
 		WriteTimeout:  5 * time.Second,
 		IdleTimeout:   5 * time.Second,
+		BodyLimit:     10 * 1024 * 1024,
 	})
 
 	// Middleware
