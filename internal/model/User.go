@@ -9,8 +9,8 @@ type User struct {
 	DeviceToken   string    `gorm:"not null;type:varchar(512)" json:"device_token"`
 	FirstName     string    `gorm:"not null;type:varchar(255)" json:"first_name"`
 	LastName      string    `gorm:"not null;type:varchar(255)" json:"last_name"`
-	NotiFood      bool      `gorm:"default:true;not null" json:"noti_food"`
-	NotiCalendars bool      `gorm:"default:true;not null" json:"noti_calendars"`
+	NotiFood      bool      `gorm:"type:boolean;default:true;not null" json:"noti_food"`
+	NotiCalendars bool      `gorm:"type:boolean;default:true;not null" json:"noti_calendars"`
 	ProfileFree   int       `gorm:"default:0;not null" json:"profile_free"`
 	FoodFree      int       `gorm:"default:0;not null" json:"food_free"`
 	FoodPlanFree  int       `gorm:"default:0;not null" json:"food_plan_free"`

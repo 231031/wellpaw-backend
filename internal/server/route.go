@@ -22,6 +22,8 @@ func RouteAuth(router fiber.Router, authController controller.AuthController) {
 func RouteUser(router fiber.Router, userController controller.UserController, authMiddleware middleware.AuthMiddleware) {
 	userRoute := router.Group("/user", authMiddleware.AuthorizeUser())
 	userRoute.Get("/", userController.GetUserAllInfo)
+	userRoute.Get("/notification/food", userController.ManageFoodNotification)
+	userRoute.Get("/notification/calendar", userController.ManageCalendarNotification)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {

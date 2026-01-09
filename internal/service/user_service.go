@@ -15,6 +15,8 @@ type UserService interface {
 	GetUserByID(ctx context.Context, id uint) *model.HTTPResponse
 	GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse
 	UpdateUser(ctx context.Context, u *model.User) *model.HTTPResponse
+	ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse
+	ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse
 }
 
 type userService struct {
@@ -81,6 +83,66 @@ func (s *userService) UpdateUser(ctx context.Context, user *model.User) *model.H
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToUpdateMsg + "user",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   user,
+	}
+}
+
+func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse {
+	user, err := s.userRepo.GetUserAllInfo(ctx, id)
+	if err != nil {
+		if errors.Is(err, utils.ErrNoRowsUpdated) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
+		}
+	}
+
+	user.NotiFood = !user.NotiFood
+	err = s.userRepo.UpdateFoodNotification(ctx, id, user.NotiFood)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   user,
+	}
+}
+
+func (s *userService) ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse {
+	user, err := s.userRepo.GetUserAllInfo(ctx, id)
+	if err != nil {
+		if errors.Is(err, utils.ErrNoRowsUpdated) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
+		}
+	}
+
+	user.NotiCalendars = !user.NotiCalendars
+	err = s.userRepo.UpdateCalendarNotification(ctx, id, user.NotiCalendars)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
 		}
 	}
 

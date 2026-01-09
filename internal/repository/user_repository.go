@@ -19,6 +19,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id uint) (*model.User, error)
 	GetUserAllInfo(ctx context.Context, id uint) (*model.User, error)
 	UpdateUser(ctx context.Context, u *model.User) error
+	UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error
+	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
 }
 
 type userRepository struct {
@@ -85,6 +87,32 @@ func (r *userRepository) UpdateUser(ctx context.Context, u *model.User) error {
 	result := r.db.WithContext(ctx).Updates(u)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update user : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error {
+	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("noti_food", notiFood)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update notification : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error {
+	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("noti_calendars", notiCalendar)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update notification : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
