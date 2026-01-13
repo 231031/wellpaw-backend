@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
@@ -29,18 +30,26 @@ type AuthService interface {
 type authService struct {
 	userRepo          repository.UserRepository
 	tokenService      TokenService
+	paymentService    PaymentService
 	googleOauthConfig *oauth2.Config
 }
 
-func NewAuthService(userRepo repository.UserRepository, tokenService TokenService, googleOauthConfig *oauth2.Config) AuthService {
+func NewAuthService(userRepo repository.UserRepository, tokenService TokenService, paymentService PaymentService, googleOauthConfig *oauth2.Config) AuthService {
 	return &authService{
 		userRepo:          userRepo,
 		tokenService:      tokenService,
+		paymentService:    paymentService,
 		googleOauthConfig: googleOauthConfig,
 	}
 }
 
 func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
+	customerID, err := s.paymentService.CreateCustomer(ctx, user)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+	}
+	user.CustomerID = customerID
+
 	hashed, err := s.tokenService.HashPassword(user.Password)
 	if err != nil {
 		return &model.HTTPResponse{

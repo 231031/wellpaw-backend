@@ -15,17 +15,20 @@ type UserService interface {
 	GetUserByID(ctx context.Context, id uint) *model.HTTPResponse
 	GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse
 	UpdateUser(ctx context.Context, u *model.User) *model.HTTPResponse
+	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) *model.HTTPResponse
 	ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse
 	ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse
 }
 
 type userService struct {
-	userRepo repository.UserRepository
+	userRepo       repository.UserRepository
+	paymentService PaymentService
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
+func NewUserService(userRepo repository.UserRepository, paymentService PaymentService) UserService {
 	return &userService{
-		userRepo: userRepo,
+		userRepo:       userRepo,
+		paymentService: paymentService,
 	}
 }
 
@@ -92,8 +95,62 @@ func (s *userService) UpdateUser(ctx context.Context, user *model.User) *model.H
 	}
 }
 
+func (s *userService) UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) *model.HTTPResponse {
+	user, err := s.userRepo.GetUserIdDetailByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, utils.ErrNoRowsUpdated) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "payment method",
+		}
+	}
+
+	if user.CustomerID == "" {
+		customerID, err := s.paymentService.CreateCustomer(ctx, user)
+		if err != nil {
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToUpdateMsg + "payment method",
+			}
+		}
+
+		err = s.userRepo.UpdateCustomerID(ctx, id, customerID)
+		if err != nil {
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToUpdateMsg + "payment method",
+			}
+		}
+
+		user.CustomerID = customerID
+	}
+
+	err = s.paymentService.AttachPaymentMethod(ctx, user.CustomerID, paymentMethodID)
+	if err != nil {
+		return utils.HandleStripeCardError(err)
+	}
+
+	err = s.userRepo.UpdatePaymentMethod(ctx, id, paymentMethodID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "payment method",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   user,
+	}
+}
+
 func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse {
-	user, err := s.userRepo.GetUserAllInfo(ctx, id)
+	user, err := s.userRepo.GetUserIdDetailByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, utils.ErrNoRowsUpdated) {
 			return &model.HTTPResponse{
@@ -123,7 +180,7 @@ func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *mode
 }
 
 func (s *userService) ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse {
-	user, err := s.userRepo.GetUserAllInfo(ctx, id)
+	user, err := s.userRepo.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, utils.ErrNoRowsUpdated) {
 			return &model.HTTPResponse{

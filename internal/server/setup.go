@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 	"github.com/google/generative-ai-go/genai"
+	"github.com/stripe/stripe-go/v84"
 	"google.golang.org/api/option"
 )
 
@@ -56,6 +57,13 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	}
 	applogger.LogInfo("connected to Google AI", serverLog)
 
+	// connect Stripe
+	stripeClient := stripe.NewClient(cfg.STRIPE_API_KEY)
+	if err != nil {
+		applogger.LogError(fmt.Sprintln("failed to connect to Stripe:", err), serverLog)
+	}
+	applogger.LogInfo("connected to Stripe", serverLog)
+
 	// helath check
 	app.Get("health", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
@@ -65,6 +73,6 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	router := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain", "image/*"))
-	CreateRoute(router, db, redisClient, geminiClient, cfg)
+	CreateRoute(router, db, redisClient, geminiClient, stripeClient, cfg)
 
 }

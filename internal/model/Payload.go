@@ -16,3 +16,7 @@ type PetFoodAnalysisResponse struct {
 	Fat      *float64 `json:"fat,omitempty"`
 	Moisture *float64 `json:"moisture,omitempty"`
 }
+
+type PaymentMethodUpdatePayload struct {
+	PaymentMethodID string `json:"payment_method_id"`
+}
