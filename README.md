@@ -96,6 +96,9 @@ GOOGLE_APPLICATION_CREDENTIALS=your_google_application_credentials
 
 # Gemini API from goole ai studio
 GEMINI_API_KEY=your_gemini_api_key
+
+# Stirpe API Key
+STRIPE_API_KEY=your_stripe_api_key
 ```
 
 ### 3. Generate RSA Key Pair
@@ -165,17 +168,6 @@ docker-compose down
 Remove containers and volumes (⚠️ WARNING: This deletes all data):
 ```bash
 docker-compose down -v
-```
-
-Remove containers, volumes, and images:
-```bash
-docker-compose down -v --rmi all
-```
-
-### Rebuild Containers
-Rebuild and restart containers after code changes:
-```bash
-docker-compose up -d --build
 ```
 
 ## 📚 API Documentation
