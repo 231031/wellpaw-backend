@@ -106,8 +106,9 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 	}
 
 	userAuth := &model.UserAuth{
-		ID:   user.ID,
-		Tier: user.PaymentPlan,
+		ID:         user.ID,
+		CustomerID: user.CustomerID,
+		Tier:       user.PaymentPlan,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
@@ -205,8 +206,9 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 	}
 
 	userAuth := &model.UserAuth{
-		ID:   user.ID,
-		Tier: user.PaymentPlan,
+		ID:         user.ID,
+		CustomerID: user.CustomerID,
+		Tier:       user.PaymentPlan,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {

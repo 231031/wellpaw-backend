@@ -30,8 +30,9 @@ type TokenPair struct {
 }
 
 type UserAuth struct {
-	ID   uint     `json:"id"`
-	Tier TierType `json:"tier"`
+	ID         uint     `json:"id"`
+	CustomerID string   `json:"customer_id"`
+	Tier       TierType `json:"tier"`
 }
 
 type TokenClaims struct {
