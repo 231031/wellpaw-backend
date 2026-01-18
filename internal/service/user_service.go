@@ -16,6 +16,12 @@ type UserService interface {
 	GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse
 	UpdateUser(ctx context.Context, u *model.User) *model.HTTPResponse
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) *model.HTTPResponse
+
+	GetAllSubscriptionsPlan(ctx context.Context) *model.HTTPResponse
+	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) *model.HTTPResponse
+	StartSubscription(ctx context.Context, id uint, payload model.StartSubscriptionPayload) *model.HTTPResponse
+	UpdateSubscription(ctx context.Context, customerID string, payload model.UpdateSubscriptionPayload) *model.HTTPResponse
+
 	ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse
 	ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse
 }
@@ -98,7 +104,7 @@ func (s *userService) UpdateUser(ctx context.Context, user *model.User) *model.H
 func (s *userService) UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserIdDetailByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, utils.ErrNoRowsUpdated) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
@@ -132,7 +138,7 @@ func (s *userService) UpdatePaymentMethod(ctx context.Context, id uint, paymentM
 
 	err = s.paymentService.AttachPaymentMethod(ctx, user.CustomerID, paymentMethodID)
 	if err != nil {
-		return utils.HandleStripeCardError(err)
+		return utils.HandleStripeError(utils.FailedToUpdateMsg+"payment method: ", err)
 	}
 
 	err = s.userRepo.UpdatePaymentMethod(ctx, id, paymentMethodID)
@@ -147,6 +153,58 @@ func (s *userService) UpdatePaymentMethod(ctx context.Context, id uint, paymentM
 		Status: http.StatusOK,
 		Data:   user,
 	}
+}
+
+func (s *userService) GetAllSubscriptionsPlan(ctx context.Context) *model.HTTPResponse {
+	plans, err := s.paymentService.GetAllSubscriptionsPlan(ctx)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "subscription plans",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   plans,
+	}
+}
+
+func (s *userService) GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) *model.HTTPResponse {
+	subscriptions, err := s.paymentService.GetAllSubscriptionsByCustomerID(ctx, customerID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "subscriptions",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   subscriptions,
+	}
+}
+
+func (s *userService) StartSubscription(ctx context.Context, id uint, payload model.StartSubscriptionPayload) *model.HTTPResponse {
+	user, err := s.userRepo.GetUserIdDetailByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToCreateMsg + "subscription",
+		}
+	}
+
+	return s.paymentService.CreateSubscription(ctx, user.CustomerID, user.PaymentMethodID, payload.SubscriptionPlanID)
+}
+
+func (s *userService) UpdateSubscription(ctx context.Context, customerID string, payload model.UpdateSubscriptionPayload) *model.HTTPResponse {
+	return s.paymentService.UpdateSubscription(ctx, customerID, payload.NewSubscriptionPlanID)
 }
 
 func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse {

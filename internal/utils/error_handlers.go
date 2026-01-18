@@ -2,8 +2,10 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/stripe/stripe-go/v84"
 )
@@ -20,40 +22,31 @@ var (
 	ErrFailToGet    = errors.New("failed to get data")
 )
 
-func HandleStripeCardError(err error) *model.HTTPResponse {
+func HandleStripeError(msgFailed string, err error) *model.HTTPResponse {
 	var stripeErr *stripe.Error
 	if errors.As(err, &stripeErr) {
-		switch stripeErr.Code {
-		case stripe.ErrorCodeCardDeclined:
+		switch stripeErr.Type {
+		case stripe.ErrorTypeCard:
 			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "card declined",
+				Status:  stripeErr.HTTPStatusCode,
+				Message: msgFailed + stripeErr.Msg,
 			}
-		case stripe.ErrorCodeExpiredCard:
+		case stripe.ErrorTypeInvalidRequest:
 			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "card expired",
-			}
-		case stripe.ErrorCodeCardDeclineRateLimitExceeded:
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "card decline rate limit exceeded",
-			}
-		case stripe.ErrorCodeCardholderPhoneNumberRequired:
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "cardholder phone number required",
+				Status:  stripeErr.HTTPStatusCode,
+				Message: msgFailed + stripeErr.Msg,
 			}
 		default:
+			applogger.LogError(fmt.Sprintf("stripe error: %v", err), "STRIPE ERROR")
 			return &model.HTTPResponse{
-				Status:  http.StatusInternalServerError,
-				Message: FailedToUpdateMsg + "payment method",
+				Status:  stripeErr.HTTPStatusCode,
+				Message: msgFailed + stripeErr.Msg,
 			}
 		}
 	}
 
 	return &model.HTTPResponse{
 		Status:  http.StatusInternalServerError,
-		Message: FailedToUpdateMsg + "payment method",
+		Message: msgFailed + err.Error(),
 	}
 }

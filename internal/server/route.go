@@ -27,8 +27,14 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 	userRoute.Get("/notification/food", userController.ManageFoodNotification)
 	userRoute.Get("/notification/calendar", userController.ManageCalendarNotification)
 
-	paymentUserRoute := userRoute.Group("/payment", authMiddleware.AuthorizeUser())
+	paymentUserRoute := userRoute.Group("/payment")
 	paymentUserRoute.Patch("/paymentmethod", userController.UpdatePaymentMethod)
+
+	subUserRoute := userRoute.Group("/subscription")
+	subUserRoute.Get("/", userController.GetAllSubscriptionsPlan)
+	subUserRoute.Get("/history", userController.GetAllSubscriptionsByCustomerID)
+	subUserRoute.Post("/", userController.StartSubscription)
+	subUserRoute.Patch("/update", userController.UpdateSubscription)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {

@@ -10,7 +10,7 @@ const (
 )
 
 var TierTypeLabel = map[TierType]string{
-	FREE:   "Dry",
+	FREE:   "Free",
 	WEEKS:  "Week",
 	MONTHS: "Month",
 	YEARS:  "Year",
