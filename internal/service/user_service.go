@@ -210,7 +210,7 @@ func (s *userService) UpdateSubscription(ctx context.Context, customerID string,
 func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserIdDetailByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, utils.ErrNoRowsUpdated) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
@@ -240,7 +240,7 @@ func (s *userService) ManageFoodNotification(ctx context.Context, id uint) *mode
 func (s *userService) ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse {
 	user, err := s.userRepo.GetUserByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, utils.ErrNoRowsUpdated) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &model.HTTPResponse{
 				Status:  http.StatusNotFound,
 				Message: "user" + utils.NotFoundMsg,
