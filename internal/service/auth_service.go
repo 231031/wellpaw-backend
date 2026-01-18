@@ -190,6 +190,13 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 				LastName:    userInfo.LastName,
 				DeviceToken: payload.DeviceToken,
 			}
+
+			customerID, err := s.paymentService.CreateCustomer(ctx, user)
+			if err != nil {
+				applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+			}
+
+			user.CustomerID = customerID
 			err = s.userRepo.CreateUser(ctx, user)
 			if err != nil {
 				return &model.HTTPResponse{
