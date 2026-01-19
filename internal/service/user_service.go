@@ -19,6 +19,8 @@ type UserService interface {
 
 	GetAllSubscriptionsPlan(ctx context.Context) *model.HTTPResponse
 	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) *model.HTTPResponse
+	GetPaymentIntentByID(ctx context.Context, paymentIntentID string) *model.HTTPResponse
+	GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) *model.HTTPResponse
 	StartSubscription(ctx context.Context, id uint, payload model.StartSubscriptionPayload) *model.HTTPResponse
 	UpdateSubscription(ctx context.Context, customerID string, payload model.UpdateSubscriptionPayload) *model.HTTPResponse
 
@@ -182,6 +184,33 @@ func (s *userService) GetAllSubscriptionsByCustomerID(ctx context.Context, custo
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   subscriptions,
+	}
+}
+
+func (s *userService) GetPaymentIntentByID(ctx context.Context, paymentIntentID string) *model.HTTPResponse {
+	paymentIntent, err := s.paymentService.GetPaymentIntentByID(ctx, paymentIntentID)
+	if err != nil {
+		return utils.HandleStripeError(utils.FailedToGetMsg+"payment intent: ", err)
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   paymentIntent,
+	}
+}
+
+func (s *userService) GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) *model.HTTPResponse {
+	subSchedules, err := s.paymentService.GetSubscriptionScheduleByCustomerID(ctx, customerID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "subscription schedules",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   subSchedules,
 	}
 }
 

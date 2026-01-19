@@ -151,21 +151,52 @@ definitions:
       status:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.LoginData:
+    properties:
+      token:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TokenPair'
+      user:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.LoginGooglePayload:
+    properties:
+      auth_code:
+        type: string
+      device_token:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.LoginPayload:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.LoginResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LoginData'
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.OcrPetFoodResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodAnalysisResponse'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.Payment:
     properties:
       created_at:
         type: string
-      currency:
-        type: string
       id:
         type: integer
-      price:
-        type: integer
+      price_id:
+        type: string
       status:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentStatusType'
-      stripe_payment_id:
-        type: string
-      subscription_period_end:
+      subscription_id:
         type: string
       updated_at:
         type: string
@@ -175,6 +206,31 @@ definitions:
         description: Relationships
       user_id:
         type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentInvoice'
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PaymentInvoice:
+    properties:
+      amount:
+        type: integer
+      client_secret:
+        type: string
+      default_payment_method_id:
+        type: string
+      payment_intent_status:
+        type: string
+      subscription_status:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PaymentMethodUpdatePayload:
+    properties:
+      payment_method_id:
+        type: string
     type: object
   github_com_231031_wellpaw-backend_internal_model.PaymentStatusType:
     enum:
@@ -312,6 +368,17 @@ definitions:
       weight:
         type: number
     type: object
+  github_com_231031_wellpaw-backend_internal_model.PetFoodAnalysisResponse:
+    properties:
+      energy:
+        type: number
+      fat:
+        type: number
+      moisture:
+        type: number
+      protein:
+        type: number
+    type: object
   github_com_231031_wellpaw-backend_internal_model.PetFoodPlan:
     properties:
       active:
@@ -407,6 +474,77 @@ definitions:
     x-enum-varnames:
     - FEMALE
     - MALE
+  github_com_231031_wellpaw-backend_internal_model.StartSubscriptionPayload:
+    properties:
+      payment_method_id:
+        type: string
+      subscription_plan_id:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory:
+    properties:
+      amount:
+        type: integer
+      amount_due:
+        type: integer
+      amount_paid:
+        type: integer
+      invoice_id:
+        type: string
+      invoice_status:
+        type: string
+      payment_intent_id:
+        type: string
+      period_end:
+        type: string
+      period_start:
+        type: string
+      price_id:
+        type: string
+      subscription_id:
+        type: string
+      subscription_status:
+        type: string
+      tier:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory'
+        type: array
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionPlan:
+    properties:
+      amount:
+        type: integer
+      currency:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      interval:
+        type: string
+      interval_count:
+        type: integer
+      name:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionPlanResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionPlan'
+        type: array
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.TierType:
     enum:
     - 0
@@ -419,6 +557,13 @@ definitions:
     - WEEKS
     - MONTHS
     - YEARS
+  github_com_231031_wellpaw-backend_internal_model.TokenPair:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
   github_com_231031_wellpaw-backend_internal_model.UnitType:
     enum:
     - 0
@@ -427,11 +572,18 @@ definitions:
     x-enum-varnames:
     - GRAM
     - CUP
+  github_com_231031_wellpaw-backend_internal_model.UpdateSubscriptionPayload:
+    properties:
+      new_subscription_plan_id:
+        type: string
+    type: object
   github_com_231031_wellpaw-backend_internal_model.User:
     properties:
       bcs_free:
         type: integer
       created_at:
+        type: string
+      customer_id:
         type: string
       device_token:
         type: string
@@ -459,6 +611,8 @@ definitions:
         type: boolean
       password:
         type: string
+      payment_method_id:
+        type: string
       payment_plan:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
       payments:
@@ -475,6 +629,13 @@ definitions:
       updated_at:
         type: string
     type: object
+  github_com_231031_wellpaw-backend_internal_model.UserResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
+      status:
+        type: integer
+    type: object
 host: localhost:50001
 info:
   contact:
@@ -488,6 +649,66 @@ info:
   title: WellPaw API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: login a user
+      parameters:
+      - description: Login payload
+        in: body
+        name: LoginPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LoginPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      summary: Login User
+      tags:
+      - Authentication
+  /auth/login/google:
+    post:
+      consumes:
+      - application/json
+      description: login a user with google
+      parameters:
+      - description: Login google payload
+        in: body
+        name: LoginGooglePayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LoginGooglePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      summary: Login User With Google
+      tags:
+      - Authentication
   /auth/register:
     post:
       consumes:
@@ -518,6 +739,314 @@ paths:
       summary: Register User
       tags:
       - Authentication
+  /ocr/request:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Process image file with OCR
+      parameters:
+      - description: Image file to process
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.OcrPetFoodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Request OCR
+      tags:
+      - OCR
+  /user:
+    get:
+      consumes:
+      - application/json
+      description: get user all info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get User All Info
+      tags:
+      - User
+  /user/notification/calendar:
+    get:
+      consumes:
+      - application/json
+      description: manage calendar notification
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage Calendar Notification
+      tags:
+      - User
+  /user/notification/food:
+    get:
+      consumes:
+      - application/json
+      description: manage food notification
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage Food Notification
+      tags:
+      - User
+  /user/paymentintent/{payment_intent_id}:
+    get:
+      consumes:
+      - application/json
+      description: get payment intent by id to use retry payment in frontend
+      parameters:
+      - description: Payment intent id
+        in: path
+        name: payment_intent_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Payment Intent By ID
+      tags:
+      - User
+  /user/paymentmethod:
+    patch:
+      consumes:
+      - application/json
+      description: update payment method
+      parameters:
+      - description: Update payment method payload
+        in: body
+        name: UpdatePaymentMethodPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentMethodUpdatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Payment Method
+      tags:
+      - User
+  /user/subscription:
+    get:
+      consumes:
+      - application/json
+      description: get all subscriptions plan provide for customer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionPlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get All Subscriptions Plan
+      tags:
+      - User
+  /user/subscription/history:
+    get:
+      consumes:
+      - application/json
+      description: get all subscriptions by customer id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get All Subscriptions By Customer ID
+      tags:
+      - User
+  /user/subscription/schedule:
+    get:
+      consumes:
+      - application/json
+      description: get subscription schedule by customer id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Subscription Schedule By Customer ID
+      tags:
+      - User
+  /user/subscription/start:
+    post:
+      consumes:
+      - application/json
+      description: start subscription after attached payment method
+      parameters:
+      - description: Start subscription payload
+        in: body
+        name: StartSubscriptionPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.StartSubscriptionPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Start Subscription
+      tags:
+      - User
+  /user/subscription/update:
+    patch:
+      consumes:
+      - application/json
+      description: update subscription
+      parameters:
+      - description: Update subscription payload
+        in: body
+        name: UpdateSubscriptionPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UpdateSubscriptionPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Subscription
+      tags:
+      - User
 schemes:
 - http
 swagger: "2.0"

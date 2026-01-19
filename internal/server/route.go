@@ -32,8 +32,12 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 
 	subUserRoute := userRoute.Group("/subscription")
 	subUserRoute.Get("/", userController.GetAllSubscriptionsPlan)
+	subUserRoute.Get("/schedules", userController.GetSubscriptionScheduleByCustomerID)
 	subUserRoute.Get("/history", userController.GetAllSubscriptionsByCustomerID)
-	subUserRoute.Post("/", userController.StartSubscription)
+	subUserRoute.Get("/paymentintent/:payment_intent_id", userController.GetPaymentIntentByID)
+
+	subUserRoute.Post("/start", userController.StartSubscription)
+
 	subUserRoute.Patch("/update", userController.UpdateSubscription)
 }
 

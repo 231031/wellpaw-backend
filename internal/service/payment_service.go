@@ -16,6 +16,8 @@ type PaymentService interface {
 
 	GetAllSubscriptionsPlan(ctx context.Context) ([]*model.SubscriptionPlan, error)
 	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) ([]*model.SubscriptionHistory, error)
+	GetPaymentIntentByID(ctx context.Context, paymentIntentID string) (*model.PaymentInvoice, error)
+	GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) ([]*stripe.SubscriptionSchedule, error)
 	CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse
 	UpdateSubscription(ctx context.Context, customerID, newSubscriptionPlanID string) *model.HTTPResponse
 }
@@ -102,6 +104,7 @@ func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, cu
 			stripe.String("data.items.data"),
 			stripe.String("data.items.data.price"),
 			stripe.String("data.latest_invoice.lines.data"),
+			stripe.String("data.latest_invoice.payments.data"),
 		},
 	})
 
@@ -111,11 +114,17 @@ func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, cu
 			return nil, err
 		}
 
+		var paymentIntentID string
+		if len(sub.LatestInvoice.Payments.Data) > 0 {
+			paymentIntentID = sub.LatestInvoice.Payments.Data[0].Payment.PaymentIntent.ID
+		}
+
 		subscriptionHistories = append(subscriptionHistories, &model.SubscriptionHistory{
 			SubscriptionID:     sub.ID,
 			SubscriptionStatus: string(sub.Status),
 			InvoiceID:          sub.LatestInvoice.ID,
 			InvoiceStatus:      string(sub.LatestInvoice.Status),
+			PaymentIntentID:    paymentIntentID,
 			PriceID:            sub.Items.Data[0].Price.ID,
 			AmountPaid:         sub.LatestInvoice.AmountPaid / 100,
 			AmountDue:          sub.LatestInvoice.AmountDue / 100,
@@ -128,6 +137,46 @@ func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, cu
 	}
 
 	return subscriptionHistories, nil
+}
+
+func (s *paymentService) GetPaymentIntentByID(ctx context.Context, paymentIntentID string) (*model.PaymentInvoice, error) {
+	paymentIntent, err := s.stripeClient.V1PaymentIntents.Retrieve(ctx, paymentIntentID, &stripe.PaymentIntentRetrieveParams{
+		Expand: []*string{
+			stripe.String("customer.subscriptions.data"),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	paymentInvoice := &model.PaymentInvoice{
+		ClientSecret:        paymentIntent.ClientSecret,
+		PaymentIntentStatus: string(paymentIntent.Status),
+		SubscriptionStatus:  string(paymentIntent.Customer.Subscriptions.Data[0].Status),
+		Amount:              paymentIntent.Amount / 100,
+	}
+	return paymentInvoice, nil
+}
+
+func (s *paymentService) GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) ([]*stripe.SubscriptionSchedule, error) {
+	subSchedules := s.stripeClient.V1SubscriptionSchedules.List(ctx, &stripe.SubscriptionScheduleListParams{
+		Customer: stripe.String(customerID),
+		Expand: []*string{
+			stripe.String("data.phases.items.price"),
+			stripe.String("data.subscription.items.data"),
+			stripe.String("data.subscription.latest_invoice.payments"),
+		},
+	})
+
+	var allSubSchedules []*stripe.SubscriptionSchedule
+	for subSchedule, err := range subSchedules {
+		if err != nil {
+			return nil, err
+		}
+		allSubSchedules = append(allSubSchedules, subSchedule)
+	}
+
+	return allSubSchedules, nil
 }
 
 func (s *paymentService) CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse {
@@ -210,7 +259,10 @@ func (s *paymentService) UpdateSubscription(ctx context.Context, customerID, new
 	}
 
 	if sub == nil {
-		return utils.HandleStripeError("failed to update subscription: ", fmt.Errorf("user has no active subscription"))
+		return &model.HTTPResponse{
+			Status:  http.StatusNotFound,
+			Message: utils.FailedToUpdateMsg + "subscription: user has no active subscription",
+		}
 	}
 
 	subUpdated, err := s.stripeClient.V1Subscriptions.Update(ctx, sub.ID, &stripe.SubscriptionUpdateParams{

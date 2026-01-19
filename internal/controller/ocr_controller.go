@@ -3,6 +3,7 @@ package controller
 import (
 	"time"
 
+	_ "github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,12 +25,13 @@ func NewOcrController(ocrService service.OcrService) OcrController {
 // @Summary Request OCR
 // @Description Process image file with OCR
 // @tags OCR
+// @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce application/json
 // @Param image formData file true "Image file to process"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
+// @Success 200 {object} model.OcrPetFoodResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
 // @Router /ocr/request [post]
 func (c *ocrController) ProcessOcrRequest(ctx *fiber.Ctx) error {
 	fileHeader, err := ctx.FormFile("image")

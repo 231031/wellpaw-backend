@@ -12,13 +12,6 @@ type LoginGooglePayload struct {
 	DeviceToken string `json:"device_token"`
 }
 
-type PetFoodAnalysisResponse struct {
-	Energy   *float64 `json:"energy,omitempty"`
-	Protein  *float64 `json:"protein,omitempty"`
-	Fat      *float64 `json:"fat,omitempty"`
-	Moisture *float64 `json:"moisture,omitempty"`
-}
-
 type PaymentMethodUpdatePayload struct {
 	PaymentMethodID string `json:"payment_method_id"`
 }
@@ -55,6 +48,7 @@ type SubscriptionHistory struct {
 	SubscriptionStatus string    `json:"subscription_status"`
 	InvoiceID          string    `json:"invoice_id"`
 	InvoiceStatus      string    `json:"invoice_status"`
+	PaymentIntentID    string    `json:"payment_intent_id"`
 	PriceID            string    `json:"price_id"`
 	AmountPaid         int64     `json:"amount_paid"`
 	AmountDue          int64     `json:"amount_due"`

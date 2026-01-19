@@ -56,6 +56,16 @@ func (c *authController) CreateUser(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Status).JSON(response)
 }
 
+// @Summary Login User
+// @Description login a user
+// @tags Authentication
+// @Param   LoginPayload body model.LoginPayload true "Login payload"
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.LoginResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/login [post]
 func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 	var payload model.LoginPayload
 	if err := ctx.BodyParser(&payload); err != nil {
@@ -73,6 +83,16 @@ func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Status).JSON(response)
 }
 
+// @Summary Login User With Google
+// @Description login a user with google
+// @tags Authentication
+// @Param   LoginGooglePayload body model.LoginGooglePayload true "Login google payload"
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.LoginResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/login/google [post]
 func (c *authController) LoginUserWithGoogle(ctx *fiber.Ctx) error {
 	var payload model.LoginGooglePayload
 	if err := ctx.BodyParser(&payload); err != nil {
