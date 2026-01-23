@@ -14,3 +14,18 @@ func ConvertIntervalToTierType(interval string) model.TierType {
 		return model.FREE
 	}
 }
+
+func ConvertSubscriptionStatusToSubscriptionStatusType(subscriptionStatus string) model.SubscriptionStatusType {
+	switch subscriptionStatus {
+	case "incomplete":
+		return model.INCOMPLETE
+	case "active":
+		return model.ACTIVESUB
+	case "past_due":
+		return model.PASTDUE
+	case "canceled":
+		return model.CANCELED
+	default:
+		return model.INACTIVESUB
+	}
+}

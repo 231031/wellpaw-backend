@@ -32,13 +32,18 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 
 	subUserRoute := userRoute.Group("/subscription")
 	subUserRoute.Get("/", userController.GetAllSubscriptionsPlan)
-	subUserRoute.Get("/schedules", userController.GetSubscriptionScheduleByCustomerID)
 	subUserRoute.Get("/history", userController.GetAllSubscriptionsByCustomerID)
 	subUserRoute.Get("/paymentintent/:payment_intent_id", userController.GetPaymentIntentByID)
 
 	subUserRoute.Post("/start", userController.StartSubscription)
 
 	subUserRoute.Patch("/update", userController.UpdateSubscription)
+	subUserRoute.Get("/cancel/:subscription_id", userController.CancelSubscription)
+}
+
+func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
+	webhookRoute := router.Group("/webhook")
+	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {
@@ -57,6 +62,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	authMiddlware := middleware.NewAuthMiddleware(tokenService)
 
 	paymentService := service.NewPaymentService(stripeClient)
+	webhookService := service.NewWebhookService(userRepo)
 
 	// routing
 	authService := service.NewAuthService(userRepo, tokenService, paymentService, googleOauthConfig)
@@ -70,4 +76,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	ocrService := service.NewOcrService(geminiClient)
 	ocrController := controller.NewOcrController(ocrService)
 	RouteOcr(router, ocrController, authMiddlware)
+
+	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
+	RouteWebhook(router, webhookController)
 }

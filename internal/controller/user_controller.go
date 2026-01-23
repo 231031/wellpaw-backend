@@ -18,9 +18,9 @@ type UserController interface {
 
 	GetAllSubscriptionsByCustomerID(ctx *fiber.Ctx) error
 	GetPaymentIntentByID(ctx *fiber.Ctx) error
-	GetSubscriptionScheduleByCustomerID(ctx *fiber.Ctx) error
 	StartSubscription(ctx *fiber.Ctx) error
 	UpdateSubscription(ctx *fiber.Ctx) error
+	CancelSubscription(ctx *fiber.Ctx) error
 
 	ManageFoodNotification(ctx *fiber.Ctx) error
 	ManageCalendarNotification(ctx *fiber.Ctx) error
@@ -109,17 +109,19 @@ func (c *userController) GetAllSubscriptionsPlan(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} model.SubscriptionHistoryResponse
+// @Param last_id query string false "Last id"
+// @Success 200 {object} model.SubscriptionHistoryPaginationResponse
 // @Failure 400 {object} model.HTTPResponse
 // @Failure 500 {object} model.HTTPResponse
 // @Router /user/subscription/history [get]
 func (c *userController) GetAllSubscriptionsByCustomerID(ctx *fiber.Ctx) error {
 	customerID := ctx.Locals("customer_id").(string)
+	lastID := ctx.Query("last_id", "")
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
 	defer cancel()
 
-	response := c.userService.GetAllSubscriptionsByCustomerID(ctxWithTimeOut, customerID)
+	response := c.userService.GetAllSubscriptionsByCustomerID(ctxWithTimeOut, customerID, lastID)
 	return ctx.Status(response.Status).JSON(response)
 }
 
@@ -147,27 +149,6 @@ func (c *userController) GetPaymentIntentByID(ctx *fiber.Ctx) error {
 		})
 	}
 	response := c.userService.GetPaymentIntentByID(ctxWithTimeOut, paymentIntentID)
-	return ctx.Status(response.Status).JSON(response)
-}
-
-// @Summary Get Subscription Schedule By Customer ID
-// @Description get subscription schedule by customer id
-// @tags User
-// @Security BearerAuth
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {object} model.HTTPResponse
-// @Failure 400 {object} model.HTTPResponse
-// @Failure 500 {object} model.HTTPResponse
-// @Router /user/subscription/schedule [get]
-func (c *userController) GetSubscriptionScheduleByCustomerID(ctx *fiber.Ctx) error {
-	// @Success 200 {object} model.SubscriptionScheduleResponse
-	customerID := ctx.Locals("customer_id").(string)
-
-	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
-	defer cancel()
-
-	response := c.userService.GetSubscriptionScheduleByCustomerID(ctxWithTimeOut, customerID)
 	return ctx.Status(response.Status).JSON(response)
 }
 
@@ -226,6 +207,26 @@ func (c *userController) UpdateSubscription(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.userService.UpdateSubscription(ctxWithTimeOut, customerID, payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Cancel Subscription
+// @Description cancel subscription
+// @tags User
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.SubscriptionHistory
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /user/subscription/cancel/{subscription_id} [get]
+func (c *userController) CancelSubscription(ctx *fiber.Ctx) error {
+	subscriptionID := ctx.Params("subscription_id")
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
+	defer cancel()
+
+	response := c.userService.CancelSubscription(ctxWithTimeOut, subscriptionID)
 	return ctx.Status(response.Status).JSON(response)
 }
 

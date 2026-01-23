@@ -37,6 +37,7 @@ type Cfg struct {
 	GOOGLE_WEB_CLIENT_SECRET string
 	GEMINI_API_KEY           string
 	STRIPE_API_KEY           string
+	STRIPE_WEBHOOK_SECRET    string
 }
 
 func getAllENV() *Cfg {
@@ -57,6 +58,7 @@ func getAllENV() *Cfg {
 		"GOOGLE_WEB_CLIENT_SECRET",
 		"GEMINI_API_KEY",
 		"STRIPE_API_KEY",
+		"STRIPE_WEBHOOK_SECRET",
 	}
 
 	allValue := make(map[string]string)
@@ -85,6 +87,7 @@ func getAllENV() *Cfg {
 		GOOGLE_WEB_CLIENT_SECRET: allValue[allKey[13]],
 		GEMINI_API_KEY:           allValue[allKey[14]],
 		STRIPE_API_KEY:           allValue[allKey[15]],
+		STRIPE_WEBHOOK_SECRET:    allValue[allKey[16]],
 	}
 
 	return cfg

@@ -24,6 +24,7 @@ type UserRepository interface {
 	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
+	UpdateSubscriptionDetail(ctx context.Context, email string, status model.SubscriptionStatusType, tier model.TierType) error
 }
 
 type userRepository struct {
@@ -158,6 +159,22 @@ func (r *userRepository) UpdateCustomerID(ctx context.Context, id uint, customer
 	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("customer_id", customerID)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update customer id : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) error {
+	result := r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
+		"subscription_status": status,
+		"tier":                tier,
+	})
+	if result.Error != nil {
+		return fmt.Errorf("failed to update subscription status : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {

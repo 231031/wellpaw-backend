@@ -508,12 +508,19 @@ definitions:
       tier:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
     type: object
-  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse:
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPagination:
     properties:
-      data:
+      last_id:
+        type: string
+      subscriptions:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory'
         type: array
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPaginationResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPagination'
       status:
         type: integer
     type: object
@@ -545,6 +552,20 @@ definitions:
       status:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionStatusType:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    type: integer
+    x-enum-varnames:
+    - INACTIVESUB
+    - INCOMPLETE
+    - ACTIVESUB
+    - PASTDUE
+    - CANCELED
   github_com_231031_wellpaw-backend_internal_model.TierType:
     enum:
     - 0
@@ -626,6 +647,10 @@ definitions:
         type: array
       profile_free:
         type: integer
+      subscription_status:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionStatusType'
+      tier:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
       updated_at:
         type: string
     type: object
@@ -933,18 +958,48 @@ paths:
       summary: Get All Subscriptions Plan
       tags:
       - User
-  /user/subscription/history:
+  /user/subscription/cancel/{subscription_id}:
     get:
       consumes:
       - application/json
-      description: get all subscriptions by customer id
+      description: cancel subscription
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse'
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Subscription
+      tags:
+      - User
+  /user/subscription/history:
+    get:
+      consumes:
+      - application/json
+      description: get all subscriptions by customer id
+      parameters:
+      - description: Last id
+        in: query
+        name: last_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPaginationResponse'
         "400":
           description: Bad Request
           schema:
@@ -956,31 +1011,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get All Subscriptions By Customer ID
-      tags:
-      - User
-  /user/subscription/schedule:
-    get:
-      consumes:
-      - application/json
-      description: get subscription schedule by customer id
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-      security:
-      - BearerAuth: []
-      summary: Get Subscription Schedule By Customer ID
       tags:
       - User
   /user/subscription/start:

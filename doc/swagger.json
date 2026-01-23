@@ -467,6 +467,46 @@
                 }
             }
         },
+        "/user/subscription/cancel/{subscription_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "cancel subscription",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Cancel Subscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/subscription/history": {
             "get": {
                 "security": [
@@ -485,51 +525,19 @@
                     "User"
                 ],
                 "summary": "Get All Subscriptions By Customer ID",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/user/subscription/schedule": {
-            "get": {
-                "security": [
+                "parameters": [
                     {
-                        "BearerAuth": []
+                        "type": "string",
+                        "description": "Last id",
+                        "name": "last_id",
+                        "in": "query"
                     }
                 ],
-                "description": "get subscription schedule by customer id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Get Subscription Schedule By Customer ID",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPaginationResponse"
                         }
                     },
                     "400": {
@@ -1398,14 +1406,25 @@
                 }
             }
         },
-        "github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse": {
+        "github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPagination": {
             "type": "object",
             "properties": {
-                "data": {
+                "last_id": {
+                    "type": "string"
+                },
+                "subscriptions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory"
                     }
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPaginationResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPagination"
                 },
                 "status": {
                     "type": "integer"
@@ -1454,6 +1473,23 @@
                     "type": "integer"
                 }
             }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.SubscriptionStatusType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "INACTIVESUB",
+                "INCOMPLETE",
+                "ACTIVESUB",
+                "PASTDUE",
+                "CANCELED"
+            ]
         },
         "github_com_231031_wellpaw-backend_internal_model.TierType": {
             "type": "integer",
@@ -1572,6 +1608,12 @@
                 },
                 "profile_free": {
                     "type": "integer"
+                },
+                "subscription_status": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionStatusType"
+                },
+                "tier": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType"
                 },
                 "updated_at": {
                     "type": "string"

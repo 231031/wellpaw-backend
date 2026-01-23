@@ -15,11 +15,11 @@ type PaymentService interface {
 	AttachPaymentMethod(ctx context.Context, customerID string, paymentMethodID string) error
 
 	GetAllSubscriptionsPlan(ctx context.Context) ([]*model.SubscriptionPlan, error)
-	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) ([]*model.SubscriptionHistory, error)
+	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string, lastID string) ([]*model.SubscriptionHistory, string, error)
 	GetPaymentIntentByID(ctx context.Context, paymentIntentID string) (*model.PaymentInvoice, error)
-	GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) ([]*stripe.SubscriptionSchedule, error)
 	CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse
 	UpdateSubscription(ctx context.Context, customerID, newSubscriptionPlanID string) *model.HTTPResponse
+	CancelSubscription(ctx context.Context, subscriptionID string) (*model.SubscriptionHistory, error)
 }
 
 type paymentService struct {
@@ -96,8 +96,9 @@ func (s *paymentService) GetAllSubscriptionsPlan(ctx context.Context) ([]*model.
 	return subscriptionPlans, nil
 }
 
-func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string) ([]*model.SubscriptionHistory, error) {
-	subscriptions := s.stripeClient.V1Subscriptions.List(ctx, &stripe.SubscriptionListParams{
+func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string, lastID string) ([]*model.SubscriptionHistory, string, error) {
+	var newLastID string
+	params := &stripe.SubscriptionListParams{
 		Customer: stripe.String(customerID),
 		Status:   stripe.String("all"),
 		Expand: []*string{
@@ -106,43 +107,36 @@ func (s *paymentService) GetAllSubscriptionsByCustomerID(ctx context.Context, cu
 			stripe.String("data.latest_invoice.lines.data"),
 			stripe.String("data.latest_invoice.payments.data"),
 		},
-	})
-
-	var subscriptionHistories []*model.SubscriptionHistory
-	for sub, err := range subscriptions {
-		if err != nil {
-			return nil, err
-		}
-
-		var paymentIntentID string
-		if len(sub.LatestInvoice.Payments.Data) > 0 {
-			paymentIntentID = sub.LatestInvoice.Payments.Data[0].Payment.PaymentIntent.ID
-		}
-
-		subscriptionHistories = append(subscriptionHistories, &model.SubscriptionHistory{
-			SubscriptionID:     sub.ID,
-			SubscriptionStatus: string(sub.Status),
-			InvoiceID:          sub.LatestInvoice.ID,
-			InvoiceStatus:      string(sub.LatestInvoice.Status),
-			PaymentIntentID:    paymentIntentID,
-			PriceID:            sub.Items.Data[0].Price.ID,
-			AmountPaid:         sub.LatestInvoice.AmountPaid / 100,
-			AmountDue:          sub.LatestInvoice.AmountDue / 100,
-			Amount:             sub.Items.Data[0].Price.UnitAmount / 100,
-			PeriodStart:        utils.ConvertStripeTimeToTimeStr(sub.LatestInvoice.Lines.Data[0].Period.Start),
-			PeriodEnd:          utils.ConvertStripeTimeToTimeStr(sub.LatestInvoice.Lines.Data[0].Period.End),
-			Tier:               utils.ConvertIntervalToTierType(*stripe.String(sub.Items.Data[0].Price.Recurring.Interval)),
-		})
-
+		ListParams: stripe.ListParams{
+			Limit:   stripe.Int64(10),
+			Context: ctx,
+			Single:  true,
+		},
 	}
 
-	return subscriptionHistories, nil
+	if lastID != "" {
+		params.StartingAfter = stripe.String(lastID)
+	}
+	subscriptions := s.stripeClient.V1Subscriptions.List(ctx, params)
+
+	subscriptionHistories := []*model.SubscriptionHistory{}
+	for sub, err := range subscriptions {
+		if err != nil {
+			return nil, "", err
+		}
+
+		history := s.mapStripeSubToSubDetails(sub)
+		subscriptionHistories = append(subscriptionHistories, history)
+		newLastID = sub.ID
+	}
+
+	return subscriptionHistories, newLastID, nil
 }
 
 func (s *paymentService) GetPaymentIntentByID(ctx context.Context, paymentIntentID string) (*model.PaymentInvoice, error) {
 	paymentIntent, err := s.stripeClient.V1PaymentIntents.Retrieve(ctx, paymentIntentID, &stripe.PaymentIntentRetrieveParams{
 		Expand: []*string{
-			stripe.String("customer.subscriptions.data"),
+			stripe.String("customer.subscriptions.data.default_payment_method"),
 		},
 	})
 	if err != nil {
@@ -150,36 +144,17 @@ func (s *paymentService) GetPaymentIntentByID(ctx context.Context, paymentIntent
 	}
 
 	paymentInvoice := &model.PaymentInvoice{
-		ClientSecret:        paymentIntent.ClientSecret,
-		PaymentIntentStatus: string(paymentIntent.Status),
-		SubscriptionStatus:  string(paymentIntent.Customer.Subscriptions.Data[0].Status),
-		Amount:              paymentIntent.Amount / 100,
+		ClientSecret:           paymentIntent.ClientSecret,
+		PaymentIntentStatus:    string(paymentIntent.Status),
+		SubscriptionStatus:     string(paymentIntent.Customer.Subscriptions.Data[0].Status),
+		DefaultPaymentMethodID: string(paymentIntent.Customer.Subscriptions.Data[0].DefaultPaymentMethod.ID),
+		Amount:                 paymentIntent.Amount / 100,
 	}
 	return paymentInvoice, nil
 }
 
-func (s *paymentService) GetSubscriptionScheduleByCustomerID(ctx context.Context, customerID string) ([]*stripe.SubscriptionSchedule, error) {
-	subSchedules := s.stripeClient.V1SubscriptionSchedules.List(ctx, &stripe.SubscriptionScheduleListParams{
-		Customer: stripe.String(customerID),
-		Expand: []*string{
-			stripe.String("data.phases.items.price"),
-			stripe.String("data.subscription.items.data"),
-			stripe.String("data.subscription.latest_invoice.payments"),
-		},
-	})
-
-	var allSubSchedules []*stripe.SubscriptionSchedule
-	for subSchedule, err := range subSchedules {
-		if err != nil {
-			return nil, err
-		}
-		allSubSchedules = append(allSubSchedules, subSchedule)
-	}
-
-	return allSubSchedules, nil
-}
-
 func (s *paymentService) CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse {
+
 	params := &stripe.SubscriptionCreateParams{
 		Customer:             stripe.String(customerID),
 		DefaultPaymentMethod: stripe.String(paymentMethodID),
@@ -331,4 +306,66 @@ func (s *paymentService) handlePaymentIntentFromInvoiceSubscription(ctx context.
 	}
 
 	return paymentIntent, nil
+}
+
+func (s *paymentService) CancelSubscription(ctx context.Context, subscriptionID string) (*model.SubscriptionHistory, error) {
+	sub, err := s.stripeClient.V1Subscriptions.Cancel(ctx, subscriptionID, &stripe.SubscriptionCancelParams{
+		Expand: []*string{
+			stripe.String("items.data"),
+			stripe.String("items.data.price"),
+			stripe.String("latest_invoice.lines.data"),
+			stripe.String("latest_invoice.payments.data"),
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to cancel subscription: %w", err)
+	}
+
+	subDetails := s.mapStripeSubToSubDetails(sub)
+	return subDetails, nil
+}
+
+func (s *paymentService) mapStripeSubToSubDetails(sub *stripe.Subscription) *model.SubscriptionHistory {
+	subDetails := &model.SubscriptionHistory{
+		SubscriptionID:     sub.ID,
+		SubscriptionStatus: string(sub.Status),
+	}
+
+	// --- Subscription Item ---
+	if len(sub.Items.Data) > 0 && sub.Items.Data[0].Price != nil {
+		price := sub.Items.Data[0].Price
+
+		subDetails.PriceID = price.ID
+		subDetails.Amount = price.UnitAmount / 100
+
+		if price.Recurring != nil {
+			subDetails.Tier = utils.ConvertIntervalToTierType(*stripe.String(price.Recurring.Interval))
+		}
+	}
+
+	// --- Latest Invoice ---
+	invoice := sub.LatestInvoice
+	if invoice != nil {
+		subDetails.InvoiceID = invoice.ID
+		subDetails.InvoiceStatus = string(invoice.Status)
+		subDetails.AmountPaid = invoice.AmountPaid / 100
+		subDetails.AmountDue = invoice.AmountDue / 100
+
+		// Invoice period
+		if len(invoice.Lines.Data) > 0 {
+			line := invoice.Lines.Data[0]
+			subDetails.PeriodStart = utils.ConvertStripeTimeToTimeStr(line.Period.Start)
+			subDetails.PeriodEnd = utils.ConvertStripeTimeToTimeStr(line.Period.End)
+		}
+
+		// PaymentIntent
+		if len(invoice.Payments.Data) > 0 &&
+			invoice.Payments.Data[0].Payment != nil &&
+			invoice.Payments.Data[0].Payment.PaymentIntent != nil {
+
+			subDetails.PaymentIntentID = invoice.Payments.Data[0].Payment.PaymentIntent.ID
+		}
+	}
+
+	return subDetails
 }

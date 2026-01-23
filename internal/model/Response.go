@@ -20,9 +20,19 @@ type SubscriptionPlanResponse struct {
 	Data   []*SubscriptionPlan `json:"data"`
 }
 
+type SubscriptionHistoryPagination struct {
+	Subscriptions []*SubscriptionHistory `json:"subscriptions"`
+	LastID        string                 `json:"last_id"`
+}
+
+type SubscriptionHistoryPaginationResponse struct {
+	Status int                            `json:"status"`
+	Data   *SubscriptionHistoryPagination `json:"data"`
+}
+
 type SubscriptionHistoryResponse struct {
-	Status int                    `json:"status"`
-	Data   []*SubscriptionHistory `json:"data"`
+	Status int                  `json:"status"`
+	Data   *SubscriptionHistory `json:"data"`
 }
 
 type PaymentIntentResponse struct {
