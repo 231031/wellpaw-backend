@@ -86,7 +86,7 @@ func (c *userController) UpdatePaymentMethod(ctx *fiber.Ctx) error {
 }
 
 // @Summary Get All Subscriptions Plan
-// @Description get all subscriptions plan provide for customer
+// @Description get all subscriptions plan and their details provide for customer to select
 // @tags User
 // @Security BearerAuth
 // @Accept application/json
@@ -104,7 +104,7 @@ func (c *userController) GetAllSubscriptionsPlan(ctx *fiber.Ctx) error {
 }
 
 // @Summary Get All Subscriptions By Customer ID
-// @Description get all subscriptions by customer id
+// @Description get all subscription histories by customer id
 // @tags User
 // @Security BearerAuth
 // @Accept application/json
@@ -126,7 +126,7 @@ func (c *userController) GetAllSubscriptionsByCustomerID(ctx *fiber.Ctx) error {
 }
 
 // @Summary Get Payment Intent By ID
-// @Description get payment intent by id to use retry payment in frontend
+// @Description get payment intent by id to use retry payment in frontend (in case of payment failed)
 // @tags User
 // @Security BearerAuth
 // @Accept application/json
@@ -153,7 +153,7 @@ func (c *userController) GetPaymentIntentByID(ctx *fiber.Ctx) error {
 }
 
 // @Summary Start Subscription
-// @Description start subscription after attached payment method
+// @Description start subscription after attached payment method and return payment intent detail to confirm payment in frontend
 // @tags User
 // @Security BearerAuth
 // @Accept application/json
@@ -182,7 +182,7 @@ func (c *userController) StartSubscription(ctx *fiber.Ctx) error {
 }
 
 // @Summary Update Subscription
-// @Description update subscription
+// @Description update subscription return payment intent detail to confirm payment in frontend
 // @tags User
 // @Security BearerAuth
 // @Accept application/json
@@ -216,7 +216,7 @@ func (c *userController) UpdateSubscription(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} model.SubscriptionHistory
+// @Success 200 {object} model.SubscriptionHistoryResponse
 // @Failure 400 {object} model.HTTPResponse
 // @Failure 500 {object} model.HTTPResponse
 // @Router /user/subscription/cancel/{subscription_id} [get]

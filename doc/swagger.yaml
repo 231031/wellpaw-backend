@@ -524,6 +524,13 @@ definitions:
       status:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.SubscriptionPlan:
     properties:
       amount:
@@ -874,7 +881,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: get payment intent by id to use retry payment in frontend
+      description: get payment intent by id to use retry payment in frontend (in case
+        of payment failed)
       parameters:
       - description: Payment intent id
         in: path
@@ -937,7 +945,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: get all subscriptions plan provide for customer
+      description: get all subscriptions plan and their details provide for customer
+        to select
       produces:
       - application/json
       responses:
@@ -969,7 +978,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory'
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse'
         "400":
           description: Bad Request
           schema:
@@ -987,7 +996,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: get all subscriptions by customer id
+      description: get all subscription histories by customer id
       parameters:
       - description: Last id
         in: query
@@ -1017,7 +1026,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: start subscription after attached payment method
+      description: start subscription after attached payment method and return payment
+        intent detail to confirm payment in frontend
       parameters:
       - description: Start subscription payload
         in: body
@@ -1049,7 +1059,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: update subscription
+      description: update subscription return payment intent detail to confirm payment
+        in frontend
       parameters:
       - description: Update subscription payload
         in: body

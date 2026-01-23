@@ -337,7 +337,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "get payment intent by id to use retry payment in frontend",
+                "description": "get payment intent by id to use retry payment in frontend (in case of payment failed)",
                 "consumes": [
                     "application/json"
                 ],
@@ -437,7 +437,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "get all subscriptions plan provide for customer",
+                "description": "get all subscriptions plan and their details provide for customer to select",
                 "consumes": [
                     "application/json"
                 ],
@@ -492,7 +492,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory"
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse"
                         }
                     },
                     "400": {
@@ -517,7 +517,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "get all subscriptions by customer id",
+                "description": "get all subscription histories by customer id",
                 "consumes": [
                     "application/json"
                 ],
@@ -565,7 +565,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "start subscription after attached payment method",
+                "description": "start subscription after attached payment method and return payment intent detail to confirm payment in frontend",
                 "consumes": [
                     "application/json"
                 ],
@@ -616,7 +616,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "update subscription",
+                "description": "update subscription return payment intent detail to confirm payment in frontend",
                 "consumes": [
                     "application/json"
                 ],
@@ -1428,6 +1428,17 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryPagination"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.SubscriptionHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory"
                 },
                 "status": {
                     "type": "integer"
