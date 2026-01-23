@@ -59,6 +59,7 @@ func (m *authMiddleware) AuthorizeUser() fiber.Handler {
 
 		c.Locals("id", claims.User.ID)
 		c.Locals("tier", claims.User.Tier)
+		c.Locals("customer_id", claims.User.CustomerID)
 
 		return c.Next()
 	}

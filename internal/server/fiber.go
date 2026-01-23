@@ -58,7 +58,7 @@ func Run() {
 		},
 	))
 
-	app.Get("/swagger/*", fiberSwagger.WrapHandler)
+	app.Get("/doc/*", fiberSwagger.WrapHandler)
 
 	// setup fiber logger
 	file := InitLogger(app)

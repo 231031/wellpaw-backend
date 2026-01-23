@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
@@ -29,18 +30,41 @@ type AuthService interface {
 type authService struct {
 	userRepo          repository.UserRepository
 	tokenService      TokenService
+	paymentService    PaymentService
 	googleOauthConfig *oauth2.Config
 }
 
-func NewAuthService(userRepo repository.UserRepository, tokenService TokenService, googleOauthConfig *oauth2.Config) AuthService {
+func NewAuthService(userRepo repository.UserRepository, tokenService TokenService, paymentService PaymentService, googleOauthConfig *oauth2.Config) AuthService {
 	return &authService{
 		userRepo:          userRepo,
 		tokenService:      tokenService,
+		paymentService:    paymentService,
 		googleOauthConfig: googleOauthConfig,
 	}
 }
 
 func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
+	customer, err := s.paymentService.GetCustomerByEmail(ctx, user.Email)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to create customer by email",
+		}
+	}
+
+	if customer != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusConflict,
+			Message: "email already exists",
+		}
+	}
+
+	customerID, err := s.paymentService.CreateCustomer(ctx, user)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+	}
+	user.CustomerID = customerID
+
 	hashed, err := s.tokenService.HashPassword(user.Password)
 	if err != nil {
 		return &model.HTTPResponse{
@@ -97,8 +121,9 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 	}
 
 	userAuth := &model.UserAuth{
-		ID:   user.ID,
-		Tier: user.PaymentPlan,
+		ID:         user.ID,
+		CustomerID: user.CustomerID,
+		Tier:       user.PaymentPlan,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
@@ -180,6 +205,13 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 				LastName:    userInfo.LastName,
 				DeviceToken: payload.DeviceToken,
 			}
+
+			customerID, err := s.paymentService.CreateCustomer(ctx, user)
+			if err != nil {
+				applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+			}
+
+			user.CustomerID = customerID
 			err = s.userRepo.CreateUser(ctx, user)
 			if err != nil {
 				return &model.HTTPResponse{
@@ -196,8 +228,9 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 	}
 
 	userAuth := &model.UserAuth{
-		ID:   user.ID,
-		Tier: user.PaymentPlan,
+		ID:         user.ID,
+		CustomerID: user.CustomerID,
+		Tier:       user.PaymentPlan,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
