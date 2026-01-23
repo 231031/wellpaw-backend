@@ -11,6 +11,7 @@ import (
 )
 
 type PaymentService interface {
+	GetCustomerByEmail(ctx context.Context, email string) (*stripe.Customer, error)
 	CreateCustomer(ctx context.Context, user *model.User) (string, error)
 	AttachPaymentMethod(ctx context.Context, customerID string, paymentMethodID string) error
 
@@ -30,6 +31,21 @@ func NewPaymentService(stripeClient *stripe.Client) PaymentService {
 	return &paymentService{
 		stripeClient: stripeClient,
 	}
+}
+
+func (s *paymentService) GetCustomerByEmail(ctx context.Context, email string) (*stripe.Customer, error) {
+	customers := s.stripeClient.V1Customers.List(ctx, &stripe.CustomerListParams{
+		Email: stripe.String(email),
+	})
+
+	for customer, err := range customers {
+		if err != nil {
+			return nil, err
+		}
+		return customer, nil
+	}
+
+	return nil, nil
 }
 
 func (s *paymentService) CreateCustomer(ctx context.Context, user *model.User) (string, error) {

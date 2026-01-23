@@ -44,6 +44,21 @@ func NewAuthService(userRepo repository.UserRepository, tokenService TokenServic
 }
 
 func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
+	customer, err := s.paymentService.GetCustomerByEmail(ctx, user.Email)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to create customer by email",
+		}
+	}
+
+	if customer != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusConflict,
+			Message: "email already exists",
+		}
+	}
+
 	customerID, err := s.paymentService.CreateCustomer(ctx, user)
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
