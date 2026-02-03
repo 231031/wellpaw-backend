@@ -55,7 +55,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
-	userRepo := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(db, redisClient)
 	tokenRepo := repository.NewTokenRepository(redisClient)
 
 	tokenService := service.NewTokenService(tokenRepo, userRepo, tokenCfg)

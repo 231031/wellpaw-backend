@@ -123,7 +123,7 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 	userAuth := &model.UserAuth{
 		ID:         user.ID,
 		CustomerID: user.CustomerID,
-		Tier:       user.PaymentPlan,
+		Tier:       user.Tier,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
@@ -131,6 +131,11 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login",
 		}
+	}
+
+	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, user.CustomerID, user.Tier, user.SubscriptionStatus)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to set subscription detail : %s", err.Error()), serviceLog)
 	}
 
 	user.Password = ""
@@ -230,7 +235,7 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 	userAuth := &model.UserAuth{
 		ID:         user.ID,
 		CustomerID: user.CustomerID,
-		Tier:       user.PaymentPlan,
+		Tier:       user.Tier,
 	}
 	tokenPairs, err := s.tokenService.GenerateNewPairToken(ctx, userAuth, "")
 	if err != nil {
@@ -238,6 +243,11 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 			Status:  http.StatusInternalServerError,
 			Message: "failed to login",
 		}
+	}
+
+	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, user.CustomerID, user.Tier, user.SubscriptionStatus)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to set subscription detail : %s", err.Error()), serviceLog)
 	}
 
 	user.Password = ""

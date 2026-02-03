@@ -36,6 +36,12 @@ func (s *webhookService) HandleSubscriptionUpdated(ctx context.Context, eventObj
 	if err := s.userRepository.UpdateSubscriptionDetail(ctx, subscription.Customer.ID, status, tier); err != nil {
 		return err
 	}
+
+	err = s.userRepository.SetCurrentSubscriptionDetail(ctx, subscription.Customer.ID, tier, status)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

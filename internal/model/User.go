@@ -18,7 +18,6 @@ type User struct {
 	FoodPlanFree       int                    `gorm:"default:0;not null" json:"food_plan_free"`
 	BcsFree            int                    `gorm:"default:0;not null" json:"bcs_free"`
 	DiseaseFree        int                    `gorm:"default:0;not null" json:"disease_free"`
-	PaymentPlan        TierType               `gorm:"default:0;not null" json:"payment_plan"`
 	SubscriptionStatus SubscriptionStatusType `gorm:"default:0;not null" json:"subscription_status"`
 	Tier               TierType               `gorm:"default:0;not null" json:"tier"`
 	CreatedAt          time.Time              `gorm:"not null" json:"created_at,omitempty"`

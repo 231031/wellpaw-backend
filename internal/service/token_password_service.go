@@ -134,7 +134,7 @@ func (s *tokenService) GenerateNewPairToken(ctx context.Context, userAuth *model
 			return nil, utils.ErrUnauth
 		}
 		userAuth.ID = user.ID
-		userAuth.Tier = user.PaymentPlan
+		userAuth.Tier = user.Tier
 	}
 
 	// generate new token - login, refresh token
