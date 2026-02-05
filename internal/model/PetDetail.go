@@ -7,6 +7,7 @@ type PetDetail struct {
 	PetID              uint          `gorm:"not null" json:"pet_id"`
 	Weight             float64       `gorm:"not null" json:"weight"`
 	ActivityLevel      ActivityLevel `gorm:"not null" json:"activity_level"`
+	AgeRange           AgeType       `gorm:"not null" json:"age_range"`
 	BCS                BcsType       `gorm:"not null" json:"bcs"` // Body Condition Score
 	IsAdult            bool          `gorm:"not null" json:"is_adult"`
 	Lactation          bool          `gorm:"default:false;not null" json:"lactation"`

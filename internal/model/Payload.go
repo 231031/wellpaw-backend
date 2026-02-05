@@ -57,3 +57,15 @@ type SubscriptionHistory struct {
 	PeriodEnd          time.Time `json:"period_end"`
 	Tier               TierType  `json:"tier"`
 }
+
+type PetFoodPlanDetailsPayload struct {
+	Name   string   `json:"name"`
+	PetID  uint     `json:"pet_id"`
+	FoodID []uint   `json:"food_id"`
+	Unit   UnitType `json:"unit"`
+}
+
+type CreatePetPayload struct {
+	PetInfo   Pet       `json:"pet_info"`
+	PetDetail PetDetail `json:"pet_detail"`
+}
