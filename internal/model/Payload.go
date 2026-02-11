@@ -12,6 +12,17 @@ type LoginGooglePayload struct {
 	DeviceToken string `json:"device_token"`
 }
 
+type RequestOTPPayload struct {
+	Email string `json:"email"`
+}
+
+type ResetPasswordPayload struct {
+	Email             string `json:"email"`
+	OTP               string `json:"otp"`
+	Password          string `json:"password"`
+	ConfirmedPassword string `json:"confirmed_password"`
+}
+
 type PaymentMethodUpdatePayload struct {
 	PaymentMethodID string `json:"payment_method_id"`
 }
@@ -56,4 +67,16 @@ type SubscriptionHistory struct {
 	PeriodStart        time.Time `json:"period_start"`
 	PeriodEnd          time.Time `json:"period_end"`
 	Tier               TierType  `json:"tier"`
+}
+
+type PetFoodPlanDetailsPayload struct {
+	Name   string   `json:"name"`
+	PetID  uint     `json:"pet_id"`
+	FoodID []uint   `json:"food_id"`
+	Unit   UnitType `json:"unit"`
+}
+
+type PetPayload struct {
+	PetInfo   Pet       `json:"pet_info"`
+	PetDetail PetDetail `json:"pet_detail"`
 }

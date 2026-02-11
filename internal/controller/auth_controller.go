@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/231031/wellpaw-backend/internal/model"
@@ -17,6 +18,8 @@ type AuthController interface {
 	LoginUser(ctx *fiber.Ctx) error
 	LoginUserWithGoogle(ctx *fiber.Ctx) error
 	RefreshToken(ctx *fiber.Ctx) error
+	RequestOTP(ctx *fiber.Ctx) error
+	ResetPassword(ctx *fiber.Ctx) error
 }
 
 type authController struct {
@@ -27,6 +30,60 @@ func NewAuthController(authService service.AuthService) AuthController {
 	return &authController{
 		authService: authService,
 	}
+}
+
+// @Summary Request OTP
+// @Description request otp for password reset
+// @tags Authentication
+// @Accept application/json
+// @Produce application/json
+// @Param   RequestOTPPayload body model.RequestOTPPayload true "Request OTP payload"
+// @Success 200 {object} model.HTTPResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 404 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/otp [post]
+func (c *authController) RequestOTP(ctx *fiber.Ctx) error {
+	var payload model.RequestOTPPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+	}
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.RequestOTP(ctxWithTimeOut, payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Reset Password
+// @Description reset password with email and otp
+// @tags Authentication
+// @Accept application/json
+// @Produce application/json
+// @Param   ResetPasswordPayload body model.ResetPasswordPayload true "Reset password payload"
+// @Success 200 {object} model.HTTPResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/resetpassword [post]
+func (c *authController) ResetPassword(ctx *fiber.Ctx) error {
+	var payload model.ResetPasswordPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+	}
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.ResetPassword(ctxWithTimeOut, payload)
+	return ctx.Status(response.Status).JSON(response)
 }
 
 // @Summary Register User

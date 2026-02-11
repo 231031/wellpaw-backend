@@ -3,9 +3,14 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/utils"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -22,18 +27,26 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, u *model.User) error
 	UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error
 	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
+	getSubscriptionDetailFromDB(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error)
+	GetSubscriptionDetail(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error)
+	SetCurrentSubscriptionDetail(ctx context.Context, customerID string, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
+	UpdatePasswordByEmail(ctx context.Context, email string, password string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
 	UpdateSubscriptionDetail(ctx context.Context, email string, status model.SubscriptionStatusType, tier model.TierType) error
 }
 
 type userRepository struct {
-	db *gorm.DB
+	db          *gorm.DB
+	redisClient *redis.Client
+	redisTTL    time.Duration
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
+func NewUserRepository(db *gorm.DB, redisClient *redis.Client) UserRepository {
 	return &userRepository{
-		db: db,
+		db:          db,
+		redisClient: redisClient,
+		redisTTL:    15 * 24 * time.Hour,
 	}
 }
 
@@ -57,10 +70,10 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
 	var user *model.User
 	err := r.db.WithContext(ctx).
-		Select("id", "email", "first_name", "last_name",
+		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
 			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
-			"payment_plan").
+			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by id : %w", err)
@@ -76,7 +89,7 @@ func (r *userRepository) GetUserIdDetailByID(ctx context.Context, id uint) (*mod
 			"payment_method_id", "customer_id",
 			"noti_food", "noti_calendars",
 			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
-			"payment_plan").
+			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by id : %w", err)
@@ -91,10 +104,10 @@ func (r *userRepository) GetUserAllInfo(ctx context.Context, id uint) (*model.Us
 	// all info in dashboard page
 	err := r.db.WithContext(ctx).
 		Preload("Pets").
-		Select("id", "email", "first_name", "last_name",
+		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
 			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
-			"payment_plan").
+			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by id : %w", err)
@@ -142,10 +155,92 @@ func (r *userRepository) UpdateCalendarNotification(ctx context.Context, id uint
 	return nil
 }
 
+func (r *userRepository) getSubscriptionDetailFromDB(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+	var user *model.User
+	err := r.db.WithContext(ctx).
+		Select("tier", "subscription_status").Where("customer_id = ?", customerID).First(&user).Error
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get subscription detail from db : %w", err)
+	}
+
+	return &user.Tier, &user.SubscriptionStatus, nil
+}
+
+func (r *userRepository) getRedisKey(customerID string) string {
+	return fmt.Sprintf("sub:%s", customerID)
+}
+
+func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, customerID string, tier model.TierType, status model.SubscriptionStatusType) error {
+	key := r.getRedisKey(customerID)
+	value := fmt.Sprintf("%d:%d", tier, status)
+	_, err := r.redisClient.SetArgs(ctx, key, value, redis.SetArgs{
+		Get: true,
+		TTL: r.redisTTL,
+	}).Result()
+
+	if err == redis.Nil {
+		return nil
+	} else if err != nil {
+		applogger.LogError(fmt.Sprintf("redis failed to set subscription detail : %s", err.Error()), repoLog)
+		return fmt.Errorf("failed to set subscription detail : %w", err)
+	}
+
+	return nil
+}
+
+func (r *userRepository) GetSubscriptionDetail(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+	key := r.getRedisKey(customerID)
+	value, err := r.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("redis failed to get subscription detail : %s", err.Error()), repoLog)
+
+		tier, status, err := r.getSubscriptionDetailFromDB(ctx, customerID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get subscription detail : %w", err)
+		}
+
+		if err := r.SetCurrentSubscriptionDetail(ctx, customerID, *tier, *status); err != nil {
+			return tier, status, nil
+		}
+
+		return tier, status, nil
+	}
+
+	result := strings.Split(value, ":")
+	tier, err := strconv.Atoi(result[0])
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get subscription detail : %w", err)
+	}
+	tierType := model.TierType(tier)
+
+	status, err := strconv.Atoi(result[1])
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get subscription detail : %w", err)
+	}
+	statusType := model.SubscriptionStatusType(status)
+
+	return &tierType, &statusType, nil
+}
+
 func (r *userRepository) UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error {
 	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("payment_method_id", paymentMethodID)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update payment method : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdatePasswordByEmail(ctx context.Context, email string, password string) error {
+	result := r.db.WithContext(ctx).Table("users").
+		Where("LOWER(email) = LOWER(?)", strings.TrimSpace(email)).
+		Update("password", password)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update password : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {

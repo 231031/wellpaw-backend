@@ -12,12 +12,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func RouteAuth(router fiber.Router, authController controller.AuthController) {
+func RouteAuth(router fiber.Router, authController controller.AuthController, userController controller.UserController) {
 	authRoute := router.Group("/auth")
 	authRoute.Post("/register", authController.CreateUser)
 	authRoute.Post("/login", authController.LoginUser)
 	authRoute.Post("/login/google", authController.LoginUserWithGoogle)
 	authRoute.Post("/refreshtoken", authController.RefreshToken)
+	authRoute.Post("/otp", authController.RequestOTP)
+	authRoute.Post("/resetpassword", authController.ResetPassword)
 }
 
 func RouteUser(router fiber.Router, userController controller.UserController, authMiddleware middleware.AuthMiddleware) {
@@ -41,6 +43,13 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 	subUserRoute.Get("/cancel/:subscription_id", userController.CancelSubscription)
 }
 
+func RoutePet(router fiber.Router, petController controller.PetController, authMiddleware middleware.AuthMiddleware) {
+	petRoute := router.Group("/pet", authMiddleware.AuthorizeUser())
+	petRoute.Post("/", petController.CreateNewPet)
+	petRoute.Patch("/info", petController.UpdatePetInfo)
+	petRoute.Post("/detail", petController.UpdatePetDetail)
+}
+
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
 	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
@@ -55,23 +64,35 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
-	userRepo := repository.NewUserRepository(db)
+	userRepo := repository.NewUserRepository(db, redisClient)
 	tokenRepo := repository.NewTokenRepository(redisClient)
+	otpRepo := repository.NewOTPRepository(redisClient)
 
 	tokenService := service.NewTokenService(tokenRepo, userRepo, tokenCfg)
+	emailService := service.NewEmailService(cfg.MAILJET_API_KEY, cfg.MAILJET_API_SECRET, cfg.MAILJET_SENDER_EMAIL, cfg.MAILJET_SENDER_NAME)
+	otpService := service.NewOTPService(otpRepo, emailService)
 	authMiddlware := middleware.NewAuthMiddleware(tokenService)
 
 	paymentService := service.NewPaymentService(stripeClient)
 	webhookService := service.NewWebhookService(userRepo)
 
-	// routing
-	authService := service.NewAuthService(userRepo, tokenService, paymentService, googleOauthConfig)
-	authController := controller.NewAuthController(authService)
-	RouteAuth(router, authController)
-
 	userService := service.NewUserService(userRepo, paymentService)
 	userController := controller.NewUserController(userService)
+
+	petRepo := repository.NewPetRepository(db)
+	energyReqService := service.NewEnergyRequirementService()
+	nutritientReqService := service.NewNutritientRequirementService()
+	calculationService := service.NewCalculationService(energyReqService, nutritientReqService)
+	petService := service.NewPetService(calculationService, petRepo)
+	petController := controller.NewPetController(petService)
+
+	// routing
+	authService := service.NewAuthService(userRepo, tokenService, paymentService, otpService, googleOauthConfig)
+	authController := controller.NewAuthController(authService)
+	RouteAuth(router, authController, userController)
+
 	RouteUser(router, userController, authMiddlware)
+	RoutePet(router, petController, authMiddlware)
 
 	ocrService := service.NewOcrService(geminiClient)
 	ocrController := controller.NewOcrController(ocrService)

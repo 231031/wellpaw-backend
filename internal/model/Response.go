@@ -52,6 +52,11 @@ type OcrPetFoodResponse struct {
 	Data   *PetFoodAnalysisResponse `json:"data"`
 }
 
+type PetResponse struct {
+	Status int         `json:"status"`
+	Data   *PetPayload `json:"data"`
+}
+
 // type SubscriptionScheduleResponse struct {
 // 	Status int                            `json:"status"`
 // 	Data   []*stripe.SubscriptionSchedule `json:"data"`

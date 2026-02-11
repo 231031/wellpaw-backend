@@ -115,6 +115,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/otp": {
+            "post": {
+                "description": "request otp for password reset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request OTP",
+                "parameters": [
+                    {
+                        "description": "Request OTP payload",
+                        "name": "RequestOTPPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "description": "register a new user",
@@ -148,6 +200,58 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resetpassword": {
+            "post": {
+                "description": "reset password with email and otp",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset Password",
+                "parameters": [
+                    {
+                        "description": "Reset password payload",
+                        "name": "ResetPasswordPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
                         }
@@ -197,6 +301,189 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pet": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "create new pet with pet info and pet detail",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Create New Pet",
+                "parameters": [
+                    {
+                        "description": "Create pet payload",
+                        "name": "PetPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pet/detail": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update pet detail and recalculate nutrients",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Update Pet Detail",
+                "parameters": [
+                    {
+                        "description": "Update pet detail payload",
+                        "name": "UpdatePetDetailPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pet/info": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update pet base info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Update Pet Info",
+                "parameters": [
+                    {
+                        "description": "Update pet info payload",
+                        "name": "UpdatePetInfoPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
                         }
@@ -677,6 +964,19 @@ const docTemplate = `{
                 "VERYACTIVE"
             ]
         },
+        "github_com_231031_wellpaw-backend_internal_model.AgeType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "JUNIOR",
+                "ADULT",
+                "SENIOR"
+            ]
+        },
         "github_com_231031_wellpaw-backend_internal_model.BcsType": {
             "type": "integer",
             "enum": [
@@ -1139,6 +1439,9 @@ const docTemplate = `{
                 "activity_level": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel"
                 },
+                "age_range": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AgeType"
+                },
                 "bcs": {
                     "description": "Body Condition Score",
                     "allOf": [
@@ -1153,6 +1456,9 @@ const docTemplate = `{
                 "energy": {
                     "type": "number"
                 },
+                "expected_weight": {
+                    "type": "number"
+                },
                 "fat": {
                     "type": "number"
                 },
@@ -1164,9 +1470,6 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
-                },
-                "is_adult": {
-                    "type": "boolean"
                 },
                 "lactation": {
                     "type": "boolean"
@@ -1191,7 +1494,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "protein": {
-                    "description": "Fixed typo from 'protien'",
                     "type": "number"
                 },
                 "weight": {
@@ -1303,6 +1605,28 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_231031_wellpaw-backend_internal_model.PetPayload": {
+            "type": "object",
+            "properties": {
+                "pet_detail": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
+                },
+                "pet_info": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPayload"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.PetSkinImage": {
             "type": "object",
             "properties": {
@@ -1345,6 +1669,31 @@ const docTemplate = `{
                 "DOG",
                 "CAT"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload": {
+            "type": "object",
+            "properties": {
+                "confirmed_password": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "otp": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.SexType": {
             "type": "integer",
@@ -1603,9 +1952,6 @@ const docTemplate = `{
                 },
                 "payment_method_id": {
                     "type": "string"
-                },
-                "payment_plan": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType"
                 },
                 "payments": {
                     "type": "array",

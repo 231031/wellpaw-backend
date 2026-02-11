@@ -38,6 +38,10 @@ type Cfg struct {
 	GEMINI_API_KEY           string
 	STRIPE_API_KEY           string
 	STRIPE_WEBHOOK_SECRET    string
+	MAILJET_API_KEY          string
+	MAILJET_API_SECRET       string
+	MAILJET_SENDER_EMAIL     string
+	MAILJET_SENDER_NAME      string
 }
 
 func getAllENV() *Cfg {
@@ -59,6 +63,10 @@ func getAllENV() *Cfg {
 		"GEMINI_API_KEY",
 		"STRIPE_API_KEY",
 		"STRIPE_WEBHOOK_SECRET",
+		"MAILJET_API_KEY",
+		"MAILJET_API_SECRET",
+		"MAILJET_SENDER_EMAIL",
+		"MAILJET_SENDER_NAME",
 	}
 
 	allValue := make(map[string]string)
@@ -88,6 +96,10 @@ func getAllENV() *Cfg {
 		GEMINI_API_KEY:           allValue[allKey[14]],
 		STRIPE_API_KEY:           allValue[allKey[15]],
 		STRIPE_WEBHOOK_SECRET:    allValue[allKey[16]],
+		MAILJET_API_KEY:          allValue[allKey[17]],
+		MAILJET_API_SECRET:       allValue[allKey[18]],
+		MAILJET_SENDER_EMAIL:     allValue[allKey[19]],
+		MAILJET_SENDER_NAME:      allValue[allKey[20]],
 	}
 
 	return cfg
