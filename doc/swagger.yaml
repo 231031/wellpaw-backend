@@ -12,6 +12,16 @@ definitions:
     - SOMEACTIVE
     - ACTIVE
     - VERYACTIVE
+  github_com_231031_wellpaw-backend_internal_model.AgeType:
+    enum:
+    - 0
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - JUNIOR
+    - ADULT
+    - SENIOR
   github_com_231031_wellpaw-backend_internal_model.BcsType:
     enum:
     - 0
@@ -327,6 +337,8 @@ definitions:
     properties:
       activity_level:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel'
+      age_range:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AgeType'
       bcs:
         allOf:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.BcsType'
@@ -334,6 +346,8 @@ definitions:
       created_at:
         type: string
       energy:
+        type: number
+      expected_weight:
         type: number
       fat:
         type: number
@@ -343,8 +357,6 @@ definitions:
         type: string
       id:
         type: integer
-      is_adult:
-        type: boolean
       lactation:
         type: boolean
       neutered:
@@ -363,7 +375,6 @@ definitions:
       pet_id:
         type: integer
       protein:
-        description: Fixed typo from 'protien'
         type: number
       weight:
         type: number
@@ -437,6 +448,20 @@ definitions:
       pet_food_plan_id:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.PetPayload:
+    properties:
+      pet_detail:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
+      pet_info:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPayload'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.PetSkinImage:
     properties:
       confident:
@@ -466,6 +491,22 @@ definitions:
     x-enum-varnames:
     - DOG
     - CAT
+  github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload:
+    properties:
+      email:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload:
+    properties:
+      confirmed_password:
+        type: string
+      email:
+        type: string
+      otp:
+        type: string
+      password:
+        type: string
+    type: object
   github_com_231031_wellpaw-backend_internal_model.SexType:
     enum:
     - 0
@@ -641,8 +682,6 @@ definitions:
         type: string
       payment_method_id:
         type: string
-      payment_plan:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
       payments:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Payment'
@@ -741,6 +780,40 @@ paths:
       summary: Login User With Google
       tags:
       - Authentication
+  /auth/otp:
+    post:
+      consumes:
+      - application/json
+      description: request otp for password reset
+      parameters:
+      - description: Request OTP payload
+        in: body
+        name: RequestOTPPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      summary: Request OTP
+      tags:
+      - Authentication
   /auth/register:
     post:
       consumes:
@@ -769,6 +842,40 @@ paths:
           schema:
             $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
       summary: Register User
+      tags:
+      - Authentication
+  /auth/resetpassword:
+    post:
+      consumes:
+      - application/json
+      description: reset password with email and otp
+      parameters:
+      - description: Reset password payload
+        in: body
+        name: ResetPasswordPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      summary: Reset Password
       tags:
       - Authentication
   /ocr/request:
@@ -802,6 +909,122 @@ paths:
       summary: Request OCR
       tags:
       - OCR
+  /pet:
+    post:
+      consumes:
+      - application/json
+      description: create new pet with pet info and pet detail
+      parameters:
+      - description: Create pet payload
+        in: body
+        name: PetPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Create New Pet
+      tags:
+      - Pet
+  /pet/detail:
+    post:
+      consumes:
+      - application/json
+      description: update pet detail and recalculate nutrients
+      parameters:
+      - description: Update pet detail payload
+        in: body
+        name: UpdatePetDetailPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Pet Detail
+      tags:
+      - Pet
+  /pet/info:
+    patch:
+      consumes:
+      - application/json
+      description: update pet base info
+      parameters:
+      - description: Update pet info payload
+        in: body
+        name: UpdatePetInfoPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Pet Info
+      tags:
+      - Pet
   /user:
     get:
       consumes:

@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/generative-ai-go v0.20.1
 	github.com/google/uuid v1.6.0
+	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/stripe/stripe-go/v84 v84.1.0
 	github.com/swaggo/fiber-swagger v1.3.0

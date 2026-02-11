@@ -8,6 +8,7 @@ type CalculationService interface {
 	ConvertNutricientPercentToGrams(proteinPercent, fatPercant, moisturePercent float64) (float64, float64)
 	CalMerEnergyRequirement(petDetail *model.PetDetail, petType model.PetType) float64
 	CalNutritientRequirement(mer float64, petDetail *model.PetDetail, petType model.PetType) (float64, float64)
+	CalExpectedWeight(currentWeight float64, bcs model.BcsType) float64
 }
 
 type calculationService struct {

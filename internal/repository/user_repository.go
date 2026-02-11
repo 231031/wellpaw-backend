@@ -31,6 +31,7 @@ type UserRepository interface {
 	GetSubscriptionDetail(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error)
 	SetCurrentSubscriptionDetail(ctx context.Context, customerID string, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
+	UpdatePasswordByEmail(ctx context.Context, email string, password string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
 	UpdateSubscriptionDetail(ctx context.Context, email string, status model.SubscriptionStatusType, tier model.TierType) error
 }
@@ -225,6 +226,21 @@ func (r *userRepository) UpdatePaymentMethod(ctx context.Context, id uint, payme
 	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("payment_method_id", paymentMethodID)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update payment method : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdatePasswordByEmail(ctx context.Context, email string, password string) error {
+	result := r.db.WithContext(ctx).Table("users").
+		Where("LOWER(email) = LOWER(?)", strings.TrimSpace(email)).
+		Update("password", password)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update password : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
