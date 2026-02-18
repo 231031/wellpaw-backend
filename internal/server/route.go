@@ -50,6 +50,18 @@ func RoutePet(router fiber.Router, petController controller.PetController, authM
 	petRoute.Post("/detail", petController.UpdatePetDetail)
 }
 
+func RouteFood(router fiber.Router, foodController controller.FoodController, authMiddleware middleware.AuthMiddleware) {
+	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
+	foodRoute.Post("/", foodController.CreateFood)
+}
+
+func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetFoodPlanController, authMiddleware middleware.AuthMiddleware) {
+	petFoodPlanRoute := router.Group("/foodplan", authMiddleware.AuthorizeUser())
+	petFoodPlanRoute.Post("/", petFoodPlanController.CreatePetFoodPlan)
+	petFoodPlanRoute.Put("/amount", petFoodPlanController.UpdateFeedingAmountFromUser)
+	petFoodPlanRoute.Get("/:pet_id", petFoodPlanController.GetLastestActivePlanDetailByPet)
+}
+
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
 	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
@@ -79,11 +91,21 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	userService := service.NewUserService(userRepo, paymentService)
 	userController := controller.NewUserController(userService)
 
-	petRepo := repository.NewPetRepository(db)
 	energyReqService := service.NewEnergyRequirementService()
 	nutritientReqService := service.NewNutritientRequirementService()
 	calculationService := service.NewCalculationService(energyReqService, nutritientReqService)
-	petService := service.NewPetService(calculationService, petRepo)
+
+	foodRepo := repository.NewFoodRepository(db)
+	foodService := service.NewFoodService(calculationService, foodRepo)
+	foodController := controller.NewFoodController(foodService)
+
+	petRepo := repository.NewPetRepository(db)
+	petFoodPlanRepo := repository.NewPetFoodPlanRepository(db)
+
+	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo)
+	petFoodPlanController := controller.NewPetFoodPlanController(petFoodPlanService)
+
+	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo)
 	petController := controller.NewPetController(petService)
 
 	// routing
@@ -93,6 +115,8 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	RouteUser(router, userController, authMiddlware)
 	RoutePet(router, petController, authMiddlware)
+	RouteFood(router, foodController, authMiddlware)
+	RoutePetFoodPlan(router, petFoodPlanController, authMiddlware)
 
 	ocrService := service.NewOcrService(geminiClient)
 	ocrController := controller.NewOcrController(ocrService)

@@ -3,12 +3,16 @@ package model
 import "time"
 
 type PetFoodPlanHistory struct {
-	ID            uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	PetFoodPlanID uint      `gorm:"not null" json:"pet_food_plan_id"`
-	PetDetailID   uint      `gorm:"not null" json:"pet_detail_id"`
-	CreatedAt     time.Time `gorm:"not null" json:"created_at"`
+	ID                 uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	PetID              uint      `gorm:"not null" json:"pet_id"`
+	PetFoodPlanTotalID uint      `gorm:"not null" json:"pet_food_plan_total_id"`
+	CreatedAt          time.Time `gorm:"not null" json:"created_at"`
 
 	// Relationships
-	// PetFoodPlan *PetFoodPlan `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
-	// PetDetail   *PetDetail   `gorm:"foreignKey:PetDetailID" json:"pet_detail,omitempty"`
+	// Pet              *Pet              `gorm:"foreignKey:PetID" json:"pet,omitempty"`
+	// PetFoodPlanTotal *PetFoodPlanTotal `gorm:"foreignKey:PetFoodPlanTotalID" json:"pet_food_plan_total,omitempty"`
+}
+
+func (PetFoodPlanHistory) TableName() string {
+	return "pet_food_plan_historys"
 }

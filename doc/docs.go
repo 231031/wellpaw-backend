@@ -265,6 +265,250 @@ const docTemplate = `{
                 }
             }
         },
+        "/food": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "create food for the authorized user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Create Food",
+                "parameters": [
+                    {
+                        "description": "Create food payload",
+                        "name": "CreateFoodPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/foodplan": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "create pet food plan with selected foods and optional grams per cup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Food Plan"
+                ],
+                "summary": "Create Pet Food Plan",
+                "parameters": [
+                    {
+                        "description": "Create pet food plan payload",
+                        "name": "CreatePetFoodPlanPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/foodplan/amount": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update feeding amount in latest active pet food plan and recalculate total intake",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Food Plan"
+                ],
+                "summary": "Update Feeding Amount In Pet Food Plan",
+                "parameters": [
+                    {
+                        "description": "Adjust feeding amount payload",
+                        "name": "AdjustAmountFoodInPetFoodPlanPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/foodplan/{pet_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get latest active pet food plan detail by pet id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Food Plan"
+                ],
+                "summary": "Get Latest Active Pet Food Plan Detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/ocr/request": {
             "post": {
                 "security": [
@@ -964,6 +1208,20 @@ const docTemplate = `{
                 "VERYACTIVE"
             ]
         },
+        "github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload": {
+            "type": "object",
+            "properties": {
+                "pet_food_plan_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail"
+                    }
+                },
+                "pet_food_plan_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.AgeType": {
             "type": "integer",
             "enum": [
@@ -976,6 +1234,17 @@ const docTemplate = `{
                 "ADULT",
                 "SENIOR"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "food_pet_food_plan_id": {
+                    "type": "integer"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.BcsType": {
             "type": "integer",
@@ -1007,17 +1276,37 @@ const docTemplate = `{
                 "APPOINTMENT"
             ]
         },
+        "github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload": {
+            "type": "object",
+            "properties": {
+                "foods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "unit": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.CupFoodPet": {
             "type": "object",
             "properties": {
                 "food_pet_food_plan_id": {
                     "type": "integer"
                 },
+                "grams": {
+                    "type": "number"
+                },
                 "id": {
                     "type": "integer"
-                },
-                "unit_type": {
-                    "type": "number"
                 }
             }
         },
@@ -1078,7 +1367,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType"
                 },
                 "user": {
-                    "description": "Relationships",
+                    "description": "e Relationships",
                     "allOf": [
                         {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
@@ -1123,6 +1412,28 @@ const docTemplate = `{
                     }
                 },
                 "pet_food_plan_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload": {
+            "type": "object",
+            "properties": {
+                "food_id": {
+                    "type": "integer"
+                },
+                "grams_per_cup": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                },
+                "status": {
                     "type": "integer"
                 }
             }
@@ -1346,6 +1657,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
                     }
                 },
+                "pet_food_plan_historys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                    }
+                },
                 "pet_food_plans": {
                     "type": "array",
                     "items": {
@@ -1477,17 +1794,11 @@ const docTemplate = `{
                 "neutered": {
                     "type": "boolean"
                 },
-                "pet_food_plan_details": {
+                "pet_food_plan_totals": {
                     "description": "Relationships\nPet                *Pet                 ` + "`" + `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"
-                    }
-                },
-                "pet_food_plan_history": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal"
                     }
                 },
                 "pet_id": {
@@ -1540,10 +1851,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "pet_food_plan_history": {
+                "pet_food_plan_totals": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal"
                     }
                 },
                 "pet_id": {
@@ -1559,6 +1870,9 @@ const docTemplate = `{
             "properties": {
                 "amount": {
                     "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "energy_intake": {
                     "type": "number"
@@ -1580,11 +1894,28 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "pet_detail_id": {
+                "pet_food_plan_total": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal"
+                },
+                "pet_food_plan_totals_id": {
                     "type": "integer"
                 },
                 "protein_intake": {
                     "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetailResponse": {
+            "type": "object",
+            "properties": {
+                "pet_detail": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
+                },
+                "pet_food_plan": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan"
+                },
+                "pet_info": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
                 }
             }
         },
@@ -1597,11 +1928,61 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "pet_food_plan_total_id": {
+                    "type": "integer"
+                },
+                "pet_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetailResponse"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "pet_detail_id": {
                     "type": "integer"
                 },
+                "pet_food_plan_details": {
+                    "description": "Relationships\nPetFoodPlan      *PetFoodPlan       ` + "`" + `gorm:\"foreignKey:PetFoodPlanID\" json:\"pet_food_plan,omitempty\"` + "`" + `\nPetDetail        *PetDetail         ` + "`" + `gorm:\"foreignKey:PetDetailID\" json:\"pet_detail,omitempty\"` + "`" + `",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"
+                    }
+                },
+                "pet_food_plan_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                    }
+                },
                 "pet_food_plan_id": {
                     "type": "integer"
+                },
+                "total_energy_intake": {
+                    "type": "number"
+                },
+                "total_fat_intake": {
+                    "type": "number"
+                },
+                "total_protein_intake": {
+                    "type": "number"
                 }
             }
         },
