@@ -11,16 +11,18 @@ import (
 
 type FoodService interface {
 	CreateFood(ctx context.Context, food *model.Food) *model.HTTPResponse
-	UpdateFoodWeightAndQuantity(ctx context.Context, id uint, weight float64, quantity int) error
+	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
 }
 
 type foodService struct {
-	foodRepo repository.FoodRepository
+	calculationService CalculationService
+	foodRepo           repository.FoodRepository
 }
 
-func NewFoodService(foodRepo repository.FoodRepository) FoodService {
+func NewFoodService(calculationService CalculationService, foodRepo repository.FoodRepository) FoodService {
 	return &foodService{
-		foodRepo: foodRepo,
+		calculationService: calculationService,
+		foodRepo:           foodRepo,
 	}
 }
 
@@ -39,7 +41,7 @@ func (s *foodService) CreateFood(ctx context.Context, food *model.Food) *model.H
 	}
 }
 
-func (s *foodService) UpdateFoodWeightAndQuantity(ctx context.Context, id uint, weight float64, quantity int) error {
+func (s *foodService) UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error {
 	// logic to update food weight and quantity
-	return s.foodRepo.UpdateFoodWeightAndQuantity(ctx, id, weight, quantity)
+	return s.foodRepo.UpdateFoodWeightAndQuantity(ctx, userID, id, weight, quantity)
 }

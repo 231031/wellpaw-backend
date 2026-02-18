@@ -2,15 +2,10 @@ package controller
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
-)
-
-var (
-	defaultTimeout = 3 * time.Second
 )
 
 type AuthController interface {

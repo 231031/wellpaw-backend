@@ -21,12 +21,14 @@ type PetService interface {
 type petService struct {
 	calculationService CalculationService
 	petRepo            repository.PetRepository
+	petFoodPlanRepo    repository.PetFoodPlanRepository
 }
 
-func NewPetService(calculationService CalculationService, petRepo repository.PetRepository) PetService {
+func NewPetService(calculationService CalculationService, petRepo repository.PetRepository, petFoodPlanRepo repository.PetFoodPlanRepository) PetService {
 	return &petService{
 		calculationService: calculationService,
 		petRepo:            petRepo,
+		petFoodPlanRepo:    petFoodPlanRepo,
 	}
 }
 
@@ -35,7 +37,7 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 	ageMonth := time.Since(birthDate).Hours() / 24 / 30
 	switch petType {
 	case model.CAT:
-		if ageMonth < 12 {
+		if ageMonth <= 12 {
 			return model.JUNIOR
 		} else if ageMonth >= 84 {
 			return model.SENIOR
@@ -43,7 +45,7 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 			return model.ADULT
 		}
 	case model.DOG:
-		if ageMonth < 12 {
+		if ageMonth <= 12 {
 			return model.JUNIOR
 		} else if ageMonth >= 84 {
 			return model.SENIOR
@@ -124,25 +126,72 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
+	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, pet.Type)
 	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
-	// if the some feeding plan is active -> calculate new feeding amount for this updating
-	// transaction update instead of one
+	latestPlanID, foodsInActivePlan, err := s.petFoodPlanRepo.GetFoodsInLastestActivePlanByPetID(ctx, pet.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := s.petRepo.UpdatePetDetails(ctx, petDetail); err != nil {
+				return &model.HTTPResponse{
+					Status:  http.StatusInternalServerError,
+					Message: utils.FailedToUpdateMsg + "pet detail",
+				}
+			}
 
-	if err := s.petRepo.UpdatePetDetails(ctx, petDetail); err != nil {
+			return &model.HTTPResponse{
+				Status: http.StatusOK,
+				Data: map[string]interface{}{
+					"pet_info":   pet,
+					"pet_detail": petDetail,
+				},
+			}
+		}
+
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToUpdateMsg + "pet detail",
 		}
 	}
 
+	var foods []model.Food
+	for _, fp := range foodsInActivePlan {
+		foods = append(foods, *fp.Food)
+	}
+	foodPlanDetails := s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+	for idx := range foodsInActivePlan {
+		foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
+	}
+
+	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
+	foodPlanTotal.PetFoodPlanID = latestPlanID
+	foodPlanTotal.PetDetailID = petDetail.ID
+
+	if err := s.petRepo.UpdatePetDetailsAndPlan(ctx, pet.ID, petDetail, foodPlanTotal, foodPlanDetails); err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "pet detail",
+		}
+	}
+
+	activePlanDetail, err := s.petFoodPlanRepo.GetLastestActivePlanDetailByPet(ctx, pet.ID, petDetail.ID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "successfully updated pet detail and plan but " + utils.FailedToGetMsg + "lastest pet food plan",
+		}
+	}
+
+	responseData := map[string]interface{}{
+		"pet_info":      pet,
+		"pet_detail":    petDetail,
+		"pet_food_plan": activePlanDetail,
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
-		Data: map[string]interface{}{
-			"pet_info":   pet,
-			"pet_detail": petDetail,
-		},
+		Data:   responseData,
 	}
 }

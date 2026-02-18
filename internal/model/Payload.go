@@ -76,6 +76,27 @@ type PetFoodPlanDetailsPayload struct {
 	Unit   UnitType `json:"unit"`
 }
 
+type FoodPlanFoodPayload struct {
+	FoodID      uint     `json:"food_id"`
+	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
+}
+
+type CreatePetFoodPlanPayload struct {
+	Name  string                `json:"name"`
+	PetID uint                  `json:"pet_id"`
+	Unit  UnitType              `json:"unit"`
+	Foods []FoodPlanFoodPayload `json:"foods"`
+}
+
+type AmountFoodDetail struct {
+	FoodPetFoodPlanID uint    `json:"food_pet_food_plan_id"`
+	Amount            float64 `json:"amount"`
+}
+type AdjustAmountFoodInPetFoodPlanPayload struct {
+	PetFoodPlanID      uint               `json:"pet_food_plan_id"`
+	PetFoodPlanDetails []AmountFoodDetail `json:"pet_food_plan_details"`
+}
+
 type PetPayload struct {
 	PetInfo   Pet       `json:"pet_info"`
 	PetDetail PetDetail `json:"pet_detail"`

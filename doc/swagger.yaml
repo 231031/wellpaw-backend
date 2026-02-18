@@ -12,6 +12,15 @@ definitions:
     - SOMEACTIVE
     - ACTIVE
     - VERYACTIVE
+  github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload:
+    properties:
+      pet_food_plan_details:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail'
+        type: array
+      pet_food_plan_id:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.AgeType:
     enum:
     - 0
@@ -22,6 +31,13 @@ definitions:
     - JUNIOR
     - ADULT
     - SENIOR
+  github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail:
+    properties:
+      amount:
+        type: number
+      food_pet_food_plan_id:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.BcsType:
     enum:
     - 0
@@ -46,14 +62,27 @@ definitions:
     - VACCINE
     - DRUG
     - APPOINTMENT
+  github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload:
+    properties:
+      foods:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload'
+        type: array
+      name:
+        type: string
+      pet_id:
+        type: integer
+      unit:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CupFoodPet:
     properties:
       food_pet_food_plan_id:
         type: integer
+      grams:
+        type: number
       id:
         type: integer
-      unit_type:
-        type: number
     type: object
   github_com_231031_wellpaw-backend_internal_model.DiseaseType:
     enum:
@@ -98,7 +127,7 @@ definitions:
       user:
         allOf:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
-        description: Relationships
+        description: e Relationships
       user_id:
         type: integer
       weight:
@@ -125,6 +154,20 @@ definitions:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
         type: array
       pet_food_plan_id:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload:
+    properties:
+      food_id:
+        type: integer
+      grams_per_cup:
+        type: number
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.FoodResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
+      status:
         type: integer
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodType:
@@ -277,6 +320,10 @@ definitions:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
         type: array
+      pet_food_plan_historys:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory'
+        type: array
       pet_food_plans:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan'
@@ -361,16 +408,12 @@ definitions:
         type: boolean
       neutered:
         type: boolean
-      pet_food_plan_details:
+      pet_food_plan_totals:
         description: |-
           Relationships
           Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`
         items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
-        type: array
-      pet_food_plan_history:
-        items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory'
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal'
         type: array
       pet_id:
         type: integer
@@ -407,9 +450,9 @@ definitions:
         type: integer
       name:
         type: string
-      pet_food_plan_history:
+      pet_food_plan_totals:
         items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory'
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal'
         type: array
       pet_id:
         type: integer
@@ -420,6 +463,8 @@ definitions:
     properties:
       amount:
         type: number
+      created_at:
+        type: string
       energy_intake:
         type: number
       fat_intake:
@@ -432,10 +477,21 @@ definitions:
         type: integer
       id:
         type: integer
-      pet_detail_id:
+      pet_food_plan_total:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal'
+      pet_food_plan_totals_id:
         type: integer
       protein_intake:
         type: number
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetailResponse:
+    properties:
+      pet_detail:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
+      pet_food_plan:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan'
+      pet_info:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory:
     properties:
@@ -443,10 +499,46 @@ definitions:
         type: string
       id:
         type: integer
+      pet_food_plan_total_id:
+        type: integer
+      pet_id:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetailResponse'
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
       pet_detail_id:
         type: integer
+      pet_food_plan_details:
+        description: |-
+          Relationships
+          PetFoodPlan      *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
+          PetDetail        *PetDetail         `gorm:"foreignKey:PetDetailID" json:"pet_detail,omitempty"`
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
+        type: array
+      pet_food_plan_history:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory'
+        type: array
       pet_food_plan_id:
         type: integer
+      total_energy_intake:
+        type: number
+      total_fat_intake:
+        type: number
+      total_protein_intake:
+        type: number
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetPayload:
     properties:
@@ -878,6 +970,163 @@ paths:
       summary: Reset Password
       tags:
       - Authentication
+  /food:
+    post:
+      consumes:
+      - application/json
+      description: create food for the authorized user
+      parameters:
+      - description: Create food payload
+        in: body
+        name: CreateFoodPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Food
+      tags:
+      - Food
+  /foodplan:
+    post:
+      consumes:
+      - application/json
+      description: create pet food plan with selected foods and optional grams per
+        cup
+      parameters:
+      - description: Create pet food plan payload
+        in: body
+        name: CreatePetFoodPlanPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Pet Food Plan
+      tags:
+      - Pet Food Plan
+  /foodplan/{pet_id}:
+    get:
+      consumes:
+      - application/json
+      description: get latest active pet food plan detail by pet id
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Latest Active Pet Food Plan Detail
+      tags:
+      - Pet Food Plan
+  /foodplan/amount:
+    put:
+      consumes:
+      - application/json
+      description: update feeding amount in latest active pet food plan and recalculate
+        total intake
+      parameters:
+      - description: Adjust feeding amount payload
+        in: body
+        name: AdjustAmountFoodInPetFoodPlanPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Feeding Amount In Pet Food Plan
+      tags:
+      - Pet Food Plan
   /ocr/request:
     post:
       consumes:
