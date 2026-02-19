@@ -48,7 +48,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		}
 		seenFoodIDs[f.FoodID] = true
 
-		if payload.Unit == model.CUP && f.GramsPerCup == nil {
+		if *payload.Unit == model.CUP && f.GramsPerCup == nil {
 			return &model.HTTPResponse{
 				Status:  http.StatusBadRequest,
 				Message: "grams per cup is required for unit cup",
@@ -104,7 +104,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		PetID:     payload.PetID,
 		Name:      payload.Name,
 		Active:    true,
-		Unit:      payload.Unit,
+		Unit:      *payload.Unit,
 		CreatedAt: time.Now(),
 	}
 
@@ -115,7 +115,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 			FoodID: food.ID,
 		})
 
-		if payload.Unit == model.CUP {
+		if *payload.Unit == model.CUP {
 			cupFoods = append(cupFoods, &model.CupFoodPet{
 				Grams: gramsPerCupByFoodID[food.ID],
 			})
@@ -249,8 +249,8 @@ func (s *petFoodPlanService) UpdateFeedingAmountFromUser(ctx context.Context, pa
 			}
 		}
 
-		energyInake := s.calculationService.CalEnergyIntakeFromGramIntake(fp.Amount, food.Energy, food.Type)
-		proteinIntake, fatIntake := s.calculationService.CalNutritientIntakeFromGramIntake(fp.Amount, food.Protein, food.Fat, food.Type)
+		energyInake := s.calculationService.CalEnergyIntakeFromGramIntake(fp.Amount, food.Energy, *food.Type)
+		proteinIntake, fatIntake := s.calculationService.CalNutritientIntakeFromGramIntake(fp.Amount, food.Protein, food.Fat, *food.Type)
 		foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
 			FoodPetFoodPlanID: fp.FoodPetFoodPlanID,
 			Amount:            fp.Amount,

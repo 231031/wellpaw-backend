@@ -5,6 +5,7 @@ import (
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -46,6 +47,9 @@ func (c *authController) RequestOTP(ctx *fiber.Ctx) error {
 			Message: "invalid request body",
 		})
 	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -73,6 +77,9 @@ func (c *authController) ResetPassword(ctx *fiber.Ctx) error {
 			Message: "invalid request body",
 		})
 	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -98,8 +105,9 @@ func (c *authController) CreateUser(ctx *fiber.Ctx) error {
 			"message": "invalid request body",
 		})
 	}
-
-	// validate fields
+	if validationResponse, err := utils.ValidateStruct(&user); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -125,8 +133,9 @@ func (c *authController) LoginUser(ctx *fiber.Ctx) error {
 			"message": "invalid request body",
 		})
 	}
-
-	// validate fields
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -152,8 +161,9 @@ func (c *authController) LoginUserWithGoogle(ctx *fiber.Ctx) error {
 			"message": "invalid request body",
 		})
 	}
-
-	// validate fields
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -168,6 +178,9 @@ func (c *authController) RefreshToken(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "invalid request body",
 		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)

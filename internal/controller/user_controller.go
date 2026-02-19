@@ -77,6 +77,9 @@ func (c *userController) UpdatePaymentMethod(ctx *fiber.Ctx) error {
 			Message: utils.FailedToUpdateMsg + "payment method",
 		})
 	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
@@ -173,6 +176,9 @@ func (c *userController) StartSubscription(ctx *fiber.Ctx) error {
 			Message: utils.FailedToUpdateMsg + "payment method",
 		})
 	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 10*time.Second)
 	defer cancel()
@@ -201,6 +207,9 @@ func (c *userController) UpdateSubscription(ctx *fiber.Ctx) error {
 			Status:  http.StatusBadRequest,
 			Message: utils.FailedToUpdateMsg + "subscription",
 		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
 	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)

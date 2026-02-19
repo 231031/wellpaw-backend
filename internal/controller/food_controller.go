@@ -5,6 +5,7 @@ import (
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -45,14 +46,11 @@ func (c *foodController) CreateFood(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if payload.Type < model.DRY || payload.Type > model.SUPPLEMENTS {
-		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Message: "invalid food type",
-		})
+	payload.UserID = userID
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
-	payload.UserID = userID
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
 

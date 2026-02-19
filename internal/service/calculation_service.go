@@ -33,7 +33,7 @@ func (s *calculationService) CalMerEnergyRequirement(petDetail *model.PetDetail,
 	return s.energyRequirementService.GetMerEnergy(
 		petDetail.Weight,
 		petDetail.AgeRange,
-		petDetail.ActivityLevel,
+		*petDetail.ActivityLevel,
 		petDetail.BCS,
 		petDetail.Gestation,
 		petDetail.GestationStartDate,
@@ -91,7 +91,7 @@ func (s *calculationService) calFeedingAmountEachFoodPerDay(energyIntake float64
 	calPerGram := food.Energy / 100.0
 	gramsIntake := energyIntake / calPerGram
 
-	proteinIntake, fatIntake := s.CalNutritientIntakeFromGramIntake(gramsIntake, food.Protein, food.Fat, food.Type)
+	proteinIntake, fatIntake := s.CalNutritientIntakeFromGramIntake(gramsIntake, food.Protein, food.Fat, *food.Type)
 
 	foodPlanDetail = &model.PetFoodPlanDetail{
 		Amount:        gramsIntake,
@@ -107,7 +107,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 
 	checkType := map[model.FoodType]float64{}
 	for _, f := range foods {
-		checkType[f.Type] = f.Energy
+		checkType[*f.Type] = f.Energy
 	}
 
 	threadHold := 0.2 * petDetail.Energy
@@ -135,7 +135,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 
 	var foodPlanDetails []*model.PetFoodPlanDetail
 	for _, f := range foods {
-		if f.Type == model.SUPPLEMENTS {
+		if *f.Type == model.SUPPLEMENTS {
 			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
 				// feeding base on recommended of specific supplement
 				Amount:        0,
@@ -145,7 +145,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 			})
 			continue
 		}
-		enegyIntakePerF := reqEnergy * checkType[f.Type]
+		enegyIntakePerF := reqEnergy * checkType[*f.Type]
 		feedingDetail := s.calFeedingAmountEachFoodPerDay(enegyIntakePerF, f)
 		foodPlanDetails = append(foodPlanDetails, feedingDetail)
 	}

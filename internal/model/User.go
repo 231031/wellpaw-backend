@@ -4,13 +4,13 @@ import "time"
 
 type User struct {
 	ID                 uint                   `gorm:"primaryKey;autoIncrement" json:"id"`
-	Email              string                 `gorm:"unique;not null;type:varchar(255)" json:"email"`
-	Password           string                 `gorm:"not null;type:varchar(255)" json:"password,omitempty"`
+	Email              string                 `gorm:"unique;not null;type:varchar(255)" json:"email" validate:"required,email"`
+	Password           string                 `gorm:"not null;type:varchar(255)" json:"password,omitempty" validate:"required"`
 	CustomerID         string                 `gorm:"type:varchar(255)" json:"customer_id,omitempty"`
 	PaymentMethodID    string                 `gorm:"type:varchar(255)" json:"payment_method_id,omitempty"`
-	DeviceToken        string                 `gorm:"not null;type:varchar(512)" json:"device_token,omitempty"`
-	FirstName          string                 `gorm:"not null;type:varchar(255)" json:"first_name"`
-	LastName           string                 `gorm:"not null;type:varchar(255)" json:"last_name"`
+	DeviceToken        string                 `gorm:"not null;type:varchar(512)" json:"device_token,omitempty" validate:"required"`
+	FirstName          string                 `gorm:"not null;type:varchar(255)" json:"first_name" validate:"required"`
+	LastName           string                 `gorm:"not null;type:varchar(255)" json:"last_name" validate:"required"`
 	NotiFood           bool                   `gorm:"type:boolean;default:true;not null" json:"noti_food"`
 	NotiCalendars      bool                   `gorm:"type:boolean;default:true;not null" json:"noti_calendars"`
 	ProfileFree        int                    `gorm:"default:0;not null" json:"profile_free"`
