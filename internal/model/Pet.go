@@ -1,18 +1,23 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Pet struct {
-	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID    uint      `gorm:"not null" json:"user_id" validate:"required"`
-	ImagePath string    `gorm:"type:varchar(512)" json:"image_path"`
-	Name      string    `gorm:"not null;type:varchar(255)" json:"name" validate:"required"`
-	Type      *PetType  `gorm:"not null" json:"type" validate:"required,oneof=0 1"`
-	Breed     string    `gorm:"not null;type:varchar(255)" json:"breed" validate:"required"`
-	SexType   *SexType  `gorm:"not null" json:"sex_type" validate:"required,oneof=0 1"`
-	BirthDate time.Time `gorm:"not null;type:date" json:"birth_date" validate:"required"`
-	CreatedAt time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt time.Time `gorm:"not null" json:"updated_at"`
+	ID        uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID    uint           `gorm:"not null" json:"user_id" validate:"required"`
+	ImagePath string         `gorm:"type:varchar(512)" json:"image_path"`
+	Name      string         `gorm:"not null;type:varchar(255)" json:"name" validate:"required"`
+	Type      *PetType       `gorm:"not null" json:"type" validate:"required,oneof=0 1"`
+	Breed     string         `gorm:"not null;type:varchar(255)" json:"breed" validate:"required"`
+	SexType   *SexType       `gorm:"not null" json:"sex_type" validate:"required,oneof=0 1"`
+	BirthDate time.Time      `gorm:"not null;type:date" json:"birth_date" validate:"required"`
+	CreatedAt time.Time      `gorm:"not null" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"not null" json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
 	// User           *User                 `gorm:"foreignKey:UserID" json:"user,omitempty"`

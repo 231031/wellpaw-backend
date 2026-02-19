@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
@@ -13,6 +14,7 @@ type PetController interface {
 	CreateNewPet(ctx *fiber.Ctx) error
 	UpdatePetInfo(ctx *fiber.Ctx) error
 	UpdatePetDetail(ctx *fiber.Ctx) error
+	SoftDeletePet(ctx *fiber.Ctx) error
 }
 
 type petController struct {
@@ -123,5 +125,36 @@ func (c *petController) UpdatePetDetail(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.petService.UpdatePetDetail(ctxWithTimeout, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Soft Delete Pet
+// @Description soft delete pet by id
+// @tags Pet
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param pet_id path int true "Pet ID"
+// @Success 200 {object} model.HTTPResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 404 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /pet/{pet_id} [delete]
+func (c *petController) SoftDeletePet(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+	rawPetID := ctx.Params("pet_id")
+	petID64, err := strconv.ParseUint(rawPetID, 10, 64)
+	if err != nil || petID64 == 0 {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid pet_id",
+		})
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.petService.SoftDeletePet(ctxWithTimeout, userID, uint(petID64))
 	return ctx.Status(response.Status).JSON(response)
 }

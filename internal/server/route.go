@@ -48,11 +48,13 @@ func RoutePet(router fiber.Router, petController controller.PetController, authM
 	petRoute.Post("/", petController.CreateNewPet)
 	petRoute.Patch("/info", petController.UpdatePetInfo)
 	petRoute.Post("/detail", petController.UpdatePetDetail)
+	petRoute.Delete("/:pet_id", petController.SoftDeletePet)
 }
 
 func RouteFood(router fiber.Router, foodController controller.FoodController, authMiddleware middleware.AuthMiddleware) {
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
+	foodRoute.Delete("/:food_id", foodController.SoftDeleteFood)
 }
 
 func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetFoodPlanController, authMiddleware middleware.AuthMiddleware) {

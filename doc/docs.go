@@ -322,6 +322,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/food/{food_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "soft delete food by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Soft Delete Food",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Food ID",
+                        "name": "food_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/foodplan": {
             "post": {
                 "security": [
@@ -712,6 +773,67 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pet/{pet_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "soft delete pet by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Soft Delete Pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
                         }
                     },
                     "400": {
@@ -1210,6 +1332,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload": {
             "type": "object",
+            "required": [
+                "pet_food_plan_details",
+                "pet_food_plan_id"
+            ],
             "properties": {
                 "pet_food_plan_details": {
                     "type": "array",
@@ -1237,6 +1363,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail": {
             "type": "object",
+            "required": [
+                "amount",
+                "food_pet_food_plan_id"
+            ],
             "properties": {
                 "amount": {
                     "type": "number"
@@ -1278,6 +1408,12 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload": {
             "type": "object",
+            "required": [
+                "foods",
+                "name",
+                "pet_id",
+                "unit"
+            ],
             "properties": {
                 "foods": {
                     "type": "array",
@@ -1292,7 +1428,15 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "unit": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType"
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType"
+                        }
+                    ]
                 }
             }
         },
@@ -1329,9 +1473,24 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.Food": {
             "type": "object",
+            "required": [
+                "brand",
+                "energy",
+                "fat",
+                "moist",
+                "name",
+                "protein",
+                "quantity",
+                "type",
+                "user_id",
+                "weight"
+            ],
             "properties": {
                 "brand": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "energy": {
                     "type": "number"
@@ -1364,10 +1523,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType"
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType"
+                        }
+                    ]
                 },
                 "user": {
-                    "description": "e Relationships",
+                    "description": "Relationships",
                     "allOf": [
                         {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
@@ -1418,6 +1587,9 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload": {
             "type": "object",
+            "required": [
+                "food_id"
+            ],
             "properties": {
                 "food_id": {
                     "type": "integer"
@@ -1495,6 +1667,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.LoginGooglePayload": {
             "type": "object",
+            "required": [
+                "auth_code",
+                "device_token"
+            ],
             "properties": {
                 "auth_code": {
                     "type": "string"
@@ -1506,6 +1682,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.LoginPayload": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -1604,6 +1784,9 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.PaymentMethodUpdatePayload": {
             "type": "object",
+            "required": [
+                "payment_method_id"
+            ],
             "properties": {
                 "payment_method_id": {
                     "type": "string"
@@ -1625,6 +1808,14 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.Pet": {
             "type": "object",
+            "required": [
+                "birth_date",
+                "breed",
+                "name",
+                "sex_type",
+                "type",
+                "user_id"
+            ],
             "properties": {
                 "activity_events": {
                     "type": "array",
@@ -1640,6 +1831,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "id": {
                     "type": "integer"
@@ -1676,10 +1870,26 @@ const docTemplate = `{
                     }
                 },
                 "sex_type": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SexType"
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.SexType"
+                        }
+                    ]
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType"
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType"
+                        }
+                    ]
                 },
                 "updated_at": {
                     "type": "string"
@@ -1716,6 +1926,12 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.PetCalendar": {
             "type": "object",
+            "required": [
+                "frequently",
+                "name",
+                "start_datetime",
+                "type"
+            ],
             "properties": {
                 "activity_events": {
                     "description": "Relationships",
@@ -1726,6 +1942,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "end_date": {
                     "type": "string"
@@ -1752,9 +1971,25 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.PetDetail": {
             "type": "object",
+            "required": [
+                "activity_level",
+                "bcs",
+                "neutered",
+                "weight"
+            ],
             "properties": {
                 "activity_level": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel"
+                    "enum": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel"
+                        }
+                    ]
                 },
                 "age_range": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AgeType"
@@ -1837,6 +2072,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "food_pet_food_plans": {
                     "description": "Relationships\nPet                *Pet                 ` + "`" + `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"` + "`" + `",
@@ -1988,6 +2226,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.PetPayload": {
             "type": "object",
+            "required": [
+                "pet_detail",
+                "pet_info"
+            ],
             "properties": {
                 "pet_detail": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
@@ -2016,6 +2258,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "id": {
                     "type": "integer"
@@ -2053,6 +2298,9 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload": {
             "type": "object",
+            "required": [
+                "email"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -2061,6 +2309,12 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload": {
             "type": "object",
+            "required": [
+                "confirmed_password",
+                "email",
+                "otp",
+                "password"
+            ],
             "properties": {
                 "confirmed_password": {
                     "type": "string"
@@ -2089,6 +2343,10 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.StartSubscriptionPayload": {
             "type": "object",
+            "required": [
+                "payment_method_id",
+                "subscription_plan_id"
+            ],
             "properties": {
                 "payment_method_id": {
                     "type": "string"
@@ -2274,6 +2532,9 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.UpdateSubscriptionPayload": {
             "type": "object",
+            "required": [
+                "new_subscription_plan_id"
+            ],
             "properties": {
                 "new_subscription_plan_id": {
                     "type": "string"
@@ -2282,6 +2543,13 @@ const docTemplate = `{
         },
         "github_com_231031_wellpaw-backend_internal_model.User": {
             "type": "object",
+            "required": [
+                "device_token",
+                "email",
+                "first_name",
+                "last_name",
+                "password"
+            ],
             "properties": {
                 "bcs_free": {
                     "type": "integer"
@@ -2291,6 +2559,9 @@ const docTemplate = `{
                 },
                 "customer_id": {
                     "type": "string"
+                },
+                "deleted_at": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "device_token": {
                     "type": "string"
@@ -2369,6 +2640,18 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "gorm.DeletedAt": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if Time is not NULL",
+                    "type": "boolean"
                 }
             }
         }

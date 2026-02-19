@@ -11,11 +11,12 @@ import (
 )
 
 var (
-	ErrNoRowsUpdated  = errors.New("no rows affected when updating")
-	FailedToGetMsg    = "failed to get "
-	NotFoundMsg       = " not found"
-	FailedToCreateMsg = "failed to create "
-	FailedToUpdateMsg = "failed to update "
+	ErrNoRowsUpdated    = errors.New("no rows affected when updating")
+	ErrFoodInActivePlan = errors.New("food is in active plan")
+	FailedToGetMsg      = "failed to get "
+	NotFoundMsg         = " not found"
+	FailedToCreateMsg   = "failed to create "
+	FailedToUpdateMsg   = "failed to update "
 
 	ErrUnauth       = errors.New("the token is invalid")
 	ErrUnauthHeader = errors.New("the user is unauthorization")

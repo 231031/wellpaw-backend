@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type User struct {
 	ID                 uint                   `gorm:"primaryKey;autoIncrement" json:"id"`
@@ -22,6 +26,7 @@ type User struct {
 	Tier               TierType               `gorm:"default:0;not null" json:"tier"`
 	CreatedAt          time.Time              `gorm:"not null" json:"created_at,omitempty"`
 	UpdatedAt          time.Time              `gorm:"not null" json:"updated_at,omitempty"`
+	DeletedAt          gorm.DeletedAt         `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
 	Pets     []Pet     `gorm:"foreignKey:UserID" json:"pets,omitempty"`

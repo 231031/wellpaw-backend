@@ -17,6 +17,7 @@ type PetRepository interface {
 	UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error)
+	SoftDeletePetByIDAndUserID(ctx context.Context, petID uint, userID uint) error
 }
 
 type petRepository struct {
@@ -155,4 +156,19 @@ func (r *petRepository) GetPetByUserID(ctx context.Context, id uint) ([]model.Pe
 	}
 
 	return pets, nil
+}
+
+func (r *petRepository) SoftDeletePetByIDAndUserID(ctx context.Context, petID uint, userID uint) error {
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", petID, userID).
+		Delete(&model.Pet{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to soft delete pet : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
 }
