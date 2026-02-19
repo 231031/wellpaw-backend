@@ -16,6 +16,7 @@ type PetService interface {
 	CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse
 	UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *model.HTTPResponse
 	UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse
+	SoftDeletePet(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
 }
 
 type petService struct {
@@ -60,9 +61,9 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
 
-	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(petInfo.Type, petInfo.BirthDate)
-	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(&petDetail, petInfo.Type)
-	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, &petDetail, petInfo.Type)
+	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
+	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(&petDetail, *petInfo.Type)
+	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, &petDetail, *petInfo.Type)
 
 	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 	err := s.petRepo.CreateNewPet(ctx, &petInfo, &petDetail)
@@ -126,9 +127,9 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(pet.Type, pet.BirthDate)
-	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, pet.Type)
-	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, pet.Type)
+	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
+	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
+	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)
 	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	latestPlanID, foodsInActivePlan, err := s.petFoodPlanRepo.GetFoodsInLastestActivePlanByPetID(ctx, pet.ID)
@@ -193,5 +194,26 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   responseData,
+	}
+}
+
+func (s *petService) SoftDeletePet(ctx context.Context, userID uint, petID uint) *model.HTTPResponse {
+	if err := s.petRepo.SoftDeletePetByIDAndUserID(ctx, petID, userID); err != nil {
+		if errors.Is(err, utils.ErrNoRowsUpdated) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet" + utils.NotFoundMsg,
+			}
+		}
+
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to delete pet",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status:  http.StatusOK,
+		Message: "pet deleted successfully",
 	}
 }

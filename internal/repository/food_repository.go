@@ -13,6 +13,7 @@ type FoodRepository interface {
 	CreateFood(ctx context.Context, food *model.Food) (*model.Food, error)
 	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
 	GetFoodsByIDsAndUserID(ctx context.Context, userID uint, foodIDs []uint) ([]model.Food, error)
+	SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error
 }
 
 type foodRepository struct {
@@ -65,4 +66,33 @@ func (r *foodRepository) GetFoodsByIDsAndUserID(ctx context.Context, userID uint
 	}
 
 	return foods, nil
+}
+
+func (r *foodRepository) SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error {
+	var activePlanCount int64
+	if err := r.db.WithContext(ctx).
+		Table("food_pet_food_plans").
+		Joins("JOIN pet_food_plans ON pet_food_plans.id = food_pet_food_plans.pet_food_plan_id").
+		Joins("JOIN foods ON foods.id = food_pet_food_plans.food_id").
+		Where("food_pet_food_plans.food_id = ? AND foods.user_id = ? AND foods.deleted_at IS NULL AND pet_food_plans.active = ?", foodID, userID, true).
+		Count(&activePlanCount).Error; err != nil {
+		return fmt.Errorf("failed to check active plan before deleting food : %w", err)
+	}
+
+	if activePlanCount > 0 {
+		return utils.ErrFoodInActivePlan
+	}
+
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", foodID, userID).
+		Delete(&model.Food{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to soft delete food : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
 }

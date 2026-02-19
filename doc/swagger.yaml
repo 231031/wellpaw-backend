@@ -20,6 +20,9 @@ definitions:
         type: array
       pet_food_plan_id:
         type: integer
+    required:
+    - pet_food_plan_details
+    - pet_food_plan_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.AgeType:
     enum:
@@ -37,6 +40,9 @@ definitions:
         type: number
       food_pet_food_plan_id:
         type: integer
+    required:
+    - amount
+    - food_pet_food_plan_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.BcsType:
     enum:
@@ -73,7 +79,16 @@ definitions:
       pet_id:
         type: integer
       unit:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
+        enum:
+        - 0
+        - 1
+    required:
+    - foods
+    - name
+    - pet_id
+    - unit
     type: object
   github_com_231031_wellpaw-backend_internal_model.CupFoodPet:
     properties:
@@ -102,6 +117,8 @@ definitions:
     properties:
       brand:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       energy:
         type: number
       fat:
@@ -123,15 +140,32 @@ definitions:
       quantity:
         type: integer
       type:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType'
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodType'
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
       user:
         allOf:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
-        description: e Relationships
+        description: Relationships
       user_id:
         type: integer
       weight:
         type: number
+    required:
+    - brand
+    - energy
+    - fat
+    - moist
+    - name
+    - protein
+    - quantity
+    - type
+    - user_id
+    - weight
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan:
     properties:
@@ -162,6 +196,8 @@ definitions:
         type: integer
       grams_per_cup:
         type: number
+    required:
+    - food_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodResponse:
     properties:
@@ -217,6 +253,9 @@ definitions:
         type: string
       device_token:
         type: string
+    required:
+    - auth_code
+    - device_token
     type: object
   github_com_231031_wellpaw-backend_internal_model.LoginPayload:
     properties:
@@ -224,6 +263,9 @@ definitions:
         type: string
       password:
         type: string
+    required:
+    - email
+    - password
     type: object
   github_com_231031_wellpaw-backend_internal_model.LoginResponse:
     properties:
@@ -284,6 +326,8 @@ definitions:
     properties:
       payment_method_id:
         type: string
+    required:
+    - payment_method_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.PaymentStatusType:
     enum:
@@ -307,6 +351,8 @@ definitions:
         type: string
       created_at:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       id:
         type: integer
       image_path:
@@ -333,13 +379,28 @@ definitions:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage'
         type: array
       sex_type:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SexType'
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.SexType'
+        enum:
+        - 0
+        - 1
       type:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType'
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType'
+        enum:
+        - 0
+        - 1
       updated_at:
         type: string
       user_id:
         type: integer
+    required:
+    - birth_date
+    - breed
+    - name
+    - sex_type
+    - type
+    - user_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar:
     properties:
@@ -365,6 +426,8 @@ definitions:
         type: array
       created_at:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       end_date:
         type: string
       frequently:
@@ -379,11 +442,22 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarType'
+    required:
+    - frequently
+    - name
+    - start_datetime
+    - type
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetDetail:
     properties:
       activity_level:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel'
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityLevel'
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
       age_range:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AgeType'
       bcs:
@@ -421,6 +495,11 @@ definitions:
         type: number
       weight:
         type: number
+    required:
+    - activity_level
+    - bcs
+    - neutered
+    - weight
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetFoodAnalysisResponse:
     properties:
@@ -439,6 +518,8 @@ definitions:
         type: boolean
       created_at:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       food_pet_food_plans:
         description: |-
           Relationships
@@ -546,6 +627,9 @@ definitions:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
       pet_info:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+    required:
+    - pet_detail
+    - pet_info
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetResponse:
     properties:
@@ -560,6 +644,8 @@ definitions:
         type: integer
       created_at:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       id:
         type: integer
       image_evidence:
@@ -587,6 +673,8 @@ definitions:
     properties:
       email:
         type: string
+    required:
+    - email
     type: object
   github_com_231031_wellpaw-backend_internal_model.ResetPasswordPayload:
     properties:
@@ -598,6 +686,11 @@ definitions:
         type: string
       password:
         type: string
+    required:
+    - confirmed_password
+    - email
+    - otp
+    - password
     type: object
   github_com_231031_wellpaw-backend_internal_model.SexType:
     enum:
@@ -613,6 +706,9 @@ definitions:
         type: string
       subscription_plan_id:
         type: string
+    required:
+    - payment_method_id
+    - subscription_plan_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory:
     properties:
@@ -737,6 +833,8 @@ definitions:
     properties:
       new_subscription_plan_id:
         type: string
+    required:
+    - new_subscription_plan_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.User:
     properties:
@@ -746,6 +844,8 @@ definitions:
         type: string
       customer_id:
         type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
       device_token:
         type: string
       disease_free:
@@ -791,6 +891,12 @@ definitions:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.TierType'
       updated_at:
         type: string
+    required:
+    - device_token
+    - email
+    - first_name
+    - last_name
+    - password
     type: object
   github_com_231031_wellpaw-backend_internal_model.UserResponse:
     properties:
@@ -798,6 +904,14 @@ definitions:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
       status:
         type: integer
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
     type: object
 host: localhost:50001
 info:
@@ -1006,6 +1120,45 @@ paths:
       summary: Create Food
       tags:
       - Food
+  /food/{food_id}:
+    delete:
+      consumes:
+      - application/json
+      description: soft delete food by id
+      parameters:
+      - description: Food ID
+        in: path
+        name: food_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Soft Delete Food
+      tags:
+      - Food
   /foodplan:
     post:
       consumes:
@@ -1192,6 +1345,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Create New Pet
+      tags:
+      - Pet
+  /pet/{pet_id}:
+    delete:
+      consumes:
+      - application/json
+      description: soft delete pet by id
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Soft Delete Pet
       tags:
       - Pet
   /pet/detail:

@@ -6,6 +6,7 @@ import (
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -47,6 +48,9 @@ func (c *petFoodPlanController) CreatePetFoodPlan(ctx *fiber.Ctx) error {
 			Status:  http.StatusBadRequest,
 			Message: "invalid request body",
 		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
@@ -106,6 +110,9 @@ func (c *petFoodPlanController) UpdateFeedingAmountFromUser(ctx *fiber.Ctx) erro
 			Status:  http.StatusBadRequest,
 			Message: "invalid request body",
 		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)

@@ -140,7 +140,7 @@ func pickFoodsForCase(t *testing.T, allFoods []model.Food, indexes []int, overri
 		}
 		food := allFoods[idx]
 		if overrideType, ok := overrideByPos[pos]; ok {
-			food.Type = overrideType
+			*food.Type = overrideType
 		}
 		foods = append(foods, food)
 	}
