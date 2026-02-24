@@ -64,11 +64,11 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	petDetail := pet.PetDetail
 
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
-	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(&petDetail, *petInfo.Type)
-	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, &petDetail, *petInfo.Type)
+	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
+	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
 
 	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
-	err := s.petRepo.CreateNewPet(ctx, &petInfo, &petDetail)
+	err := s.petRepo.CreateNewPet(ctx, petInfo, petDetail)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,

@@ -13,7 +13,7 @@ type PetDetail struct {
 	Lactation          bool           `gorm:"default:false;not null" json:"lactation"`
 	Gestation          bool           `gorm:"default:false;not null" json:"gestation"`
 	GestationStartDate time.Time      `gorm:"type:date" json:"gestation_startdate"`
-	Neutered           bool           `gorm:"default:false;not null" json:"neutered" validate:"required"`
+	Neutered           *bool          `gorm:"default:false;not null" json:"neutered" validate:"required"`
 	Energy             float64        `gorm:"not null" json:"energy"`
 	Protein            float64        `gorm:"not null" json:"protein"`
 	Fat                float64        `gorm:"not null" json:"fat"`

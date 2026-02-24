@@ -38,7 +38,7 @@ func (s *calculationService) CalMerEnergyRequirement(petDetail *model.PetDetail,
 		petDetail.Gestation,
 		petDetail.GestationStartDate,
 		petDetail.Lactation,
-		petDetail.Neutered,
+		*petDetail.Neutered,
 		petType,
 	)
 }

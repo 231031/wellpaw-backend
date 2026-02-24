@@ -98,6 +98,6 @@ type AdjustAmountFoodInPetFoodPlanPayload struct {
 }
 
 type PetPayload struct {
-	PetInfo   Pet       `json:"pet_info" validate:"required"`
-	PetDetail PetDetail `json:"pet_detail" validate:"required"`
+	PetInfo   *Pet       `json:"pet_info" validate:"required"`
+	PetDetail *PetDetail `json:"pet_detail" validate:"required"`
 }
