@@ -676,6 +676,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/pet/analysis/{pet_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get pet monthly analysis by pet id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Get Pet Analysis",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysisResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/pet/detail": {
             "post": {
                 "security": [
@@ -740,7 +801,7 @@ const docTemplate = `{
             }
         },
         "/pet/info": {
-            "patch": {
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
@@ -1841,6 +1902,12 @@ const docTemplate = `{
                 "image_path": {
                     "type": "string"
                 },
+                "monthly_nutrition_twa": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetMonthlyNutritionTWA"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2166,11 +2233,22 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "pet_food_plan_total": {
+                    "description": "Relationships\nPet              *Pet              ` + "`" + `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"` + "`" + `",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal"
+                        }
+                    ]
+                },
                 "pet_food_plan_total_id": {
                     "type": "integer"
                 },
                 "pet_id": {
                     "type": "integer"
+                },
+                "plan_usage_end_date": {
+                    "type": "string"
                 }
             }
         },
@@ -2197,8 +2275,16 @@ const docTemplate = `{
                 "pet_detail_id": {
                     "type": "integer"
                 },
+                "pet_food_plan": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan"
+                        }
+                    ]
+                },
                 "pet_food_plan_details": {
-                    "description": "Relationships\nPetFoodPlan      *PetFoodPlan       ` + "`" + `gorm:\"foreignKey:PetFoodPlanID\" json:\"pet_food_plan,omitempty\"` + "`" + `\nPetDetail        *PetDetail         ` + "`" + `gorm:\"foreignKey:PetDetailID\" json:\"pet_detail,omitempty\"` + "`" + `",
+                    "description": "PetDetail        *PetDetail         ` + "`" + `gorm:\"foreignKey:PetDetailID\" json:\"pet_detail,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"
@@ -2224,6 +2310,38 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_231031_wellpaw-backend_internal_model.PetMonthlyNutritionTWA": {
+            "type": "object",
+            "properties": {
+                "activity_level": {
+                    "type": "integer"
+                },
+                "energy": {
+                    "type": "number"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "protein": {
+                    "type": "number"
+                },
+                "total_energy_intake": {
+                    "type": "number"
+                },
+                "total_fat_intake": {
+                    "type": "number"
+                },
+                "total_protein_intake": {
+                    "type": "number"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.PetPayload": {
             "type": "object",
             "required": [
@@ -2236,6 +2354,28 @@ const docTemplate = `{
                 },
                 "pet_info": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis": {
+            "type": "object",
+            "properties": {
+                "pet": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                },
+                "pet_food_plan_histories": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysisResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis"
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         },

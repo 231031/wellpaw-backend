@@ -357,6 +357,10 @@ definitions:
         type: integer
       image_path:
         type: string
+      monthly_nutrition_twa:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetMonthlyNutritionTWA'
+        type: array
       name:
         type: string
       pet_details:
@@ -580,10 +584,18 @@ definitions:
         type: string
       id:
         type: integer
+      pet_food_plan_total:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal'
+        description: |-
+          Relationships
+          Pet              *Pet              `gorm:"foreignKey:PetID" json:"pet,omitempty"`
       pet_food_plan_total_id:
         type: integer
       pet_id:
         type: integer
+      plan_usage_end_date:
+        type: string
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse:
     properties:
@@ -600,11 +612,13 @@ definitions:
         type: integer
       pet_detail_id:
         type: integer
+      pet_food_plan:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan'
+        description: Relationships
       pet_food_plan_details:
-        description: |-
-          Relationships
-          PetFoodPlan      *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
-          PetDetail        *PetDetail         `gorm:"foreignKey:PetDetailID" json:"pet_detail,omitempty"`
+        description: PetDetail        *PetDetail         `gorm:"foreignKey:PetDetailID"
+          json:"pet_detail,omitempty"`
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
         type: array
@@ -621,6 +635,27 @@ definitions:
       total_protein_intake:
         type: number
     type: object
+  github_com_231031_wellpaw-backend_internal_model.PetMonthlyNutritionTWA:
+    properties:
+      activity_level:
+        type: integer
+      energy:
+        type: number
+      fat:
+        type: number
+      month:
+        type: integer
+      protein:
+        type: number
+      total_energy_intake:
+        type: number
+      total_fat_intake:
+        type: number
+      total_protein_intake:
+        type: number
+      weight:
+        type: number
+    type: object
   github_com_231031_wellpaw-backend_internal_model.PetPayload:
     properties:
       pet_detail:
@@ -630,6 +665,20 @@ definitions:
     required:
     - pet_detail
     - pet_info
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis:
+    properties:
+      pet:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+      pet_food_plan_histories:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanHistory'
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysisResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis'
+      status:
+        type: integer
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetResponse:
     properties:
@@ -1386,6 +1435,45 @@ paths:
       summary: Soft Delete Pet
       tags:
       - Pet
+  /pet/analysis/{pet_id}:
+    get:
+      consumes:
+      - application/json
+      description: get pet monthly analysis by pet id
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Pet Analysis
+      tags:
+      - Pet
   /pet/detail:
     post:
       consumes:
@@ -1427,7 +1515,7 @@ paths:
       tags:
       - Pet
   /pet/info:
-    patch:
+    put:
       consumes:
       - application/json
       description: update pet base info

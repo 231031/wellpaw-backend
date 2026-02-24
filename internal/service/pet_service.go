@@ -14,6 +14,8 @@ import (
 
 type PetService interface {
 	CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse
+	GetPetsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
+	GetPetAnalysisByPetID(ctx context.Context, petID uint) *model.HTTPResponse
 	UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *model.HTTPResponse
 	UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse
 	SoftDeletePet(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
@@ -79,6 +81,49 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 		Data: map[string]interface{}{
 			"pet_info":   petInfo,
 			"pet_detail": petDetail,
+		},
+	}
+}
+
+func (s *petService) GetPetsByUserID(ctx context.Context, userID uint) *model.HTTPResponse {
+	pets, err := s.petRepo.GetPetsByUserID(ctx, userID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pets",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"pets": pets,
+		},
+	}
+}
+
+func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *model.HTTPResponse {
+	pet, err := s.petRepo.GetPetAnalysisByID(ctx, petID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{}
+		}
+		return &model.HTTPResponse{}
+	}
+
+	planUsageHistories, err := s.petFoodPlanRepo.GetPlanUsageHistoryByPetID(ctx, petID)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{}
+		}
+		planUsageHistories = []model.PetFoodPlanHistory{}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusCreated,
+		Data: map[string]interface{}{
+			"pet":                     pet,
+			"pet_food_plan_histories": planUsageHistories,
 		},
 	}
 }

@@ -12,6 +12,8 @@ import (
 
 type PetController interface {
 	CreateNewPet(ctx *fiber.Ctx) error
+	GetPetsByUserID(ctx *fiber.Ctx) error
+	GetPetAnalysisByPetID(ctx *fiber.Ctx) error
 	UpdatePetInfo(ctx *fiber.Ctx) error
 	UpdatePetDetail(ctx *fiber.Ctx) error
 	SoftDeletePet(ctx *fiber.Ctx) error
@@ -61,6 +63,56 @@ func (c *petController) CreateNewPet(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Status).JSON(response)
 }
 
+// @Summary Get User Pets
+// @Description get all pets by current user
+// @tags Pet
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.PetsResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /pets [get]
+func (c *petController) GetPetsByUserID(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.petService.GetPetsByUserID(ctxWithTimeout, userID)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Get Pet Analysis
+// @Description get pet monthly analysis by pet id
+// @tags Pet
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param pet_id path int true "Pet ID"
+// @Success 200 {object} model.PetPlanAnalysisResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 404 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /pet/analysis/{pet_id} [get]
+func (c *petController) GetPetAnalysisByPetID(ctx *fiber.Ctx) error {
+	rawPetID := ctx.Params("pet_id")
+	petID64, err := strconv.ParseUint(rawPetID, 10, 64)
+	if err != nil || petID64 == 0 {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid pet_id",
+		})
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.petService.GetPetAnalysisByPetID(ctxWithTimeout, uint(petID64))
+	return ctx.Status(response.Status).JSON(response)
+}
+
 // @Summary Update Pet Info
 // @Description update pet base info
 // @tags Pet
@@ -73,7 +125,7 @@ func (c *petController) CreateNewPet(ctx *fiber.Ctx) error {
 // @Failure 401 {object} model.HTTPResponse
 // @Failure 404 {object} model.HTTPResponse
 // @Failure 500 {object} model.HTTPResponse
-// @Router /pet/info [patch]
+// @Router /pet/info [put]
 func (c *petController) UpdatePetInfo(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("id").(uint)
 

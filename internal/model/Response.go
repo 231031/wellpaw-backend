@@ -57,6 +57,15 @@ type PetResponse struct {
 	Data   *PetPayload `json:"data"`
 }
 
+type PetsData struct {
+	Pets []Pet `json:"pets"`
+}
+
+type PetsResponse struct {
+	Status int       `json:"status"`
+	Data   *PetsData `json:"data"`
+}
+
 type FoodResponse struct {
 	Status int   `json:"status"`
 	Data   *Food `json:"data"`
@@ -71,6 +80,15 @@ type PetFoodPlanDetailResponse struct {
 type PetFoodPlanResponse struct {
 	Status int                        `json:"status"`
 	Data   *PetFoodPlanDetailResponse `json:"data"`
+}
+
+type PetPlanAnalysis struct {
+	Pet                *Pet                `json:"pet,omitempty"`
+	PetFoodPlanHistory *PetFoodPlanHistory `json:"pet_food_plan_histories,omitempty"`
+}
+type PetPlanAnalysisResponse struct {
+	Status int              `json:"status"`
+	Data   *PetPlanAnalysis `json:"data"`
 }
 
 // type SubscriptionScheduleResponse struct {

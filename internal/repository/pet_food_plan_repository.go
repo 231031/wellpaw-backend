@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"gorm.io/gorm"
@@ -13,6 +14,7 @@ type PetFoodPlanRepository interface {
 	GetFoodsInLastestActivePlanByPetID(ctx context.Context, petID uint) (uint, []model.FoodPetFoodPlan, error)
 	GetFoodsInLastestActivePlanByPlanID(ctx context.Context, planID uint) (*model.PetFoodPlan, error)
 	GetLastestActivePlanDetailByPet(ctx context.Context, petID uint, petDetailID uint) (*model.PetFoodPlan, error)
+	GetPlanUsageHistoryByPetID(ctx context.Context, petID uint) ([]model.PetFoodPlanHistory, error)
 	UpdateFeedingAmountFromUser(ctx context.Context, petID uint, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
 }
 
@@ -150,6 +152,34 @@ func (r *petFoodPlanRepository) GetLastestActivePlanDetailByPet(ctx context.Cont
 	}
 
 	return &foodPlan, nil
+}
+
+func (r *petFoodPlanRepository) GetPlanUsageHistoryByPetID(ctx context.Context, petID uint) ([]model.PetFoodPlanHistory, error) {
+	var histories []model.PetFoodPlanHistory
+	if err := r.db.WithContext(ctx).
+		Where("pet_id = ?", petID).
+		Order("created_at DESC, id DESC").
+		Preload("PetFoodPlanTotal").
+		Preload("PetFoodPlanTotal.PetFoodPlan").
+		Limit(2).
+		Find(&histories).Error; err != nil {
+		return nil, fmt.Errorf("failed to get plan usage history by pet id : %w", err)
+	}
+
+	if len(histories) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	now := time.Now()
+	for idx := range histories {
+		if idx == 0 {
+			histories[idx].PlanUsageEndDate = now
+			continue
+		}
+		histories[idx].PlanUsageEndDate = histories[idx-1].CreatedAt
+	}
+
+	return histories, nil
 }
 
 // not test

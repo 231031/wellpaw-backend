@@ -44,9 +44,12 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 }
 
 func RoutePet(router fiber.Router, petController controller.PetController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/pets", authMiddleware.AuthorizeUser(), petController.GetPetsByUserID)
+
 	petRoute := router.Group("/pet", authMiddleware.AuthorizeUser())
 	petRoute.Post("/", petController.CreateNewPet)
-	petRoute.Patch("/info", petController.UpdatePetInfo)
+	petRoute.Get("/analysis/:pet_id", petController.GetPetAnalysisByPetID)
+	petRoute.Put("/info", petController.UpdatePetInfo)
 	petRoute.Post("/detail", petController.UpdatePetDetail)
 	petRoute.Delete("/:pet_id", petController.SoftDeletePet)
 }
