@@ -10,8 +10,8 @@ type PetDetail struct {
 	ActivityLevel      *ActivityLevel `gorm:"not null" json:"activity_level" validate:"required,oneof=0 1 2 3"`
 	AgeRange           AgeType        `gorm:"not null" json:"age_range"`
 	BCS                BcsType        `gorm:"not null" json:"bcs" validate:"required,gt=0"` // Body Condition Score
-	Lactation          bool           `gorm:"default:false;not null" json:"lactation"`
-	Gestation          bool           `gorm:"default:false;not null" json:"gestation"`
+	Lactation          *bool          `gorm:"default:false;not null" json:"lactation" validate:"required"`
+	Gestation          *bool          `gorm:"default:false;not null" json:"gestation" validate:"required"`
 	GestationStartDate time.Time      `gorm:"type:date" json:"gestation_startdate"`
 	Neutered           *bool          `gorm:"default:false;not null" json:"neutered" validate:"required"`
 	Energy             float64        `gorm:"not null" json:"energy"`
