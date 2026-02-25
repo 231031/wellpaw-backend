@@ -502,6 +502,8 @@ definitions:
     required:
     - activity_level
     - bcs
+    - gestation
+    - lactation
     - neutered
     - weight
     type: object
@@ -718,6 +720,20 @@ definitions:
     x-enum-varnames:
     - DOG
     - CAT
+  github_com_231031_wellpaw-backend_internal_model.PetsData:
+    properties:
+      pets:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+        type: array
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsData'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload:
     properties:
       email:
@@ -878,6 +894,25 @@ definitions:
     x-enum-varnames:
     - GRAM
     - CUP
+  github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload:
+    properties:
+      food_id:
+        type: integer
+      image_path:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      quality:
+        type: integer
+      quantity:
+        type: integer
+      weight:
+        type: number
+    required:
+    - food_id
+    type: object
   github_com_231031_wellpaw-backend_internal_model.UpdateSubscriptionPayload:
     properties:
       new_subscription_plan_id:
@@ -1134,6 +1169,45 @@ paths:
       tags:
       - Authentication
   /food:
+    patch:
+      consumes:
+      - application/json
+      description: update food fields (weight, quantity/quality, name, image_path)
+      parameters:
+      - description: Update food payload
+        in: body
+        name: UpdateFoodDetailPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Food Detail
+      tags:
+      - Food
     post:
       consumes:
       - application/json
@@ -1552,6 +1626,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Pet Info
+      tags:
+      - Pet
+  /pets:
+    get:
+      consumes:
+      - application/json
+      description: get all pets by current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get User Pets
       tags:
       - Pet
   /user:

@@ -57,6 +57,7 @@ func RoutePet(router fiber.Router, petController controller.PetController, authM
 func RouteFood(router fiber.Router, foodController controller.FoodController, authMiddleware middleware.AuthMiddleware) {
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
+	foodRoute.Patch("/", foodController.UpdateFoodDetail)
 	foodRoute.Delete("/:food_id", foodController.SoftDeleteFood)
 }
 

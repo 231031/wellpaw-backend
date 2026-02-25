@@ -88,6 +88,15 @@ type CreatePetFoodPlanPayload struct {
 	Foods []FoodPlanFoodPayload `json:"foods" validate:"required"`
 }
 
+type UpdateFoodDetailPayload struct {
+	FoodID    uint     `json:"food_id" validate:"required"`
+	Name      *string  `json:"name,omitempty" validate:"omitempty,min=1"`
+	ImagePath *string  `json:"image_path,omitempty"`
+	Weight    *float64 `json:"weight,omitempty" validate:"omitempty,gt=0"`
+	Quantity  *int     `json:"quantity,omitempty" validate:"omitempty,gt=0"`
+	Quality   *int     `json:"quality,omitempty" validate:"omitempty,gt=0"`
+}
+
 type AmountFoodDetail struct {
 	FoodPetFoodPlanID uint    `json:"food_pet_food_plan_id" validate:"required"`
 	Amount            float64 `json:"amount" validate:"required,gt=0"`

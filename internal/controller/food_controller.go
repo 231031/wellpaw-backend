@@ -12,6 +12,7 @@ import (
 
 type FoodController interface {
 	CreateFood(ctx *fiber.Ctx) error
+	UpdateFoodDetail(ctx *fiber.Ctx) error
 	SoftDeleteFood(ctx *fiber.Ctx) error
 }
 
@@ -57,6 +58,41 @@ func (c *foodController) CreateFood(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.foodService.CreateFood(ctxWithTimeout, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Update Food Detail
+// @Description update food fields (weight, quantity/quality, name, image_path)
+// @tags Food
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param   UpdateFoodDetailPayload body model.UpdateFoodDetailPayload true "Update food payload"
+// @Success 200 {object} model.FoodResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 404 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /food [patch]
+func (c *foodController) UpdateFoodDetail(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	var payload model.UpdateFoodDetailPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+	}
+
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.foodService.UpdateFoodDetail(ctxWithTimeout, userID, payload.FoodID, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
 

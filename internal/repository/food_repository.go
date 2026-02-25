@@ -12,7 +12,9 @@ import (
 type FoodRepository interface {
 	CreateFood(ctx context.Context, food *model.Food) (*model.Food, error)
 	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
+	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, updates map[string]interface{}) error
 	GetFoodsByIDsAndUserID(ctx context.Context, userID uint, foodIDs []uint) ([]model.Food, error)
+	GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) (*model.Food, error)
 	SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error
 }
 
@@ -66,6 +68,38 @@ func (r *foodRepository) GetFoodsByIDsAndUserID(ctx context.Context, userID uint
 	}
 
 	return foods, nil
+}
+
+func (r *foodRepository) GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) (*model.Food, error) {
+	var food *model.Food
+
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", foodID, userID).
+		Find(&food).Error; err != nil {
+		return nil, fmt.Errorf("failed to get food by ids and user id : %w", err)
+	}
+
+	return food, nil
+}
+
+func (r *foodRepository) UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	result := r.db.WithContext(ctx).
+		Model(&model.Food{}).
+		Where("id = ? AND user_id = ?", foodID, userID).
+		Updates(updates)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update food detail : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
 }
 
 func (r *foodRepository) SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error {

@@ -320,6 +320,67 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update food fields (weight, quantity/quality, name, image_path)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Update Food Detail",
+                "parameters": [
+                    {
+                        "description": "Update food payload",
+                        "name": "UpdateFoodDetailPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
             }
         },
         "/food/{food_id}": {
@@ -911,6 +972,46 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get all pets by current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet"
+                ],
+                "summary": "Get User Pets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
                         }
@@ -2041,6 +2142,8 @@ const docTemplate = `{
             "required": [
                 "activity_level",
                 "bcs",
+                "gestation",
+                "lactation",
                 "neutered",
                 "weight"
             ],
@@ -2436,6 +2539,28 @@ const docTemplate = `{
                 "CAT"
             ]
         },
+        "github_com_231031_wellpaw-backend_internal_model.PetsData": {
+            "type": "object",
+            "properties": {
+                "pets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                    }
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsData"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.RequestOTPPayload": {
             "type": "object",
             "required": [
@@ -2669,6 +2794,34 @@ const docTemplate = `{
                 "GRAM",
                 "CUP"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload": {
+            "type": "object",
+            "required": [
+                "food_id"
+            ],
+            "properties": {
+                "food_id": {
+                    "type": "integer"
+                },
+                "image_path": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "quality": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.UpdateSubscriptionPayload": {
             "type": "object",
