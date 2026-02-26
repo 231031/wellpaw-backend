@@ -157,7 +157,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		if *f.Type == model.SUPPLEMENTS {
 			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
 				// feeding base on recommended of specific supplement
-				Amount:        0,
+				Amount:        1,
 				EnergyIntake:  f.Energy,
 				ProteinIntake: f.Protein,
 				FatIntake:     f.Fat,

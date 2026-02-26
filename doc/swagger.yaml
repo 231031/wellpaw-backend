@@ -45,11 +45,22 @@ definitions:
     - amount
     - food_pet_food_plan_id
     type: object
+  github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload:
+    properties:
+      amount:
+        type: number
+      food_id:
+        type: integer
+      grams_per_cup:
+        type: number
+    required:
+    - food_id
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CalculatePetFoodPlanPayload:
     properties:
       foods:
         items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload'
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload'
         minItems: 1
         type: array
       name:
@@ -212,15 +223,6 @@ definitions:
         type: array
       pet_food_plan_id:
         type: integer
-    type: object
-  github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload:
-    properties:
-      food_id:
-        type: integer
-      grams_per_cup:
-        type: number
-    required:
-    - food_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodResponse:
     properties:
@@ -648,6 +650,8 @@ definitions:
         type: string
       id:
         type: integer
+      pet_detail:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
       pet_detail_id:
         type: integer
       pet_food_plan:
@@ -655,8 +659,6 @@ definitions:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan'
         description: Relationships
       pet_food_plan_details:
-        description: PetDetail        *PetDetail         `gorm:"foreignKey:PetDetailID"
-          json:"pet_detail,omitempty"`
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
         type: array

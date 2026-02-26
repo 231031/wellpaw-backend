@@ -12,8 +12,8 @@ type PetFoodPlanTotal struct {
 	CreatedAt          time.Time `gorm:"not null" json:"created_at"`
 
 	// Relationships
-	PetFoodPlan *PetFoodPlan `gorm:"foreignKey:PetFoodPlanID;references:ID" json:"pet_food_plan,omitempty"`
-	// PetDetail        *PetDetail         `gorm:"foreignKey:PetDetailID" json:"pet_detail,omitempty"`
+	PetFoodPlan        *PetFoodPlan         `gorm:"foreignKey:PetFoodPlanID;references:ID" json:"pet_food_plan,omitempty"`
+	PetDetail          *PetDetail           `gorm:"foreignKey:PetDetailID" json:"pet_detail,omitempty"`
 	PetFoodPlanDetails []PetFoodPlanDetail  `gorm:"foreignKey:PetFoodPlanTotalID;references:ID" json:"pet_food_plan_details,omitempty"`
 	PetFoodPlanHistory []PetFoodPlanHistory `gorm:"foreignKey:PetFoodPlanTotalID;references:ID" json:"pet_food_plan_history,omitempty"`
 }

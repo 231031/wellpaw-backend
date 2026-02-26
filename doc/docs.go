@@ -1697,6 +1697,23 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload": {
+            "type": "object",
+            "required": [
+                "food_id"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "food_id": {
+                    "type": "integer"
+                },
+                "grams_per_cup": {
+                    "type": "number"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.CalculatePetFoodPlanPayload": {
             "type": "object",
             "required": [
@@ -1710,7 +1727,7 @@ const docTemplate = `{
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload"
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload"
                     }
                 },
                 "name": {
@@ -1940,20 +1957,6 @@ const docTemplate = `{
                 },
                 "pet_food_plan_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload": {
-            "type": "object",
-            "required": [
-                "food_id"
-            ],
-            "properties": {
-                "food_id": {
-                    "type": "integer"
-                },
-                "grams_per_cup": {
-                    "type": "number"
                 }
             }
         },
@@ -2589,6 +2592,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "pet_detail": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
+                },
                 "pet_detail_id": {
                     "type": "integer"
                 },
@@ -2601,7 +2607,6 @@ const docTemplate = `{
                     ]
                 },
                 "pet_food_plan_details": {
-                    "description": "PetDetail        *PetDetail         ` + "`" + `gorm:\"foreignKey:PetDetailID\" json:\"pet_detail,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail"

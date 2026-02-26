@@ -13,6 +13,7 @@ import (
 )
 
 type PetFoodPlanService interface {
+	getInfoForPetFoodPlan(ctx context.Context, userID uint, petID uint, foodIDs []uint) (*model.PetDetail, []model.Food, *model.HTTPResponse)
 	CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse
 	CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse
 	GetLastestActivePlanDetailByPet(ctx context.Context, petID uint) *model.HTTPResponse
@@ -33,6 +34,40 @@ func NewPetFoodPlanService(calculationService CalculationService, petFoodPlanRep
 		petRepo:            petRepo,
 		foodRepo:           foodRepo,
 	}
+}
+
+func (s *petFoodPlanService) getInfoForPetFoodPlan(ctx context.Context, userID uint, petID uint, foodIDs []uint) (*model.PetDetail, []model.Food, *model.HTTPResponse) {
+	petDetail, err := s.petRepo.GetLatestPetDetailByPetID(ctx, petID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet detail" + utils.NotFoundMsg,
+			}
+		}
+
+		return nil, nil, &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet detail",
+		}
+	}
+
+	foods, err := s.foodRepo.GetFoodsByIDsAndUserID(ctx, userID, foodIDs)
+	if err != nil {
+		return nil, nil, &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "foods",
+		}
+	}
+
+	if len(foods) != len(foodIDs) {
+		return nil, nil, &model.HTTPResponse{
+			Status:  http.StatusNotFound,
+			Message: "some foods" + utils.NotFoundMsg,
+		}
+	}
+
+	return petDetail, foods, nil
 }
 
 func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse {
@@ -63,37 +98,39 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		foodIDs = append(foodIDs, f.FoodID)
 	}
 
-	petDetail, err := s.petRepo.GetLatestPetDetailByPetID(ctx, payload.PetID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{
-				Status:  http.StatusNotFound,
-				Message: "pet detail" + utils.NotFoundMsg,
+	petDetail, foods, resp := s.getInfoForPetFoodPlan(ctx, userID, payload.PetID, foodIDs)
+	if resp != nil {
+		return resp
+	}
+
+	foodPlanDetails := make([]*model.PetFoodPlanDetail, 0, len(payload.Foods))
+	if payload.Foods[0].Amount > 0 {
+		foodsDetail := map[uint]model.Food{}
+		for _, food := range foods {
+			foodsDetail[food.ID] = food
+		}
+
+		for _, food := range payload.Foods {
+			if food.Amount <= 0 {
+				return &model.HTTPResponse{
+					Status:  http.StatusBadRequest,
+					Message: "invalid amount of food",
+				}
 			}
+			foodDetail := foodsDetail[food.FoodID]
+			energy := s.calculationService.CalEnergyIntakeFromGramIntake(food.Amount, foodDetail.Energy, *foodDetail.Type)
+			protein, fat := s.calculationService.CalNutritientIntakeFromGramIntake(food.Amount, foodDetail.Protein, foodDetail.Fat, *foodDetail.Type)
+			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
+				Amount:        food.Amount,
+				EnergyIntake:  energy,
+				ProteinIntake: protein,
+				FatIntake:     fat,
+			})
 		}
-
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToGetMsg + "pet detail",
-		}
+	} else {
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
 	}
 
-	foods, err := s.foodRepo.GetFoodsByIDsAndUserID(ctx, userID, foodIDs)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToGetMsg + "foods",
-		}
-	}
-
-	if len(foods) != len(foodIDs) {
-		return &model.HTTPResponse{
-			Status:  http.StatusNotFound,
-			Message: "some foods" + utils.NotFoundMsg,
-		}
-	}
-
-	foodPlanDetails := s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
 	if len(foodPlanDetails) != len(foods) {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
@@ -129,6 +166,7 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 
 	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
 	foodPlanTotal.PetDetailID = petDetail.ID
+	foodPlanTotal.PetDetail = petDetail
 
 	plan.PetFoodPlanTotals = append(plan.PetFoodPlanTotals, *foodPlanTotal)
 	for _, detail := range foodPlanDetails {
@@ -174,34 +212,9 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		foodIDs = append(foodIDs, f.FoodID)
 	}
 
-	petDetail, err := s.petRepo.GetLatestPetDetailByPetID(ctx, payload.PetID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{
-				Status:  http.StatusNotFound,
-				Message: "pet detail" + utils.NotFoundMsg,
-			}
-		}
-
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToGetMsg + "pet detail",
-		}
-	}
-
-	foods, err := s.foodRepo.GetFoodsByIDsAndUserID(ctx, userID, foodIDs)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToGetMsg + "foods",
-		}
-	}
-
-	if len(foods) != len(foodIDs) {
-		return &model.HTTPResponse{
-			Status:  http.StatusNotFound,
-			Message: "some foods" + utils.NotFoundMsg,
-		}
+	petDetail, foods, resp := s.getInfoForPetFoodPlan(ctx, userID, payload.PetID, foodIDs)
+	if resp != nil {
+		return resp
 	}
 
 	foodsDetail := map[uint]model.Food{}
@@ -262,6 +275,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		}
 	}
 
+	activePlanDetail.PetFoodPlanTotals[0].PetDetail = petDetail
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
