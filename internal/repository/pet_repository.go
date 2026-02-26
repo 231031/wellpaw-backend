@@ -233,6 +233,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 		),
 		weighted_data AS (
 			SELECT
+				EXTRACT(YEAR FROM month_start)::int AS year,
 				EXTRACT(MONTH FROM month_start)::int AS month,
 				total_energy_intake,
 				total_protein_intake,
@@ -247,6 +248,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			WHERE segment_end > segment_start
 		)
 		SELECT
+			year,
 			month,
 			SUM(total_energy_intake * weight_seconds) / SUM(weight_seconds) AS total_energy_intake,
 			SUM(total_protein_intake * weight_seconds) / SUM(weight_seconds) AS total_protein_intake,
@@ -257,8 +259,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			MAX(weight) AS weight,
 			MAX(activity_level)::int AS activity_level
 		FROM weighted_data
-		GROUP BY month
-		ORDER BY month;
+		GROUP BY year, month
+		ORDER BY year, month;
 	`
 	if err := r.db.WithContext(ctx).Raw(
 		twaQuery,

@@ -1,6 +1,7 @@
 package model
 
 type PetMonthlyNutritionTWA struct {
+	Year               uint    `json:"year"`
 	Month              uint    `json:"month"`
 	TotalEnergyIntake  float64 `json:"total_energy_intake"`
 	TotalProteinIntake float64 `json:"total_protein_intake"`

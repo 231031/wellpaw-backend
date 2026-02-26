@@ -7,6 +7,7 @@ import (
 )
 
 type CalculationService interface {
+	MapBcsScoreToBcsRange(bcsScore int) model.BcsType
 	CalMerEnergyRequirement(petDetail *model.PetDetail, petType model.PetType) float64
 	CalNutritientRequirement(mer float64, petDetail *model.PetDetail, petType model.PetType) (float64, float64)
 	CalTotalIntakeFoodPlan(foodPlanDetails []*model.PetFoodPlanDetail) *model.PetFoodPlanTotal
@@ -14,7 +15,7 @@ type CalculationService interface {
 	CalNutritientIntakeFromGramIntake(gramsIntake, proteinFood, fatFood float64, typeFood model.FoodType) (float64, float64)
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
 	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail
-	CalExpectedWeight(currentWeight float64, bcs model.BcsType) float64
+	CalExpectedWeight(currentWeight float64, bcsScore int) float64
 }
 
 type calculationService struct {
@@ -29,12 +30,30 @@ func NewCalculationService(energyRequirementService EnergyRequirementService, nu
 	}
 }
 
+func (s *calculationService) MapBcsScoreToBcsRange(bcsScore int) model.BcsType {
+	switch bcsScore {
+	case 1, 2:
+		return model.VERYTHIN
+	case 3, 4:
+		return model.THIN
+	case 5:
+		return model.IDEAL
+	case 6, 7:
+		return model.OVERWEIGHT
+	case 8, 9:
+		return model.OBESITY
+	default:
+		return model.IDEAL
+	}
+}
+
 func (s *calculationService) CalMerEnergyRequirement(petDetail *model.PetDetail, petType model.PetType) float64 {
+	bcs := s.MapBcsScoreToBcsRange(petDetail.BCS)
 	return s.energyRequirementService.GetMerEnergy(
 		petDetail.Weight,
 		petDetail.AgeRange,
 		*petDetail.ActivityLevel,
-		petDetail.BCS,
+		bcs,
 		*petDetail.Gestation,
 		petDetail.GestationStartDate,
 		*petDetail.Lactation,
@@ -156,6 +175,7 @@ func (s *calculationService) ConvertGramsToCup(foodPetFoodPlan *model.FoodPetFoo
 	return 1.0
 }
 
-func (s *calculationService) CalExpectedWeight(currentWeight float64, bcs model.BcsType) float64 {
+func (s *calculationService) CalExpectedWeight(currentWeight float64, bcsScore int) float64 {
+	s.MapBcsScoreToBcsRange(bcsScore)
 	return 1.0
 }
