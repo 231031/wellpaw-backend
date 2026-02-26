@@ -17,6 +17,7 @@ definitions:
       pet_food_plan_details:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail'
+        minItems: 1
         type: array
       pet_food_plan_id:
         type: integer
@@ -49,6 +50,7 @@ definitions:
       foods:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload'
+        minItems: 1
         type: array
       name:
         type: string
@@ -93,6 +95,7 @@ definitions:
       foods:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload'
+        minItems: 1
         type: array
       name:
         type: string

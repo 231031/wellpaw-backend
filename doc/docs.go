@@ -1659,6 +1659,7 @@ const docTemplate = `{
             "properties": {
                 "pet_food_plan_details": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail"
                     }
@@ -1707,6 +1708,7 @@ const docTemplate = `{
             "properties": {
                 "foods": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload"
                     }
@@ -1772,6 +1774,7 @@ const docTemplate = `{
             "properties": {
                 "foods": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload"
                     }
