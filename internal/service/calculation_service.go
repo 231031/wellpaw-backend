@@ -129,7 +129,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		checkType[*f.Type] = f.Energy
 	}
 
-	threadHold := 0.2 * petDetail.Energy
+	threadHold := 0.1 * petDetail.Energy
 	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok && supEnergy > threadHold {
 		// energy per serving
 		reqEnergy = reqEnergy - supEnergy

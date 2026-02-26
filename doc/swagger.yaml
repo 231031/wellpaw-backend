@@ -44,6 +44,28 @@ definitions:
     - amount
     - food_pet_food_plan_id
     type: object
+  github_com_231031_wellpaw-backend_internal_model.CalculatePetFoodPlanPayload:
+    properties:
+      foods:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload'
+        type: array
+      name:
+        type: string
+      pet_id:
+        type: integer
+      unit:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
+        enum:
+        - 0
+        - 1
+    required:
+    - foods
+    - name
+    - pet_id
+    - unit
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CalendarType:
     enum:
     - 0
@@ -54,11 +76,23 @@ definitions:
     - VACCINE
     - DRUG
     - APPOINTMENT
+  github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload:
+    properties:
+      amount:
+        type: number
+      food_id:
+        type: integer
+      grams_per_cup:
+        type: number
+    required:
+    - amount
+    - food_id
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload:
     properties:
       foods:
         items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPlanFoodPayload'
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload'
         type: array
       name:
         type: string
@@ -1401,6 +1435,47 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Feeding Amount In Pet Food Plan
+      tags:
+      - Pet Food Plan
+  /foodplan/calculate:
+    post:
+      consumes:
+      - application/json
+      description: calculate pet food plan with selected foods and optional grams
+        per cup without persisting
+      parameters:
+      - description: Calculate pet food plan payload
+        in: body
+        name: CalculatePetFoodPlanPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalculatePetFoodPlanPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Calculate Pet Food Plan
       tags:
       - Pet Food Plan
   /foods:

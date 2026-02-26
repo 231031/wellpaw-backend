@@ -66,6 +66,7 @@ func RouteFood(router fiber.Router, foodController controller.FoodController, au
 
 func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetFoodPlanController, authMiddleware middleware.AuthMiddleware) {
 	petFoodPlanRoute := router.Group("/foodplan", authMiddleware.AuthorizeUser())
+	petFoodPlanRoute.Post("/calculate", petFoodPlanController.CalculatePetFoodPlan)
 	petFoodPlanRoute.Post("/", petFoodPlanController.CreatePetFoodPlan)
 	petFoodPlanRoute.Put("/amount", petFoodPlanController.UpdateFeedingAmountFromUser)
 	petFoodPlanRoute.Get("/:pet_id", petFoodPlanController.GetLastestActivePlanDetailByPet)

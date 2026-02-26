@@ -13,6 +13,7 @@ import (
 )
 
 type PetFoodPlanService interface {
+	CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse
 	CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse
 	GetLastestActivePlanDetailByPet(ctx context.Context, petID uint) *model.HTTPResponse
 	UpdateFeedingAmountFromUser(ctx context.Context, payload *model.AdjustAmountFoodInPetFoodPlanPayload) *model.HTTPResponse
@@ -34,7 +35,7 @@ func NewPetFoodPlanService(calculationService CalculationService, petFoodPlanRep
 	}
 }
 
-func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse {
+func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse {
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
 	gramsPerCupByFoodID := make(map[uint]float64, len(payload.Foods))
@@ -98,6 +99,127 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 			Status:  http.StatusInternalServerError,
 			Message: "failed to calculate feeding plan details",
 		}
+	}
+
+	for idx := range foods {
+		foodPlanDetails[idx].FoodPetFoodPlanID = foods[idx].ID
+	}
+
+	plan := &model.PetFoodPlan{
+		PetID:     payload.PetID,
+		Name:      payload.Name,
+		Active:    false,
+		Unit:      *payload.Unit,
+		CreatedAt: time.Now(),
+	}
+
+	foodsInPlan := make([]model.FoodPetFoodPlan, 0, len(foods))
+	cupFoods := make([]model.CupFoodPet, 0, len(foods))
+	for _, food := range foods {
+		foodsInPlan = append(foodsInPlan, model.FoodPetFoodPlan{
+			FoodID: food.ID,
+		})
+
+		if *payload.Unit == model.CUP {
+			cupFoods = append(cupFoods, model.CupFoodPet{
+				Grams: gramsPerCupByFoodID[food.ID],
+			})
+		}
+	}
+
+	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
+	foodPlanTotal.PetDetailID = petDetail.ID
+
+	plan.PetFoodPlanTotals = append(plan.PetFoodPlanTotals, *foodPlanTotal)
+	for _, detail := range foodPlanDetails {
+		if detail == nil {
+			continue
+		}
+		plan.PetFoodPlanTotals[0].PetFoodPlanDetails = append(plan.PetFoodPlanTotals[0].PetFoodPlanDetails, *detail)
+	}
+	plan.FoodPetFoodPlans = foodsInPlan
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"pet_food_plan": plan,
+		},
+	}
+}
+
+func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse {
+	foodIDs := make([]uint, 0, len(payload.Foods))
+	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
+	gramsPerCupByFoodID := make(map[uint]float64, len(payload.Foods))
+
+	for _, f := range payload.Foods {
+		if _, exists := seenFoodIDs[f.FoodID]; exists {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "duplicate food_id is not allowed",
+			}
+		}
+		seenFoodIDs[f.FoodID] = true
+
+		if *payload.Unit == model.CUP && f.GramsPerCup == nil {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "grams per cup is required for unit cup",
+			}
+		}
+
+		if f.GramsPerCup != nil {
+			gramsPerCupByFoodID[f.FoodID] = *f.GramsPerCup
+		}
+
+		foodIDs = append(foodIDs, f.FoodID)
+	}
+
+	petDetail, err := s.petRepo.GetLatestPetDetailByPetID(ctx, payload.PetID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet detail" + utils.NotFoundMsg,
+			}
+		}
+
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet detail",
+		}
+	}
+
+	foods, err := s.foodRepo.GetFoodsByIDsAndUserID(ctx, userID, foodIDs)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "foods",
+		}
+	}
+
+	if len(foods) != len(foodIDs) {
+		return &model.HTTPResponse{
+			Status:  http.StatusNotFound,
+			Message: "some foods" + utils.NotFoundMsg,
+		}
+	}
+
+	foodsDetail := map[uint]model.Food{}
+	for _, food := range foods {
+		foodsDetail[food.ID] = food
+	}
+
+	foodPlanDetails := make([]*model.PetFoodPlanDetail, 0, len(payload.Foods))
+	for _, food := range payload.Foods {
+		foodDetail := foodsDetail[food.FoodID]
+		energy := s.calculationService.CalEnergyIntakeFromGramIntake(food.Amount, foodDetail.Energy, *foodDetail.Type)
+		protein, fat := s.calculationService.CalNutritientIntakeFromGramIntake(food.Amount, foodDetail.Protein, foodDetail.Fat, *foodDetail.Type)
+		foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
+			Amount:        food.Amount,
+			EnergyIntake:  energy,
+			ProteinIntake: protein,
+			FatIntake:     fat,
+		})
 	}
 
 	plan := &model.PetFoodPlan{

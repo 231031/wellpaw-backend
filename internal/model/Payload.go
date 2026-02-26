@@ -81,11 +81,24 @@ type FoodPlanFoodPayload struct {
 	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
 }
 
-type CreatePetFoodPlanPayload struct {
+type CalculatePetFoodPlanPayload struct {
 	Name  string                `json:"name" validate:"required"`
 	PetID uint                  `json:"pet_id" validate:"required"`
 	Unit  *UnitType             `json:"unit" validate:"required,oneof=0 1"`
-	Foods []FoodPlanFoodPayload `json:"foods" validate:"required"`
+	Foods []FoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
+}
+
+type CreateFoodPlanFoodPayload struct {
+	FoodID      uint     `json:"food_id" validate:"required"`
+	Amount      float64  `json:"amount" validate:"required,gt=0"`
+	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
+}
+
+type CreatePetFoodPlanPayload struct {
+	Name  string                      `json:"name" validate:"required"`
+	PetID uint                        `json:"pet_id" validate:"required"`
+	Unit  *UnitType                   `json:"unit" validate:"required,oneof=0 1"`
+	Foods []CreateFoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
 }
 
 type UpdateFoodDetailPayload struct {
@@ -103,7 +116,7 @@ type AmountFoodDetail struct {
 }
 type AdjustAmountFoodInPetFoodPlanPayload struct {
 	PetFoodPlanID      uint               `json:"pet_food_plan_id" validate:"required"`
-	PetFoodPlanDetails []AmountFoodDetail `json:"pet_food_plan_details" validate:"required"`
+	PetFoodPlanDetails []AmountFoodDetail `json:"pet_food_plan_details" validate:"required,min=1,dive"`
 }
 
 type PetPayload struct {
