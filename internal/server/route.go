@@ -55,6 +55,9 @@ func RoutePet(router fiber.Router, petController controller.PetController, authM
 }
 
 func RouteFood(router fiber.Router, foodController controller.FoodController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/foods", authMiddleware.AuthorizeUser(), foodController.GetFoodsByUserID)
+	router.Get("/foods/:food_type", authMiddleware.AuthorizeUser(), foodController.GetFoodsByFoodType)
+
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
 	foodRoute.Patch("/", foodController.UpdateFoodDetail)

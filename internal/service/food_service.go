@@ -12,6 +12,8 @@ import (
 
 type FoodService interface {
 	CreateFood(ctx context.Context, food *model.Food) *model.HTTPResponse
+	GetFoodsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
+	GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) *model.HTTPResponse
 	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, payload *model.UpdateFoodDetailPayload) *model.HTTPResponse
 	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
 	SoftDeleteFood(ctx context.Context, userID uint, foodID uint) *model.HTTPResponse
@@ -41,6 +43,40 @@ func (s *foodService) CreateFood(ctx context.Context, food *model.Food) *model.H
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data:   food,
+	}
+}
+
+func (s *foodService) GetFoodsByUserID(ctx context.Context, userID uint) *model.HTTPResponse {
+	foods, err := s.foodRepo.GetFoodsByUserID(ctx, userID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "foods",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"foods": foods,
+		},
+	}
+}
+
+func (s *foodService) GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) *model.HTTPResponse {
+	foods, err := s.foodRepo.GetFoodsByFoodType(ctx, userID, foodType)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "foods",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"foods": foods,
+		},
 	}
 }
 

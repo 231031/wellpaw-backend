@@ -44,20 +44,6 @@ definitions:
     - amount
     - food_pet_food_plan_id
     type: object
-  github_com_231031_wellpaw-backend_internal_model.BcsType:
-    enum:
-    - 0
-    - 1
-    - 2
-    - 3
-    - 4
-    type: integer
-    x-enum-varnames:
-    - VERYTHIN
-    - THIN
-    - IDEAL
-    - OVERWEIGHT
-    - OBESITY
   github_com_231031_wellpaw-backend_internal_model.CalendarType:
     enum:
     - 0
@@ -218,6 +204,20 @@ definitions:
     - WET
     - TREATS
     - SUPPLEMENTS
+  github_com_231031_wellpaw-backend_internal_model.FoodsData:
+    properties:
+      foods:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
+        type: array
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.FoodsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsData'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.FrequentlyType:
     enum:
     - 0
@@ -465,9 +465,8 @@ definitions:
       age_range:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AgeType'
       bcs:
-        allOf:
-        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.BcsType'
         description: Body Condition Score
+        type: integer
       created_at:
         type: string
       energy:
@@ -657,6 +656,8 @@ definitions:
         type: number
       weight:
         type: number
+      year:
+        type: integer
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetPayload:
     properties:
@@ -901,7 +902,6 @@ definitions:
       image_path:
         type: string
       name:
-        maxLength: 255
         minLength: 1
         type: string
       quality:
@@ -1403,6 +1403,66 @@ paths:
       summary: Update Feeding Amount In Pet Food Plan
       tags:
       - Pet Food Plan
+  /foods:
+    get:
+      consumes:
+      - application/json
+      description: get all foods of current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Foods
+      tags:
+      - Food
+  /foods/{food_type}:
+    get:
+      consumes:
+      - application/json
+      description: get foods of current user by food type (0=dry,1=wet,2=treats,3=supplements)
+      parameters:
+      - description: Food type
+        in: path
+        name: food_type
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Foods By Type
+      tags:
+      - Food
   /ocr/request:
     post:
       consumes:

@@ -11,6 +11,8 @@ import (
 
 type FoodRepository interface {
 	CreateFood(ctx context.Context, food *model.Food) (*model.Food, error)
+	GetFoodsByUserID(ctx context.Context, userID uint) ([]model.Food, error)
+	GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) ([]model.Food, error)
 	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
 	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, updates map[string]interface{}) error
 	GetFoodsByIDsAndUserID(ctx context.Context, userID uint, foodIDs []uint) ([]model.Food, error)
@@ -33,6 +35,30 @@ func (r *foodRepository) CreateFood(ctx context.Context, food *model.Food) (*mod
 		return nil, err
 	}
 	return food, nil
+}
+
+func (r *foodRepository) GetFoodsByUserID(ctx context.Context, userID uint) ([]model.Food, error) {
+	var foods []model.Food
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("brand DESC, id DESC").
+		Find(&foods).Error; err != nil {
+		return nil, fmt.Errorf("failed to get foods by user id : %w", err)
+	}
+
+	return foods, nil
+}
+
+func (r *foodRepository) GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) ([]model.Food, error) {
+	var foods []model.Food
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND type = ?", userID, foodType).
+		Order("brand DESC, id DESC").
+		Find(&foods).Error; err != nil {
+		return nil, fmt.Errorf("failed to get foods by food type : %w", err)
+	}
+
+	return foods, nil
 }
 
 // not test

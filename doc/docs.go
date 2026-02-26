@@ -631,6 +631,101 @@ const docTemplate = `{
                 }
             }
         },
+        "/foods": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get all foods of current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Get Foods",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/foods/{food_type}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get foods of current user by food type (0=dry,1=wet,2=treats,3=supplements)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Get Foods By Type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Food type",
+                        "name": "food_type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/ocr/request": {
             "post": {
                 "security": [
@@ -1538,23 +1633,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_231031_wellpaw-backend_internal_model.BcsType": {
-            "type": "integer",
-            "enum": [
-                0,
-                1,
-                2,
-                3,
-                4
-            ],
-            "x-enum-varnames": [
-                "VERYTHIN",
-                "THIN",
-                "IDEAL",
-                "OVERWEIGHT",
-                "OBESITY"
-            ]
-        },
         "github_com_231031_wellpaw-backend_internal_model.CalendarType": {
             "type": "integer",
             "enum": [
@@ -1786,6 +1864,28 @@ const docTemplate = `{
                 "TREATS",
                 "SUPPLEMENTS"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodsData": {
+            "type": "object",
+            "properties": {
+                "foods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                    }
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodsData"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.FrequentlyType": {
             "type": "integer",
@@ -2166,11 +2266,7 @@ const docTemplate = `{
                 },
                 "bcs": {
                     "description": "Body Condition Score",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.BcsType"
-                        }
-                    ]
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
@@ -2442,6 +2538,9 @@ const docTemplate = `{
                 },
                 "weight": {
                     "type": "number"
+                },
+                "year": {
+                    "type": "integer"
                 }
             }
         },
@@ -2809,7 +2908,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "maxLength": 255,
                     "minLength": 1
                 },
                 "quality": {

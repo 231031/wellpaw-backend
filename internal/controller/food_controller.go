@@ -12,6 +12,8 @@ import (
 
 type FoodController interface {
 	CreateFood(ctx *fiber.Ctx) error
+	GetFoodsByUserID(ctx *fiber.Ctx) error
+	GetFoodsByFoodType(ctx *fiber.Ctx) error
 	UpdateFoodDetail(ctx *fiber.Ctx) error
 	SoftDeleteFood(ctx *fiber.Ctx) error
 }
@@ -58,6 +60,56 @@ func (c *foodController) CreateFood(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.foodService.CreateFood(ctxWithTimeout, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Get Foods
+// @Description get all foods of current user
+// @tags Food
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.FoodsResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /foods [get]
+func (c *foodController) GetFoodsByUserID(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.foodService.GetFoodsByUserID(ctxWithTimeout, userID)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Get Foods By Type
+// @Description get foods of current user by food type (0=dry,1=wet,2=treats,3=supplements)
+// @tags Food
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param food_type path int true "Food type"
+// @Success 200 {object} model.FoodsResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /foods/{food_type} [get]
+func (c *foodController) GetFoodsByFoodType(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+	rawFoodType := ctx.Params("food_type")
+	foodType, err := strconv.Atoi(rawFoodType)
+	if err != nil || foodType < int(model.DRY) || foodType > int(model.SUPPLEMENTS) {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid food_type",
+		})
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.foodService.GetFoodsByFoodType(ctxWithTimeout, userID, model.FoodType(foodType))
 	return ctx.Status(response.Status).JSON(response)
 }
 

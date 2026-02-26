@@ -71,6 +71,15 @@ type FoodResponse struct {
 	Data   *Food `json:"data"`
 }
 
+type FoodsData struct {
+	Foods []Food `json:"foods"`
+}
+
+type FoodsResponse struct {
+	Status int        `json:"status"`
+	Data   *FoodsData `json:"data"`
+}
+
 type PetFoodPlanDetailResponse struct {
 	Pet         *Pet         `json:"pet_info,omitempty"`
 	PetDetail   *PetDetail   `json:"pet_detail,omitempty"`
