@@ -383,6 +383,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/food/quantity": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create new food weight and quantity by food_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Create new Food Weight and Quantity",
+                "parameters": [
+                    {
+                        "description": "Create new food weight and quantity payload",
+                        "name": "FoodQuantity",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/food/{food_id}": {
             "delete": {
                 "security": [
@@ -1957,6 +2020,33 @@ const docTemplate = `{
                 },
                 "pet_food_plan_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.FoodQuantity": {
+            "type": "object",
+            "required": [
+                "quantity",
+                "weight"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "food": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
+                },
+                "food_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
                 }
             }
         },

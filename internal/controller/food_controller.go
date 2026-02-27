@@ -14,6 +14,7 @@ type FoodController interface {
 	CreateFood(ctx *fiber.Ctx) error
 	GetFoodsByUserID(ctx *fiber.Ctx) error
 	GetFoodsByFoodType(ctx *fiber.Ctx) error
+	CreateNewFoodQuantity(ctx *fiber.Ctx) error
 	UpdateFoodDetail(ctx *fiber.Ctx) error
 	SoftDeleteFood(ctx *fiber.Ctx) error
 }
@@ -110,6 +111,41 @@ func (c *foodController) GetFoodsByFoodType(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.foodService.GetFoodsByFoodType(ctxWithTimeout, userID, model.FoodType(foodType))
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Create new Food Weight and Quantity
+// @Description Create new food weight and quantity by food_id
+// @tags Food
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param   FoodQuantity body model.FoodQuantity true "Create new food weight and quantity payload"
+// @Success 201 {object} model.FoodResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 404 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /food/quantity [post]
+func (c *foodController) CreateNewFoodQuantity(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	var payload model.FoodQuantity
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+	}
+
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.foodService.CreateNewFoodQuantity(ctxWithTimeout, userID, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
 

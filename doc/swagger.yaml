@@ -224,6 +224,24 @@ definitions:
       pet_food_plan_id:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.FoodQuantity:
+    properties:
+      amount:
+        type: number
+      food:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
+      food_id:
+        type: integer
+      id:
+        type: integer
+      quantity:
+        type: integer
+      weight:
+        type: number
+    required:
+    - quantity
+    - weight
+    type: object
   github_com_231031_wellpaw-backend_internal_model.FoodResponse:
     properties:
       data:
@@ -1319,6 +1337,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Soft Delete Food
+      tags:
+      - Food
+  /food/quantity:
+    post:
+      consumes:
+      - application/json
+      description: Create new food weight and quantity by food_id
+      parameters:
+      - description: Create new food weight and quantity payload
+        in: body
+        name: FoodQuantity
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new Food Weight and Quantity
       tags:
       - Food
   /foodplan:
