@@ -15,6 +15,8 @@ type PetFoodPlanRepository interface {
 	GetFoodsInLastestActivePlanByPlanID(ctx context.Context, planID uint) (*model.PetFoodPlan, error)
 	GetLastestActivePlanDetailByPet(ctx context.Context, petID uint, petDetailID uint) (*model.PetFoodPlan, error)
 	GetPlanUsageHistoryByPetID(ctx context.Context, petID uint) ([]model.PetFoodPlanHistory, error)
+	GetNextActiveFoodPlanByID(ctx context.Context, lastID uint) (*model.PetFoodPlan, error)
+	InactivePetFoodPlan(ctx context.Context, plans []model.PetFoodPlan) error
 	UpdateFeedingAmountFromUser(ctx context.Context, petID uint, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
 }
 
@@ -209,6 +211,43 @@ func (r *petFoodPlanRepository) UpdateFeedingAmountFromUser(ctx context.Context,
 
 		return nil
 	})
+}
+
+func (r *petFoodPlanRepository) GetNextActiveFoodPlanByID(ctx context.Context, lastID uint) (*model.PetFoodPlan, error) {
+	var foodPlan model.PetFoodPlan
+
+	err := r.db.WithContext(ctx).Model(&model.PetFoodPlan{}).
+		Where("active = true AND id > ?", lastID).
+		Order("id ASC").
+		Limit(1).
+		Preload("FoodPetFoodPlans", func(db *gorm.DB) *gorm.DB {
+			return db.Order("id ASC")
+		}).
+		Preload("FoodPetFoodPlans.Food").
+		Preload("FoodPetFoodPlans.Food.FoodQuantities", func(db *gorm.DB) *gorm.DB {
+			return db.Where("amount >= 0").Order("created_at ASC")
+		}).
+		Preload("FoodPetFoodPlans.PetFoodPlanDetails", func(db *gorm.DB) *gorm.DB {
+			return db.Where("id IN (SELECT MAX(id) FROM pet_food_plan_details GROUP BY food_pet_food_plan_id)")
+		}).
+		First(&foodPlan).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &foodPlan, nil
+}
+
+func (r *petFoodPlanRepository) InactivePetFoodPlan(ctx context.Context, plans []model.PetFoodPlan) error {
+	ids := make([]uint, 0, len(plans))
+	for _, p := range plans {
+		ids = append(ids, p.ID)
+	}
+
+	return r.db.WithContext(ctx).
+		Model(&model.PetFoodPlan{}).
+		Where("id IN ?", ids).
+		Update("active", false).Error
 }
 
 // func (r *petFoodPlanRepository) UpdateActivePetFoodPlan(ctx context.Context, petFoodPlanID uint) error {

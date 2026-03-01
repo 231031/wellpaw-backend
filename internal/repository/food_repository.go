@@ -18,6 +18,8 @@ type FoodRepository interface {
 	GetFoodsByIDsAndUserID(ctx context.Context, userID uint, foodIDs []uint) ([]model.Food, error)
 	GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) (*model.Food, error)
 	SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error
+
+	UpdateDailyFoodAmount(ctx context.Context, updatedAmount []model.FoodQuantity) error
 }
 
 type foodRepository struct {
@@ -133,9 +135,18 @@ func (r *foodRepository) UpdateFoodDetail(ctx context.Context, userID uint, food
 	return nil
 }
 
-func (r *foodRepository) UpdateDailyFoodAmount(ctx context.Context, updatedFood []model.Food) error {
+func (r *foodRepository) UpdateDailyFoodAmount(ctx context.Context, updatedAmount []model.FoodQuantity) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, q := range updatedAmount {
+			err := tx.Model(&model.FoodQuantity{}).Where("id = ?", q.ID).
+				Updates(map[string]interface{}{"amount": q.Amount}).Error
+			if err != nil {
+				return err
+			}
+		}
 
-	return nil
+		return nil
+	})
 }
 
 func (r *foodRepository) SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error {

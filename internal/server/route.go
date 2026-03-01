@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/231031/wellpaw-backend/internal/controller"
+	"github.com/231031/wellpaw-backend/internal/cronjob"
 	"github.com/231031/wellpaw-backend/internal/middleware"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
@@ -135,4 +136,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
 	RouteWebhook(router, webhookController)
+
+	// cronjob
+	cronjob.CreateCronjob(calculationService, foodRepo, petFoodPlanRepo)
 }
