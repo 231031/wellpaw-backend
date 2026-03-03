@@ -105,7 +105,8 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	energyReqService := service.NewEnergyRequirementService()
 	nutritientReqService := service.NewNutritientRequirementService()
-	calculationService := service.NewCalculationService(energyReqService, nutritientReqService)
+	expectedWeightService := service.NewExpectedWeightService()
+	calculationService := service.NewCalculationService(energyReqService, nutritientReqService, expectedWeightService)
 
 	foodRepo := repository.NewFoodRepository(db)
 	foodService := service.NewFoodService(calculationService, foodRepo)

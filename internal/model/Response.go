@@ -92,8 +92,9 @@ type PetFoodPlanResponse struct {
 }
 
 type PetPlanAnalysis struct {
-	Pet                *Pet                `json:"pet,omitempty"`
-	PetFoodPlanHistory *PetFoodPlanHistory `json:"pet_food_plan_histories,omitempty"`
+	Pet                            *Pet                            `json:"pet,omitempty"`
+	PetFoodPlanHistory             *PetFoodPlanHistory             `json:"pet_food_plan_histories,omitempty"`
+	AvgPercentWeightChangePerMonth *AvgPercentWeightChangePerMonth `json:"avg_percent_weight_change_per_month,omitempty"`
 }
 type PetPlanAnalysisResponse struct {
 	Status int              `json:"status"`

@@ -67,7 +67,8 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
 
-	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
+	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
+
 	err := s.petRepo.CreateNewPet(ctx, petInfo, petDetail)
 	if err != nil {
 		return &model.HTTPResponse{
@@ -119,11 +120,14 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 		planUsageHistories = []model.PetFoodPlanHistory{}
 	}
 
+	avgWeight := s.calculationService.CalAvgPercentWeightChangePerMonth(pet.MonthlyNutritionTWA, pet.PetDetails[0].BCS, *pet.Type, pet.PetDetails[0].AgeRange)
+
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
-			"pet":                     pet,
-			"pet_food_plan_histories": planUsageHistories,
+			"pet":                                 pet,
+			"pet_food_plan_histories":             planUsageHistories,
+			"avg_percent_weight_change_per_month": avgWeight,
 		},
 	}
 }
@@ -175,7 +179,7 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)
-	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
+	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	latestPlanID, foodsInActivePlan, err := s.petFoodPlanRepo.GetFoodsInLastestActivePlanByPetID(ctx, pet.ID)
 	if err != nil {

@@ -19,6 +19,7 @@ type PetRepository interface {
 	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error)
+	GetPetDetialsFromPetID(ctx context.Context, petID uint) ([]model.PetDetail, error)
 	SoftDeletePetByIDAndUserID(ctx context.Context, petID uint, userID uint) error
 }
 
@@ -134,13 +135,61 @@ func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uin
 	return &petDetail, nil
 }
 
+func (r *petRepository) GetPetDetialsFromPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
+	currentDate := time.Now()
+	oneYearAgo := currentDate.AddDate(-1, 0, 0)
+
+	query := `
+		WITH in_window_details AS (
+			SELECT *
+			FROM pet_details
+			WHERE pet_id = ?
+				AND created_at >= ?
+				AND created_at <= ?
+		),
+		last_before_window AS (
+			SELECT *
+			FROM pet_details
+			WHERE pet_id = ?
+				AND created_at < ?
+			ORDER BY created_at DESC, id DESC
+			LIMIT 1
+		),
+		relevant_details AS (
+			SELECT * FROM in_window_details
+			UNION ALL
+			SELECT * FROM last_before_window
+		)
+		SELECT *
+		FROM relevant_details
+		ORDER BY created_at ASC, id ASC;
+	`
+
+	var petDetails []model.PetDetail
+	if err := r.db.WithContext(ctx).Raw(
+		query,
+		petID,
+		oneYearAgo,
+		currentDate,
+		petID,
+		oneYearAgo,
+	).Scan(&petDetails).Error; err != nil {
+		return nil, fmt.Errorf("failed to get pet detail by pet id : %w", err)
+	}
+
+	return petDetails, nil
+}
+
 // not test
 func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error) {
 	currentDate := time.Now()
 	oneYearAgo := currentDate.AddDate(-1, 0, 0)
 
 	var pet model.Pet
-	if err := r.db.WithContext(ctx).First(&pet, id).Error; err != nil {
+	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC").Limit(1)
+	}).First(&pet, id).Error
+	if err != nil {
 		return nil, fmt.Errorf("failed to get pet by id : %w", err)
 	}
 
@@ -179,6 +228,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 		),
 		history_intervals AS (
 			SELECT
+				h.id AS history_id,
 				h.created_at AS interval_start,
 				COALESCE(
 					LEAD(h.created_at) OVER (ORDER BY h.created_at, h.id),
@@ -198,6 +248,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 		),
 		bounded_intervals AS (
 			SELECT
+				history_id,
+				interval_start AS source_created_at,
 				GREATEST(interval_start, ?) AS effective_start,
 				LEAST(interval_end, ?) AS effective_end,
 				total_energy_intake,
@@ -213,6 +265,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 		split_by_month AS (
 			SELECT
 				gs.month_start,
+				b.history_id,
+				b.source_created_at,
 				GREATEST(b.effective_start, gs.month_start) AS segment_start,
 				LEAST(b.effective_end, gs.month_start + INTERVAL '1 month') AS segment_end,
 				b.total_energy_intake,
@@ -235,6 +289,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SELECT
 				EXTRACT(YEAR FROM month_start)::int AS year,
 				EXTRACT(MONTH FROM month_start)::int AS month,
+				history_id,
+				source_created_at,
 				total_energy_intake,
 				total_protein_intake,
 				total_fat_intake,
@@ -256,8 +312,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SUM(energy * weight_seconds) / SUM(weight_seconds) AS energy,
 			SUM(protein * weight_seconds) / SUM(weight_seconds) AS protein,
 			SUM(fat * weight_seconds) / SUM(weight_seconds) AS fat,
-			MAX(weight) AS weight,
-			MAX(activity_level)::int AS activity_level
+			(ARRAY_AGG(weight ORDER BY source_created_at DESC, history_id DESC))[1] AS weight,
+			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level
 		FROM weighted_data
 		GROUP BY year, month
 		ORDER BY year, month;

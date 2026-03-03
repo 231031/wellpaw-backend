@@ -1,8 +1,6 @@
 package service
 
 import (
-	"log"
-
 	"github.com/231031/wellpaw-backend/internal/model"
 )
 
@@ -15,18 +13,20 @@ type CalculationService interface {
 	CalNutritientIntakeFromGramIntake(gramsIntake, proteinFood, fatFood float64, typeFood model.FoodType) (float64, float64)
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
 	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail
-	CalExpectedWeight(currentWeight float64, bcsScore int) float64
+	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
 }
 
 type calculationService struct {
 	energyRequirementService     EnergyRequirementService
 	nutritientRequirementService NutritientRequirementService
+	expectedWeightService        ExpectedWeightService
 }
 
-func NewCalculationService(energyRequirementService EnergyRequirementService, nutritientRequirementService NutritientRequirementService) CalculationService {
+func NewCalculationService(energyRequirementService EnergyRequirementService, nutritientRequirementService NutritientRequirementService, exexpectedWeightService ExpectedWeightService) CalculationService {
 	return &calculationService{
 		energyRequirementService:     energyRequirementService,
 		nutritientRequirementService: nutritientRequirementService,
+		expectedWeightService:        exexpectedWeightService,
 	}
 }
 
@@ -141,15 +141,12 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		foodPercent := 1.0 - checkType[model.TREATS]
 		checkType[model.DRY] = foodPercent * 0.70
 		checkType[model.WET] = foodPercent * 0.30
-		log.Println("dry, wet, treat food")
 	} else if _, ok := checkType[model.WET]; ok {
 		checkType[model.DRY] = 0.70
 		checkType[model.WET] = 0.30
 		checkType[model.TREATS] = 0
-		log.Println("dry and wet food")
 	} else {
 		checkType[model.DRY] = 1.0
-		log.Println("just dry food")
 	}
 
 	var foodPlanDetails []*model.PetFoodPlanDetail
@@ -175,7 +172,8 @@ func (s *calculationService) ConvertGramsToCup(foodPetFoodPlan *model.FoodPetFoo
 	return 1.0
 }
 
-func (s *calculationService) CalExpectedWeight(currentWeight float64, bcsScore int) float64 {
-	s.MapBcsScoreToBcsRange(bcsScore)
-	return 1.0
+func (s *calculationService) CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth {
+	bcs := s.MapBcsScoreToBcsRange(bcsScore)
+	avgWeight := s.expectedWeightService.GetAvgPercentWeightChangePerMonth(monthlyDetails, bcs, petType, ageRange)
+	return avgWeight
 }
