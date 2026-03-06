@@ -265,6 +265,227 @@ const docTemplate = `{
                 }
             }
         },
+        "/disease/labeled": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "label latest pet skin image by pet id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disease"
+                ],
+                "summary": "Label Pet Skin Disease",
+                "parameters": [
+                    {
+                        "description": "Label pet skin disease payload",
+                        "name": "LabeledPetSkinDiseasePayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.LabeledPetSkinDiseasePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/disease/predict": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "predict pet skin disease from base64 image",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disease"
+                ],
+                "summary": "Predict Disease",
+                "parameters": [
+                    {
+                        "description": "Predict disease payload",
+                        "name": "PredictPetSkinDiseasePayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseasePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/diseases": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get all pet skin images of current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disease"
+                ],
+                "summary": "Get Pet Skin Images",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/diseases/{pet_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get pet skin images by pet id and current user ownership",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disease"
+                ],
+                "summary": "Get Pet Skin Images By Pet ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/food": {
             "post": {
                 "security": [
@@ -1760,6 +1981,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth": {
+            "type": "object",
+            "properties": {
+                "calculated_percent": {
+                    "type": "number"
+                },
+                "end_percent": {
+                    "type": "number"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "start_percent": {
+                    "type": "number"
+                },
+                "total_months_used": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload": {
             "type": "object",
             "required": [
@@ -1899,14 +2140,18 @@ const docTemplate = `{
                 1,
                 2,
                 3,
-                4
+                4,
+                5,
+                6
             ],
             "x-enum-varnames": [
                 "RINGWORM",
                 "SCABIES",
                 "HEALTHY",
                 "DEMODICOSIS",
-                "PYODERMA"
+                "PYODERMA",
+                "OTHER",
+                "BACTERIAL_DERMATOSIS"
             ]
         },
         "github_com_231031_wellpaw-backend_internal_model.Food": {
@@ -1940,6 +2185,12 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan"
+                    }
+                },
+                "food_quantities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity"
                     }
                 },
                 "id": {
@@ -2033,6 +2284,9 @@ const docTemplate = `{
                 "amount": {
                     "type": "number"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "food": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
                 },
@@ -2044,6 +2298,9 @@ const docTemplate = `{
                 },
                 "quantity": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 },
                 "weight": {
                     "type": "number"
@@ -2123,6 +2380,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.LabeledPetSkinDiseasePayload": {
+            "type": "object",
+            "required": [
+                "image_evidence",
+                "labeled",
+                "pet_id",
+                "pet_skin_image_id"
+            ],
+            "properties": {
+                "image_evidence": {
+                    "type": "string"
+                },
+                "labeled": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType"
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "pet_skin_image_id": {
                     "type": "integer"
                 }
             }
@@ -2775,6 +3055,9 @@ const docTemplate = `{
         "github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis": {
             "type": "object",
             "properties": {
+                "avg_percent_weight_change_per_month": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth"
+                },
                 "pet": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
                 },
@@ -2817,6 +3100,9 @@ const docTemplate = `{
                 "deleted_at": {
                     "$ref": "#/definitions/gorm.DeletedAt"
                 },
+                "disease": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -2829,6 +3115,14 @@ const docTemplate = `{
                 "labeled": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType"
                 },
+                "pet": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                        }
+                    ]
+                },
                 "pet_id": {
                     "type": "integer"
                 },
@@ -2837,6 +3131,20 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage"
+                    }
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         },
@@ -2867,6 +3175,32 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsData"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseasePayload": {
+            "type": "object",
+            "required": [
+                "image",
+                "pet_id"
+            ],
+            "properties": {
+                "image": {
+                    "type": "string"
+                },
+                "pet_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage"
                 },
                 "status": {
                     "type": "integer"

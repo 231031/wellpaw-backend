@@ -14,6 +14,9 @@ import (
 
 type DiseaseService interface {
 	PredictPetSkinDisease(ctx context.Context, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse
+	GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse
+	GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
+	LabeledPetSkinDisease(ctx context.Context, userID uint, payload *model.LabeledPetSkinDiseasePayload) *model.HTTPResponse
 	mapPetSkinClassToDiseaseType(petType model.PetType, classIndex int) (model.DiseaseType, bool)
 }
 
@@ -44,6 +47,14 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, payload *mod
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	// check base64 format that valid or not if not return 400 status invalid image file
+	if err := utils.ValidateBase64Image(payload.Image); err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid image file",
 		}
 	}
 
@@ -86,9 +97,126 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, payload *mod
 	petSkinImage.Disease = petSkinImage.Predicted.String()
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
-		Data: map[string]interface{}{
-			"pet_skin_image": petSkinImage,
-		},
+		Data:   petSkinImage,
+	}
+}
+
+func (s *diseaseService) GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse {
+	petSkinImages, err := s.petSkinImageRepo.GetPetSkinImagesByUserID(ctx, userID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet skin images",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   s.mapPetSkinImagesDisease(petSkinImages),
+	}
+}
+
+func (s *diseaseService) GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse {
+	petSkinImages, err := s.petSkinImageRepo.GetPetSkinImagesByPetIDAndUserID(ctx, petID, userID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet skin images",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   s.mapPetSkinImagesDisease(petSkinImages),
+	}
+}
+
+func (s *diseaseService) LabeledPetSkinDisease(ctx context.Context, userID uint, payload *model.LabeledPetSkinDiseasePayload) *model.HTTPResponse {
+	pet, err := s.petRepo.GetPetInfoByID(ctx, payload.PetID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet" + utils.NotFoundMsg,
+			}
+		}
+
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	if !s.isValidPetSkinDiseaseType(*pet.Type, *payload.Labeled) {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid skin disease type " + pet.Type.String(),
+		}
+	}
+
+	if err := s.petSkinImageRepo.UpdateLabeledPetSkinDiseaseByID(ctx, payload.PetSkinImageID, payload.PetID, userID, *payload.Labeled, payload.ImageEvidence); err != nil {
+		if errors.Is(err, utils.ErrNoRowsUpdated) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet skin image" + utils.NotFoundMsg,
+			}
+		}
+
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "pet skin image label",
+		}
+	}
+
+	updatedPetSkinImage, err := s.petSkinImageRepo.GetPetSkinImageByID(ctx, payload.PetSkinImageID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet skin image" + utils.NotFoundMsg,
+			}
+		}
+
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "pet skin image labeled, but " + utils.FailedToGetMsg + "updated pet skin image",
+		}
+	}
+
+	updatedPetSkinImage.Disease = updatedPetSkinImage.Predicted.String()
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   updatedPetSkinImage,
+	}
+}
+
+func (s *diseaseService) mapPetSkinImagesDisease(petSkinImages []model.PetSkinImage) []model.PetSkinImage {
+	if len(petSkinImages) == 0 {
+		return []model.PetSkinImage{}
+	}
+
+	for idx := range petSkinImages {
+		petSkinImages[idx].Disease = petSkinImages[idx].Predicted.String()
+	}
+
+	return petSkinImages
+}
+
+func (s *diseaseService) isValidPetSkinDiseaseType(petType model.PetType, diseaseType model.DiseaseType) bool {
+	switch petType {
+	case model.CAT:
+		return diseaseType == model.HEALTHY ||
+			diseaseType == model.OTHER ||
+			diseaseType == model.RINGWORM ||
+			diseaseType == model.SCABIES
+	case model.DOG:
+		return diseaseType == model.BACTERIAL_DERMATOSIS ||
+			diseaseType == model.DEMODICOSIS ||
+			diseaseType == model.HEALTHY ||
+			diseaseType == model.OTHER ||
+			diseaseType == model.RINGWORM
+	default:
+		return false
 	}
 }
 

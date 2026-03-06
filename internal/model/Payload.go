@@ -133,3 +133,10 @@ type PredictPetSkinDiseasePayload struct {
 type PredictPetSkinModelPayload struct {
 	Image string `json:"image"`
 }
+
+type LabeledPetSkinDiseasePayload struct {
+	PetSkinImageID uint         `json:"pet_skin_image_id" validate:"required"`
+	PetID          uint         `json:"pet_id" validate:"required"`
+	Labeled        *DiseaseType `json:"labeled" validate:"required"`
+	ImageEvidence  string       `json:"image_evidence" validate:"required"`
+}

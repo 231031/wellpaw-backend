@@ -45,6 +45,19 @@ definitions:
     - amount
     - food_pet_food_plan_id
     type: object
+  github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth:
+    properties:
+      calculated_percent:
+        type: number
+      end_percent:
+        type: number
+      message:
+        type: string
+      start_percent:
+        type: number
+      total_months_used:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload:
     properties:
       amount:
@@ -140,6 +153,8 @@ definitions:
     - 2
     - 3
     - 4
+    - 5
+    - 6
     type: integer
     x-enum-varnames:
     - RINGWORM
@@ -147,6 +162,8 @@ definitions:
     - HEALTHY
     - DEMODICOSIS
     - PYODERMA
+    - OTHER
+    - BACTERIAL_DERMATOSIS
   github_com_231031_wellpaw-backend_internal_model.Food:
     properties:
       brand:
@@ -160,6 +177,10 @@ definitions:
       food_pet_food_plans:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan'
+        type: array
+      food_quantities:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity'
         type: array
       id:
         type: integer
@@ -228,6 +249,8 @@ definitions:
     properties:
       amount:
         type: number
+      created_at:
+        type: string
       food:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
       food_id:
@@ -236,6 +259,8 @@ definitions:
         type: integer
       quantity:
         type: integer
+      updated_at:
+        type: string
       weight:
         type: number
     required:
@@ -296,6 +321,22 @@ definitions:
         type: string
       status:
         type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.LabeledPetSkinDiseasePayload:
+    properties:
+      image_evidence:
+        type: string
+      labeled:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType'
+      pet_id:
+        type: integer
+      pet_skin_image_id:
+        type: integer
+    required:
+    - image_evidence
+    - labeled
+    - pet_id
+    - pet_skin_image_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.LoginData:
     properties:
@@ -728,6 +769,8 @@ definitions:
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetPlanAnalysis:
     properties:
+      avg_percent_weight_change_per_month:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth'
       pet:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
       pet_food_plan_histories:
@@ -755,6 +798,8 @@ definitions:
         type: string
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
+      disease:
+        type: string
       id:
         type: integer
       image_evidence:
@@ -763,12 +808,25 @@ definitions:
         type: string
       labeled:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType'
+      pet:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+        description: Relationships
       pet_id:
         type: integer
       predicted:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.DiseaseType'
       updated_at:
         type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage'
+        type: array
+      status:
+        type: integer
     type: object
   github_com_231031_wellpaw-backend_internal_model.PetType:
     enum:
@@ -789,6 +847,23 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetsData'
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseasePayload:
+    properties:
+      image:
+        type: string
+      pet_id:
+        type: integer
+    required:
+    - image
+    - pet_id
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImage'
       status:
         type: integer
     type: object
@@ -1225,6 +1300,146 @@ paths:
       summary: Reset Password
       tags:
       - Authentication
+  /disease/labeled:
+    patch:
+      consumes:
+      - application/json
+      description: label latest pet skin image by pet id
+      parameters:
+      - description: Label pet skin disease payload
+        in: body
+        name: LabeledPetSkinDiseasePayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LabeledPetSkinDiseasePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Label Pet Skin Disease
+      tags:
+      - Disease
+  /disease/predict:
+    post:
+      consumes:
+      - application/json
+      description: predict pet skin disease from base64 image
+      parameters:
+      - description: Predict disease payload
+        in: body
+        name: PredictPetSkinDiseasePayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseasePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Predict Disease
+      tags:
+      - Disease
+  /diseases:
+    get:
+      consumes:
+      - application/json
+      description: get all pet skin images of current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Pet Skin Images
+      tags:
+      - Disease
+  /diseases/{pet_id}:
+    get:
+      consumes:
+      - application/json
+      description: get pet skin images by pet id and current user ownership
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetSkinImageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Pet Skin Images By Pet ID
+      tags:
+      - Disease
   /food:
     patch:
       consumes:

@@ -108,6 +108,11 @@ type PetPlanAnalysisResponse struct {
 }
 
 type PetSkinImageResponse struct {
+	Status int            `json:"status"`
+	Data   []PetSkinImage `json:"data"`
+}
+
+type PredictPetSkinImageResponse struct {
 	Status int           `json:"status"`
 	Data   *PetSkinImage `json:"data"`
 }

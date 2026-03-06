@@ -85,8 +85,12 @@ func RouteOcr(router fiber.Router, ocrController controller.OcrController, authM
 }
 
 func RouteDisease(router fiber.Router, diseaseController controller.DiseaseController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/diseases", authMiddleware.AuthorizeUser(), diseaseController.GetPetSkinImagesByUserID)
+	router.Get("/diseases/:pet_id", authMiddleware.AuthorizeUser(), diseaseController.GetPetSkinImagesByPetID)
+
 	diseaseRoute := router.Group("/disease", authMiddleware.AuthorizeUser())
 	diseaseRoute.Post("/predict", diseaseController.PredictDisease)
+	diseaseRoute.Patch("/labeled", diseaseController.LabeledPetSkinDisease)
 }
 
 func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, cfg *Cfg) {

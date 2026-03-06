@@ -13,6 +13,7 @@ import (
 var (
 	ErrNoRowsUpdated    = errors.New("no rows affected when updating")
 	ErrFoodInActivePlan = errors.New("food is in active plan")
+	ErrInvalidImageFile = errors.New("invalid image file")
 	FailedToGetMsg      = "failed to get "
 	NotFoundMsg         = " not found"
 	FailedToCreateMsg   = "failed to create "

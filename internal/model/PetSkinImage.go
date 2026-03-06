@@ -20,5 +20,5 @@ type PetSkinImage struct {
 
 	Disease string `gorm:"-" json:"disease,omitempty"`
 	// Relationships
-	// Pet *Pet `gorm:"foreignKey:PetID" json:"pet,omitempty"`
+	Pet *Pet `gorm:"foreignKey:PetID" json:"pet,omitempty"`
 }
