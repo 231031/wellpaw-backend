@@ -14,7 +14,7 @@ services:
       wellpaw_db:
         condition: service_healthy
     networks:
-      - wellpaw-nw
+      - wellpaw-shared-nw
 
   wellpaw_db:
     image: postgres:17-alpine
@@ -31,7 +31,7 @@ services:
     volumes:
       - wellpaw_db_volumes:/var/lib/postgresql/data
     networks:
-      - wellpaw-nw
+      - wellpaw-shared-nw
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
@@ -54,11 +54,11 @@ services:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     networks:
-      - wellpaw-nw
+      - wellpaw-shared-nw
 
 networks:
-  wellpaw-nw:
-    driver: bridge
+  wellpaw-shared-nw:
+    external: true
 volumes:
   wellpaw_db_volumes:
   wellpaw_cache:

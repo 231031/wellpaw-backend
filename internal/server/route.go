@@ -84,6 +84,11 @@ func RouteOcr(router fiber.Router, ocrController controller.OcrController, authM
 	ocrRoute.Post("/request", ocrController.ProcessOcrRequest)
 }
 
+func RouteDisease(router fiber.Router, diseaseController controller.DiseaseController, authMiddleware middleware.AuthMiddleware) {
+	diseaseRoute := router.Group("/disease", authMiddleware.AuthorizeUser())
+	diseaseRoute.Post("/predict", diseaseController.PredictDisease)
+}
+
 func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, cfg *Cfg) {
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
@@ -121,6 +126,11 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo)
 	petController := controller.NewPetController(petService)
 
+	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
+	modelService := service.NewModelService(cfg.MODEL_BASE_API)
+	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo)
+	diseaseController := controller.NewDiseaseController(diseaseService)
+
 	// routing
 	authService := service.NewAuthService(userRepo, tokenService, paymentService, otpService, googleOauthConfig)
 	authController := controller.NewAuthController(authService)
@@ -130,6 +140,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	RoutePet(router, petController, authMiddlware)
 	RouteFood(router, foodController, authMiddlware)
 	RoutePetFoodPlan(router, petFoodPlanController, authMiddlware)
+	RouteDisease(router, diseaseController, authMiddlware)
 
 	ocrService := service.NewOcrService(geminiClient)
 	ocrController := controller.NewOcrController(ocrService)

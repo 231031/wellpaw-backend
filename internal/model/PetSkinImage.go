@@ -18,6 +18,7 @@ type PetSkinImage struct {
 	UpdatedAt     time.Time      `gorm:"not null" json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
+	Disease string `gorm:"-" json:"disease,omitempty"`
 	// Relationships
 	// Pet *Pet `gorm:"foreignKey:PetID" json:"pet,omitempty"`
 }

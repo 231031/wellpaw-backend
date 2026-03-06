@@ -124,3 +124,12 @@ type PetPayload struct {
 	PetInfo   *Pet       `json:"pet_info" validate:"required"`
 	PetDetail *PetDetail `json:"pet_detail" validate:"required"`
 }
+
+type PredictPetSkinDiseasePayload struct {
+	PetID uint   `json:"pet_id" validate:"required"`
+	Image string `json:"image" validate:"required"`
+}
+
+type PredictPetSkinModelPayload struct {
+	Image string `json:"image"`
+}

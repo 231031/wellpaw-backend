@@ -52,6 +52,12 @@ type OcrPetFoodResponse struct {
 	Data   *PetFoodAnalysisResponse `json:"data"`
 }
 
+type PetSkinModelResponse struct {
+	ClassIndex  int     `json:"class_index"`
+	Label       string  `json:"label"`
+	Probability float64 `json:"probability"`
+}
+
 type PetResponse struct {
 	Status int         `json:"status"`
 	Data   *PetPayload `json:"data"`
@@ -99,6 +105,11 @@ type PetPlanAnalysis struct {
 type PetPlanAnalysisResponse struct {
 	Status int              `json:"status"`
 	Data   *PetPlanAnalysis `json:"data"`
+}
+
+type PetSkinImageResponse struct {
+	Status int           `json:"status"`
+	Data   *PetSkinImage `json:"data"`
 }
 
 // type SubscriptionScheduleResponse struct {

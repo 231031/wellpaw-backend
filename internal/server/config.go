@@ -42,6 +42,7 @@ type Cfg struct {
 	MAILJET_API_SECRET       string
 	MAILJET_SENDER_EMAIL     string
 	MAILJET_SENDER_NAME      string
+	MODEL_BASE_API           string
 }
 
 func getAllENV() *Cfg {
@@ -67,6 +68,7 @@ func getAllENV() *Cfg {
 		"MAILJET_API_SECRET",
 		"MAILJET_SENDER_EMAIL",
 		"MAILJET_SENDER_NAME",
+		"MODEL_BASE_API",
 	}
 
 	allValue := make(map[string]string)
@@ -100,6 +102,7 @@ func getAllENV() *Cfg {
 		MAILJET_API_SECRET:       allValue[allKey[18]],
 		MAILJET_SENDER_EMAIL:     allValue[allKey[19]],
 		MAILJET_SENDER_NAME:      allValue[allKey[20]],
+		MODEL_BASE_API:           allValue[allKey[21]],
 	}
 
 	return cfg
