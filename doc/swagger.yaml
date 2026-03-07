@@ -900,12 +900,9 @@ definitions:
     - MALE
   github_com_231031_wellpaw-backend_internal_model.StartSubscriptionPayload:
     properties:
-      payment_method_id:
-        type: string
       subscription_plan_id:
         type: string
     required:
-    - payment_method_id
     - subscription_plan_id
     type: object
   github_com_231031_wellpaw-backend_internal_model.SubscriptionHistory:
@@ -1078,6 +1075,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
         type: array
+      free_tier_usage:
+        type: boolean
       id:
         type: integer
       last_name:

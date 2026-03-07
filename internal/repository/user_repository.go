@@ -33,7 +33,7 @@ type UserRepository interface {
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
 	UpdatePasswordByEmail(ctx context.Context, email string, password string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
-	UpdateSubscriptionDetail(ctx context.Context, email string, status model.SubscriptionStatusType, tier model.TierType) error
+	UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) error
 }
 
 type userRepository struct {
@@ -72,7 +72,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User,
 	err := r.db.WithContext(ctx).
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
+			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *userRepository) GetUserIdDetailByID(ctx context.Context, id uint) (*mod
 		Select("id", "email", "first_name", "last_name", "device_token",
 			"payment_method_id", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
+			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -106,7 +106,7 @@ func (r *userRepository) GetUserAllInfo(ctx context.Context, id uint) (*model.Us
 		Preload("Pets").
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free",
+			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -264,10 +264,19 @@ func (r *userRepository) UpdateCustomerID(ctx context.Context, id uint, customer
 }
 
 func (r *userRepository) UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) error {
-	result := r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
-		"subscription_status": status,
-		"tier":                tier,
-	})
+	var result *gorm.DB
+	if tier == model.FREE {
+		result = r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
+			"subscription_status": status,
+			"tier":                tier,
+			"free_tier_usage":     true,
+		})
+	} else {
+		result = r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
+			"subscription_status": status,
+			"tier":                tier,
+		})
+	}
 	if result.Error != nil {
 		return fmt.Errorf("failed to update subscription status : %w", result.Error)
 	}

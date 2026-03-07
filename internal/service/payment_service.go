@@ -18,6 +18,8 @@ type PaymentService interface {
 	GetAllSubscriptionsPlan(ctx context.Context) ([]*model.SubscriptionPlan, error)
 	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID string, lastID string) ([]*model.SubscriptionHistory, string, error)
 	GetPaymentIntentByID(ctx context.Context, paymentIntentID string) (*model.PaymentInvoice, error)
+	GetFreeTierPriceID(ctx context.Context, subscriptionPlanID string) (string, bool, error)
+	CreateSubscriptionFreeTier(ctx context.Context, customerID, subscriptionPlanID string) *model.HTTPResponse
 	CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse
 	UpdateSubscription(ctx context.Context, customerID, newSubscriptionPlanID string) *model.HTTPResponse
 	CancelSubscription(ctx context.Context, subscriptionID string) (*model.SubscriptionHistory, error)
@@ -75,7 +77,7 @@ func (s *paymentService) AttachPaymentMethod(ctx context.Context, customerID str
 
 func (s *paymentService) GetAllSubscriptionsPlan(ctx context.Context) ([]*model.SubscriptionPlan, error) {
 	params := &stripe.PriceListParams{
-		Type:     stripe.String(string(stripe.PriceTypeRecurring)),
+		// Type:     stripe.String(string(stripe.PriceTypeRecurring)),
 		Active:   stripe.Bool(true),
 		Currency: stripe.String("thb"),
 		Expand:   []*string{stripe.String("data.product")},
@@ -98,14 +100,20 @@ func (s *paymentService) GetAllSubscriptionsPlan(ctx context.Context) ([]*model.
 			features = append(features, feature.Name)
 		}
 
+		var interval string
+		var intervalCount int
+		if sp.Recurring != nil {
+			interval = *stripe.String(sp.Recurring.Interval)
+			intervalCount = int(*stripe.Int64(sp.Recurring.IntervalCount))
+		}
 		subscriptionPlans = append(subscriptionPlans, &model.SubscriptionPlan{
 			ID:            sp.ID,
 			Name:          sp.Product.Name,
 			Features:      features,
 			Amount:        sp.UnitAmount / 100,
 			Currency:      *stripe.String(sp.Currency),
-			Interval:      *stripe.String(sp.Recurring.Interval),
-			IntervalCount: int(*stripe.Int64(sp.Recurring.IntervalCount)),
+			Interval:      interval,
+			IntervalCount: intervalCount,
 		})
 	}
 
@@ -167,6 +175,99 @@ func (s *paymentService) GetPaymentIntentByID(ctx context.Context, paymentIntent
 		Amount:                 paymentIntent.Amount / 100,
 	}
 	return paymentInvoice, nil
+}
+
+func (s *paymentService) CreateSubscriptionFreeTier(ctx context.Context, customerID, subscriptionPlanID string) *model.HTTPResponse {
+	invoiceDraft, err := s.stripeClient.V1Invoices.Create(ctx, &stripe.InvoiceCreateParams{
+		Customer:         stripe.String(customerID),
+		Currency:         stripe.String("thb"),
+		AutoAdvance:      stripe.Bool(false),
+		CollectionMethod: stripe.String(string(stripe.InvoiceCollectionMethodChargeAutomatically)),
+	})
+	if err != nil {
+		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
+	}
+
+	_, err = s.stripeClient.V1InvoiceItems.Create(ctx, &stripe.InvoiceItemCreateParams{
+		Customer: stripe.String(customerID),
+		Invoice:  stripe.String(invoiceDraft.ID),
+		Pricing: &stripe.InvoiceItemCreatePricingParams{
+			Price: stripe.String(subscriptionPlanID),
+		},
+	})
+	if err != nil {
+		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
+	}
+
+	invoiceFinalized, err := s.stripeClient.V1Invoices.FinalizeInvoice(ctx, invoiceDraft.ID, &stripe.InvoiceFinalizeInvoiceParams{})
+	if err != nil {
+		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
+	}
+
+	if invoiceFinalized.Status != stripe.InvoiceStatusPaid {
+		invoiceFinalized, err = s.stripeClient.V1Invoices.Pay(ctx, invoiceFinalized.ID, &stripe.InvoicePayParams{})
+		if err != nil {
+			return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
+		}
+	}
+
+	if invoiceFinalized.Status != stripe.InvoiceStatusPaid {
+		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", fmt.Errorf("free tier invoice status is %s", invoiceFinalized.Status))
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: &model.PaymentInvoice{
+			ClientSecret:           "",
+			PaymentIntentStatus:    string(stripe.PaymentIntentStatusSucceeded),
+			SubscriptionStatus:     string(stripe.SubscriptionStatusActive),
+			DefaultPaymentMethodID: "",
+			Amount:                 invoiceFinalized.AmountPaid / 100,
+		},
+	}
+}
+
+func (s *paymentService) GetFreeTierPriceID(ctx context.Context, subscriptionPlanID string) (string, bool, error) {
+	params := &stripe.PriceListParams{
+		Type:     stripe.String(string(stripe.PriceTypeOneTime)),
+		Active:   stripe.Bool(true),
+		Currency: stripe.String("thb"),
+		Expand:   []*string{stripe.String("data.product")},
+	}
+
+	var fallbackPriceID string
+	hasAnyFreeTierPrice := false
+	prices := s.stripeClient.V1Prices.List(ctx, params)
+	for price, err := range prices {
+		if err != nil {
+			return "", false, err
+		}
+
+		if price.UnitAmount != 0 {
+			continue
+		}
+		if price.Product != nil && !price.Product.Active {
+			continue
+		}
+
+		hasAnyFreeTierPrice = true
+		if fallbackPriceID == "" {
+			fallbackPriceID = price.ID
+		}
+
+		if price.ID == subscriptionPlanID {
+			return price.ID, true, nil
+		}
+		if price.Product != nil && price.Product.ID == subscriptionPlanID {
+			return price.ID, true, nil
+		}
+	}
+
+	if subscriptionPlanID == "0" && hasAnyFreeTierPrice {
+		return fallbackPriceID, true, nil
+	}
+
+	return "", false, nil
 }
 
 func (s *paymentService) CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse {

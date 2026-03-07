@@ -3255,13 +3255,9 @@ const docTemplate = `{
         "github_com_231031_wellpaw-backend_internal_model.StartSubscriptionPayload": {
             "type": "object",
             "required": [
-                "payment_method_id",
                 "subscription_plan_id"
             ],
             "properties": {
-                "payment_method_id": {
-                    "type": "string"
-                },
                 "subscription_plan_id": {
                     "type": "string"
                 }
@@ -3524,6 +3520,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
                     }
+                },
+                "free_tier_usage": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "integer"

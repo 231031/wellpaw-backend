@@ -29,7 +29,7 @@ type PaymentMethodUpdatePayload struct {
 
 type StartSubscriptionPayload struct {
 	SubscriptionPlanID string `json:"subscription_plan_id" validate:"required"`
-	PaymentMethodID    string `json:"payment_method_id,omitempty" validate:"required"`
+	// PaymentMethodID    string `json:"payment_method_id,omitempty" validate:"omitempty"`
 }
 
 type SubscriptionPlan struct {

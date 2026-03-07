@@ -180,7 +180,7 @@ func (c *userController) StartSubscription(ctx *fiber.Ctx) error {
 		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
-	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 10*time.Second)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 120*time.Second)
 	defer cancel()
 
 	response := c.userService.StartSubscription(ctxWithTimeOut, userID, payload)

@@ -77,6 +77,7 @@ func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetF
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
 	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
+	webhookRoute.Post("/subscription/freetiral", webhookController.HandleSubscriptionFreeTiralUpdated)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {
