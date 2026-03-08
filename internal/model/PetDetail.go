@@ -3,10 +3,10 @@ package model
 import "time"
 
 type PetDetail struct {
-	ID                 uint           `gorm:"primaryKey;autoIncrement" json:"id"`
-	PetID              uint           `gorm:"not null" json:"pet_id"`
-	Weight             float64        `gorm:"not null" json:"weight" validate:"required,gt=0"`
-	ExpectedWeight     float64        `gorm:"not null" json:"expected_weight"`
+	ID     uint    `gorm:"primaryKey;autoIncrement" json:"id"`
+	PetID  uint    `gorm:"not null" json:"pet_id"`
+	Weight float64 `gorm:"not null" json:"weight" validate:"required,gt=0"`
+	// ExpectedWeight     float64        `gorm:"not null" json:"expected_weight"`
 	ActivityLevel      *ActivityLevel `gorm:"not null" json:"activity_level" validate:"required,oneof=0 1 2 3"`
 	AgeRange           AgeType        `gorm:"not null" json:"age_range"`
 	BCS                int            `gorm:"not null" json:"bcs" validate:"required,gt=0"` // Body Condition Score

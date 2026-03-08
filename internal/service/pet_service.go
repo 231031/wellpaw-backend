@@ -121,6 +121,15 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 	}
 
 	avgWeight := s.calculationService.CalAvgPercentWeightChangePerMonth(pet.MonthlyNutritionTWA, pet.PetDetails[0].BCS, *pet.Type, pet.PetDetails[0].AgeRange)
+	for i := 1; i < len(pet.MonthlyNutritionTWA); i++ {
+		prev := pet.MonthlyNutritionTWA[i-1].Weight
+		curr := pet.MonthlyNutritionTWA[i].Weight
+		if prev <= 0 {
+			continue
+		}
+
+		pet.MonthlyNutritionTWA[i].PercentWeightChange = ((curr - prev) / prev) * 100
+	}
 
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
@@ -176,6 +185,21 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
+	if len(pet.PetDetails) > 0 {
+		// Gastation, Lactation, GestationStartDate, Neutered (if true to false cannot)
+		created := pet.PetDetails[0].CreatedAt
+		now := time.Now()
+
+		createdDate := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, created.Location())
+		nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+		if nowDate.Before(createdDate.AddDate(0, 1, 0)) {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "cannot update now, user is allowed to update pet detail only one time per month",
+			}
+		}
+	}
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)

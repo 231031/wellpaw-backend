@@ -115,13 +115,31 @@ func (r *petRepository) UpdatePetDetailsAndPlan(ctx context.Context, petID uint,
 
 func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error) {
 	var pet *model.Pet
-	err := r.db.WithContext(ctx).First(&pet, id).Error
+	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC, id DESC").Limit(1)
+	}).First(&pet, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pet by id : %w", err)
 	}
 
 	return pet, nil
 }
+
+// func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
+// 	// oneMonthRange :=
+
+// 	var petDetail []model.PetDetail
+// 	if err := r.db.WithContext(ctx).
+// 		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+// 			return db.Where("created_at >= ").Order("created_at DESC")
+// 		}).
+// 		Where("pet_id = ?", petID).
+// 		Find(&petDetail).Error; err != nil {
+// 		return nil, fmt.Errorf("failed to get latest pet detail by pet id : %w", err)
+// 	}
+
+// 	return petDetail, nil
+// }
 
 func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error) {
 	var petDetail model.PetDetail
@@ -194,7 +212,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 	}
 
 	// Time-Weighted Average (TWA) by month over the last year.
-	var monthlyTWA []model.PetMonthlyNutritionTWA
+	monthlyTWA := []model.PetMonthlyNutritionTWA{}
 	twaQuery := `
 		WITH in_window_history AS (
 			SELECT
