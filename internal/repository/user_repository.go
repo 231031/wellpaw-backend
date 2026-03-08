@@ -12,6 +12,7 @@ import (
 	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // var (
@@ -27,13 +28,13 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, u *model.User) error
 	UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error
 	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
-	getSubscriptionDetailFromDB(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error)
-	GetSubscriptionDetail(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error)
-	SetCurrentSubscriptionDetail(ctx context.Context, customerID string, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
+	getSubscriptionDetailFromDB(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error)
+	GetSubscriptionDetail(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error)
+	SetCurrentSubscriptionDetail(ctx context.Context, userID string, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
 	UpdatePasswordByEmail(ctx context.Context, email string, password string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
-	UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) error
+	UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) (*model.User, error)
 }
 
 type userRepository struct {
@@ -155,10 +156,10 @@ func (r *userRepository) UpdateCalendarNotification(ctx context.Context, id uint
 	return nil
 }
 
-func (r *userRepository) getSubscriptionDetailFromDB(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+func (r *userRepository) getSubscriptionDetailFromDB(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error) {
 	var user *model.User
 	err := r.db.WithContext(ctx).
-		Select("tier", "subscription_status").Where("customer_id = ?", customerID).First(&user).Error
+		Select("tier", "subscription_status").Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get subscription detail from db : %w", err)
 	}
@@ -166,12 +167,12 @@ func (r *userRepository) getSubscriptionDetailFromDB(ctx context.Context, custom
 	return &user.Tier, &user.SubscriptionStatus, nil
 }
 
-func (r *userRepository) getRedisKey(customerID string) string {
-	return fmt.Sprintf("sub:%s", customerID)
+func (r *userRepository) getRedisKey(userID string) string {
+	return fmt.Sprintf("sub:%s", userID)
 }
 
-func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, customerID string, tier model.TierType, status model.SubscriptionStatusType) error {
-	key := r.getRedisKey(customerID)
+func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, userID string, tier model.TierType, status model.SubscriptionStatusType) error {
+	key := r.getRedisKey(userID)
 	value := fmt.Sprintf("%d:%d", tier, status)
 	_, err := r.redisClient.SetArgs(ctx, key, value, redis.SetArgs{
 		Get: true,
@@ -188,18 +189,18 @@ func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, custo
 	return nil
 }
 
-func (r *userRepository) GetSubscriptionDetail(ctx context.Context, customerID string) (*model.TierType, *model.SubscriptionStatusType, error) {
-	key := r.getRedisKey(customerID)
+func (r *userRepository) GetSubscriptionDetail(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+	key := r.getRedisKey(userID)
 	value, err := r.redisClient.Get(ctx, key).Result()
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("redis failed to get subscription detail : %s", err.Error()), repoLog)
 
-		tier, status, err := r.getSubscriptionDetailFromDB(ctx, customerID)
+		tier, status, err := r.getSubscriptionDetailFromDB(ctx, userID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get subscription detail : %w", err)
 		}
 
-		if err := r.SetCurrentSubscriptionDetail(ctx, customerID, *tier, *status); err != nil {
+		if err := r.SetCurrentSubscriptionDetail(ctx, userID, *tier, *status); err != nil {
 			return tier, status, nil
 		}
 
@@ -263,27 +264,30 @@ func (r *userRepository) UpdateCustomerID(ctx context.Context, id uint, customer
 	return nil
 }
 
-func (r *userRepository) UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) error {
-	var result *gorm.DB
-	if tier == model.FREE {
-		result = r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
-			"subscription_status": status,
-			"tier":                tier,
-			"free_tier_usage":     true,
-		})
-	} else {
-		result = r.db.WithContext(ctx).Table("users").Where("customer_id = ?", customerID).Updates(map[string]interface{}{
-			"subscription_status": status,
-			"tier":                tier,
-		})
+func (r *userRepository) UpdateSubscriptionDetail(ctx context.Context, customerID string, status model.SubscriptionStatusType, tier model.TierType) (*model.User, error) {
+	updateData := map[string]interface{}{
+		"subscription_status": status,
+		"tier":                tier,
 	}
+	if tier == model.FREE {
+		updateData["free_tier_usage"] = true
+	}
+
+	var user *model.User
+	result := r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Clauses(clause.Returning{}).
+		Where("customer_id = ?", customerID).
+		Updates(updateData).
+		Scan(&user)
+
 	if result.Error != nil {
-		return fmt.Errorf("failed to update subscription status : %w", result.Error)
+		return nil, fmt.Errorf("failed to update subscription status : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return utils.ErrNoRowsUpdated
+		return user, utils.ErrNoRowsUpdated
 	}
 
-	return nil
+	return user, nil
 }
