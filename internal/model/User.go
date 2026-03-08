@@ -30,7 +30,6 @@ type User struct {
 	DeletedAt          gorm.DeletedAt         `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
-	Pets     []Pet     `gorm:"foreignKey:UserID" json:"pets,omitempty"`
-	Foods    []Food    `gorm:"foreignKey:UserID" json:"foods,omitempty"`
-	Payments []Payment `gorm:"foreignKey:UserID" json:"payments,omitempty"`
+	Pets  []Pet  `gorm:"foreignKey:UserID" json:"pets,omitempty"`
+	Foods []Food `gorm:"foreignKey:UserID" json:"foods,omitempty"`
 }
