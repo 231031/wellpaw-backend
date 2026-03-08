@@ -23,16 +23,18 @@ type PetService interface {
 }
 
 type petService struct {
-	calculationService CalculationService
-	petRepo            repository.PetRepository
-	petFoodPlanRepo    repository.PetFoodPlanRepository
+	calculationService    CalculationService
+	petRepo               repository.PetRepository
+	petFoodPlanRepo       repository.PetFoodPlanRepository
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewPetService(calculationService CalculationService, petRepo repository.PetRepository, petFoodPlanRepo repository.PetFoodPlanRepository) PetService {
+func NewPetService(calculationService CalculationService, petRepo repository.PetRepository, petFoodPlanRepo repository.PetFoodPlanRepository, freeTierUsageValidationService FreeTierUsageValidationService) PetService {
 	return &petService{
-		calculationService: calculationService,
-		petRepo:            petRepo,
-		petFoodPlanRepo:    petFoodPlanRepo,
+		calculationService:    calculationService,
+		petRepo:               petRepo,
+		petFoodPlanRepo:       petFoodPlanRepo,
+		freeValidationService: freeTierUsageValidationService,
 	}
 }
 
@@ -61,6 +63,11 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 }
 
 func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
+	if resp != nil {
+		return resp
+	}
+
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
 
@@ -76,6 +83,11 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "new pet",
 		}
+	}
+
+	if tier != nil && *tier == model.FREE {
+		freeUsage.ProfileFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
 	}
 
 	return &model.HTTPResponse{

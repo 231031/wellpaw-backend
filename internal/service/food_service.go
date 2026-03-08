@@ -11,7 +11,7 @@ import (
 )
 
 type FoodService interface {
-	CreateFood(ctx context.Context, food *model.Food) *model.HTTPResponse
+	CreateFood(ctx context.Context, userID uint, food *model.Food) *model.HTTPResponse
 	GetFoodsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) *model.HTTPResponse
 	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, payload *model.UpdateFoodDetailPayload) *model.HTTPResponse
@@ -22,18 +22,25 @@ type FoodService interface {
 }
 
 type foodService struct {
-	calculationService CalculationService
-	foodRepo           repository.FoodRepository
+	calculationService    CalculationService
+	foodRepo              repository.FoodRepository
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewFoodService(calculationService CalculationService, foodRepo repository.FoodRepository) FoodService {
+func NewFoodService(calculationService CalculationService, foodRepo repository.FoodRepository, freeTierUsageValidationService FreeTierUsageValidationService) FoodService {
 	return &foodService{
-		calculationService: calculationService,
-		foodRepo:           foodRepo,
+		calculationService:    calculationService,
+		foodRepo:              foodRepo,
+		freeValidationService: freeTierUsageValidationService,
 	}
 }
 
-func (s *foodService) CreateFood(ctx context.Context, food *model.Food) *model.HTTPResponse {
+func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.Food) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
+	if resp != nil {
+		return resp
+	}
+
 	foodQuantity := &model.FoodQuantity{
 		Weight:   food.Weight,
 		Quantity: food.Quantity,
@@ -46,6 +53,11 @@ func (s *foodService) CreateFood(ctx context.Context, food *model.Food) *model.H
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "food",
 		}
+	}
+
+	if tier != nil && *tier == model.FREE {
+		freeUsage.FoodFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
 	}
 
 	food.FoodQuantities = append(food.FoodQuantities, *foodQuantity)

@@ -21,18 +21,20 @@ type PetFoodPlanService interface {
 }
 
 type petFoodPlanService struct {
-	calculationService CalculationService
-	petFoodPlanRepo    repository.PetFoodPlanRepository
-	petRepo            repository.PetRepository
-	foodRepo           repository.FoodRepository
+	calculationService    CalculationService
+	petFoodPlanRepo       repository.PetFoodPlanRepository
+	petRepo               repository.PetRepository
+	foodRepo              repository.FoodRepository
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewPetFoodPlanService(calculationService CalculationService, petFoodPlanRepo repository.PetFoodPlanRepository, petRepo repository.PetRepository, foodRepo repository.FoodRepository) PetFoodPlanService {
+func NewPetFoodPlanService(calculationService CalculationService, petFoodPlanRepo repository.PetFoodPlanRepository, petRepo repository.PetRepository, foodRepo repository.FoodRepository, freeTierUsageValidationService FreeTierUsageValidationService) PetFoodPlanService {
 	return &petFoodPlanService{
-		calculationService: calculationService,
-		petFoodPlanRepo:    petFoodPlanRepo,
-		petRepo:            petRepo,
-		foodRepo:           foodRepo,
+		calculationService:    calculationService,
+		petFoodPlanRepo:       petFoodPlanRepo,
+		petRepo:               petRepo,
+		foodRepo:              foodRepo,
+		freeValidationService: freeTierUsageValidationService,
 	}
 }
 
@@ -185,6 +187,11 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 }
 
 func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOODPLAN)
+	if resp != nil {
+		return resp
+	}
+
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
 	gramsPerCupByFoodID := make(map[uint]float64, len(payload.Foods))
@@ -265,6 +272,11 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "pet food plan",
 		}
+	}
+
+	if tier != nil && *tier == model.FREE {
+		freeUsage.FoodPlanFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
 	}
 
 	activePlanDetail, err := s.petFoodPlanRepo.GetLastestActivePlanDetailByPet(ctx, payload.PetID, petDetail.ID)

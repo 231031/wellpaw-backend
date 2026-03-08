@@ -60,7 +60,7 @@ func (c *foodController) CreateFood(ctx *fiber.Ctx) error {
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
 
-	response := c.foodService.CreateFood(ctxWithTimeout, &payload)
+	response := c.foodService.CreateFood(ctxWithTimeout, userID, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
 

@@ -123,16 +123,16 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	freeTierValidationService := service.NewFreeTierUsageValidationService(userRepo, freeTierRepo)
 
 	foodRepo := repository.NewFoodRepository(db)
-	foodService := service.NewFoodService(calculationService, foodRepo)
+	foodService := service.NewFoodService(calculationService, foodRepo, freeTierValidationService)
 	foodController := controller.NewFoodController(foodService)
 
 	petRepo := repository.NewPetRepository(db)
 	petFoodPlanRepo := repository.NewPetFoodPlanRepository(db)
 
-	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo)
+	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo, freeTierValidationService)
 	petFoodPlanController := controller.NewPetFoodPlanController(petFoodPlanService)
 
-	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo)
+	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo, freeTierValidationService)
 	petController := controller.NewPetController(petService)
 
 	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
@@ -151,7 +151,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	RoutePetFoodPlan(router, petFoodPlanController, authMiddlware)
 	RouteDisease(router, diseaseController, authMiddlware)
 
-	ocrService := service.NewOcrService(geminiClient)
+	ocrService := service.NewOcrService(geminiClient, freeTierValidationService)
 	ocrController := controller.NewOcrController(ocrService)
 	RouteOcr(router, ocrController, authMiddlware)
 
