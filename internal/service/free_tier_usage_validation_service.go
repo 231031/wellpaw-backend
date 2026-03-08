@@ -13,27 +13,28 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type FreeTierUsageValdiationService interface {
+type FreeTierUsageValidationService interface {
 	CheckValidUsageByUserID(ctx context.Context, userID uint, usageFeature model.UsageFeatureType) (*model.TierType, *model.FreeTierUsage, *model.HTTPResponse)
-	CheckFreeTierDiseaseUsage(diseaseFree int) *model.HTTPResponse
-	CheckFreeTierProfileUsage(profileFree int) *model.HTTPResponse
-	CheckFreeTierFoodPlanUsage(foodPlanFree int) *model.HTTPResponse
-	CheckFreeTierFoodUsage(foodFree int) *model.HTTPResponse
+	UpdateFreeTierUsage(ctx context.Context, userID uint, freeTierUsage *model.FreeTierUsage) error
+	checkFreeTierDiseaseUsage(diseaseFree int) *model.HTTPResponse
+	checkFreeTierProfileUsage(profileFree int) *model.HTTPResponse
+	checkFreeTierFoodPlanUsage(foodPlanFree int) *model.HTTPResponse
+	checkFreeTierFoodUsage(foodFree int) *model.HTTPResponse
 }
 
-type freeTierUsageValdiationService struct {
+type freeTierUsageValidationService struct {
 	userRepo          repository.UserRepository
 	freeTierUsageRepo repository.FreeTierUsageRepository
 }
 
-func NewFreeTierUsageValdiation(userRepository repository.UserRepository, freeTierUsageRepo repository.FreeTierUsageRepository) FreeTierUsageValdiationService {
-	return &freeTierUsageValdiationService{
+func NewFreeTierUsageValidationService(userRepository repository.UserRepository, freeTierUsageRepo repository.FreeTierUsageRepository) FreeTierUsageValidationService {
+	return &freeTierUsageValidationService{
 		userRepo:          userRepository,
 		freeTierUsageRepo: freeTierUsageRepo,
 	}
 }
 
-func (s *freeTierUsageValdiationService) CheckValidUsageByUserID(ctx context.Context, userID uint, usageFeature model.UsageFeatureType) (*model.TierType, *model.FreeTierUsage, *model.HTTPResponse) {
+func (s *freeTierUsageValidationService) CheckValidUsageByUserID(ctx context.Context, userID uint, usageFeature model.UsageFeatureType) (*model.TierType, *model.FreeTierUsage, *model.HTTPResponse) {
 	tier, status, err := s.userRepo.GetSubscriptionDetail(ctx, userID)
 	if err != nil {
 		return nil, nil, &model.HTTPResponse{
@@ -70,13 +71,13 @@ func (s *freeTierUsageValdiationService) CheckValidUsageByUserID(ctx context.Con
 
 	switch usageFeature {
 	case model.DISEASE:
-		return tier, freeUsage, s.CheckFreeTierDiseaseUsage(freeUsage.DiseaseFree)
+		return tier, freeUsage, s.checkFreeTierDiseaseUsage(freeUsage.DiseaseFree)
 	case model.FOODPLAN:
-		return tier, freeUsage, s.CheckFreeTierFoodPlanUsage(freeUsage.FoodPlanFree)
+		return tier, freeUsage, s.checkFreeTierFoodPlanUsage(freeUsage.FoodPlanFree)
 	case model.FOOD:
-		return tier, freeUsage, s.CheckFreeTierFoodUsage(freeUsage.FoodFree)
+		return tier, freeUsage, s.checkFreeTierFoodUsage(freeUsage.FoodFree)
 	case model.PROFILE:
-		return tier, freeUsage, s.CheckFreeTierProfileUsage(freeUsage.ProfileFree)
+		return tier, freeUsage, s.checkFreeTierProfileUsage(freeUsage.ProfileFree)
 	default:
 		return tier, freeUsage, &model.HTTPResponse{
 			Status:  http.StatusBadRequest,
@@ -85,8 +86,23 @@ func (s *freeTierUsageValdiationService) CheckValidUsageByUserID(ctx context.Con
 	}
 }
 
-func (s *freeTierUsageValdiationService) getFreeTierUsageInfoByUserID(ctx context.Context, userID uint) (*model.FreeTierUsage, error) {
-	freeUsage, err := s.freeTierUsageRepo.GetDeleteFreeTierUsage(ctx, userID)
+func (s *freeTierUsageValidationService) UpdateFreeTierUsage(ctx context.Context, userID uint, freeTierUsage *model.FreeTierUsage) error {
+	err := s.freeTierUsageRepo.UpdateFreeTierUsage(ctx, userID, freeTierUsage)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to update free tiral usage after user user: %v", err), serviceLog)
+		return err
+	}
+
+	err = s.freeTierUsageRepo.SetFreeTierUsage(ctx, userID, freeTierUsage)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to set free tiral usage after user use in redis: %v", err), serviceLog)
+		return err
+	}
+	return nil
+}
+
+func (s *freeTierUsageValidationService) getFreeTierUsageInfoByUserID(ctx context.Context, userID uint) (*model.FreeTierUsage, error) {
+	freeUsage, err := s.freeTierUsageRepo.GetFreeTierUsage(ctx, userID)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			user, err := s.userRepo.GetSubscriptionDetailFromDB(ctx, userID)
@@ -102,21 +118,16 @@ func (s *freeTierUsageValdiationService) getFreeTierUsageInfoByUserID(ctx contex
 			}
 
 			err = s.freeTierUsageRepo.SetFreeTierUsage(ctx, userID, freeUsage)
-			if err != nil {
-				applogger.LogError(fmt.Sprintf("failed to set free tier usage in redis : %v", err), serviceLog)
-			}
-
 			return freeUsage, nil
 		}
 
-		applogger.LogError(fmt.Sprintf("failed to get free tier usage in redis : %v", err), serviceLog)
 		return nil, utils.ErrFailToCheckFreeTierUsage
 	}
 
 	return freeUsage, nil
 }
 
-func (s *freeTierUsageValdiationService) CheckFreeTierDiseaseUsage(diseaseFree int) *model.HTTPResponse {
+func (s *freeTierUsageValidationService) checkFreeTierDiseaseUsage(diseaseFree int) *model.HTTPResponse {
 	if diseaseFree >= 1 {
 		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,
@@ -126,7 +137,7 @@ func (s *freeTierUsageValdiationService) CheckFreeTierDiseaseUsage(diseaseFree i
 	return nil
 }
 
-func (s *freeTierUsageValdiationService) CheckFreeTierProfileUsage(profileFree int) *model.HTTPResponse {
+func (s *freeTierUsageValidationService) checkFreeTierProfileUsage(profileFree int) *model.HTTPResponse {
 	if profileFree >= 1 {
 		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,
@@ -136,7 +147,7 @@ func (s *freeTierUsageValdiationService) CheckFreeTierProfileUsage(profileFree i
 	return nil
 }
 
-func (s *freeTierUsageValdiationService) CheckFreeTierFoodPlanUsage(foodPlanFree int) *model.HTTPResponse {
+func (s *freeTierUsageValidationService) checkFreeTierFoodPlanUsage(foodPlanFree int) *model.HTTPResponse {
 	if foodPlanFree >= 1 {
 		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,
@@ -146,7 +157,7 @@ func (s *freeTierUsageValdiationService) CheckFreeTierFoodPlanUsage(foodPlanFree
 	return nil
 }
 
-func (s *freeTierUsageValdiationService) CheckFreeTierFoodUsage(foodFree int) *model.HTTPResponse {
+func (s *freeTierUsageValidationService) checkFreeTierFoodUsage(foodFree int) *model.HTTPResponse {
 	if foodFree >= 3 {
 		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,

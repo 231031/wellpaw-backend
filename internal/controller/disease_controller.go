@@ -57,7 +57,8 @@ func (c *diseaseController) PredictDisease(ctx *fiber.Ctx) error {
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 60*time.Second)
 	defer cancel()
 
-	response := c.diseaseService.PredictPetSkinDisease(ctxWithTimeout, &payload)
+	userID := ctx.Locals("id").(uint)
+	response := c.diseaseService.PredictPetSkinDisease(ctxWithTimeout, userID, &payload)
 	return ctx.Status(response.Status).JSON(response)
 }
 

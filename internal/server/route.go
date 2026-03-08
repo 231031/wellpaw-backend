@@ -119,6 +119,9 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	expectedWeightService := service.NewExpectedWeightService()
 	calculationService := service.NewCalculationService(energyReqService, nutritientReqService, expectedWeightService)
 
+	freeTierRepo := repository.NewFreeTierUsageRepository(db, redisClient)
+	freeTierValidationService := service.NewFreeTierUsageValidationService(userRepo, freeTierRepo)
+
 	foodRepo := repository.NewFoodRepository(db)
 	foodService := service.NewFoodService(calculationService, foodRepo)
 	foodController := controller.NewFoodController(foodService)
@@ -134,7 +137,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
 	modelService := service.NewModelService(cfg.MODEL_BASE_API)
-	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo)
+	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo, freeTierValidationService)
 	diseaseController := controller.NewDiseaseController(diseaseService)
 
 	// routing

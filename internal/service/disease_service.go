@@ -13,7 +13,7 @@ import (
 )
 
 type DiseaseService interface {
-	PredictPetSkinDisease(ctx context.Context, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse
+	PredictPetSkinDisease(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse
 	GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
 	LabeledPetSkinDisease(ctx context.Context, userID uint, payload *model.LabeledPetSkinDiseasePayload) *model.HTTPResponse
@@ -21,20 +21,27 @@ type DiseaseService interface {
 }
 
 type diseaseService struct {
-	modelService     ModelService
-	petRepo          repository.PetRepository
-	petSkinImageRepo repository.PetSkinImageRepository
+	modelService          ModelService
+	petRepo               repository.PetRepository
+	petSkinImageRepo      repository.PetSkinImageRepository
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewDiseaseService(modelService ModelService, petRepo repository.PetRepository, petSkinImageRepo repository.PetSkinImageRepository) DiseaseService {
+func NewDiseaseService(modelService ModelService, petRepo repository.PetRepository, petSkinImageRepo repository.PetSkinImageRepository, freeTierUsageValidationService FreeTierUsageValidationService) DiseaseService {
 	return &diseaseService{
-		modelService:     modelService,
-		petRepo:          petRepo,
-		petSkinImageRepo: petSkinImageRepo,
+		modelService:          modelService,
+		petRepo:               petRepo,
+		petSkinImageRepo:      petSkinImageRepo,
+		freeValidationService: freeTierUsageValidationService,
 	}
 }
 
-func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse {
+func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
+	if resp != nil {
+		return resp
+	}
+
 	pet, err := s.petRepo.GetPetInfoByID(ctx, payload.PetID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -92,6 +99,11 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, payload *mod
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "pet skin image",
 		}
+	}
+
+	if tier != nil && *tier == model.FREE {
+		freeUsage.DiseaseFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
 	}
 
 	petSkinImage.Disease = petSkinImage.Predicted.String()
