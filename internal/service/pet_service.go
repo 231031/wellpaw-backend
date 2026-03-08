@@ -14,6 +14,7 @@ import (
 
 type PetService interface {
 	CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse
+	GetPetByID(ctx context.Context, petID uint) *model.HTTPResponse
 	GetPetsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetPetAnalysisByPetID(ctx context.Context, petID uint) *model.HTTPResponse
 	UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *model.HTTPResponse
@@ -99,6 +100,34 @@ func (s *petService) GetPetsByUserID(ctx context.Context, userID uint) *model.HT
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"pets": pets,
+		},
+	}
+}
+
+func (s *petService) GetPetByID(ctx context.Context, petID uint) *model.HTTPResponse {
+	pet, err := s.petRepo.GetPetInfoByID(ctx, petID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "not found pet",
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	petDetail := model.PetDetail{}
+	if len(pet.PetDetails) > 0 {
+		petDetail = pet.PetDetails[0]
+	}
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"pet_info":   pet,
+			"pet_detail": petDetail,
 		},
 	}
 }

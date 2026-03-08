@@ -12,6 +12,7 @@ import (
 
 type PetController interface {
 	CreateNewPet(ctx *fiber.Ctx) error
+	GetPetByPetID(ctx *fiber.Ctx) error
 	GetPetsByUserID(ctx *fiber.Ctx) error
 	GetPetAnalysisByPetID(ctx *fiber.Ctx) error
 	UpdatePetInfo(ctx *fiber.Ctx) error
@@ -60,6 +61,33 @@ func (c *petController) CreateNewPet(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.petService.CreateNewPet(ctxWithTimeout, &payload)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Get User Pet By Pet ID
+// @Description get pet by id
+// @tags Pet
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.PetResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /pet/{pet_id} [get]
+func (c *petController) GetPetByPetID(ctx *fiber.Ctx) error {
+	rawPetID := ctx.Params("pet_id")
+	petID64, err := strconv.ParseUint(rawPetID, 10, 64)
+	if err != nil || petID64 == 0 {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid pet_id",
+		})
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.petService.GetPetByID(ctxWithTimeout, uint(petID64))
 	return ctx.Status(response.Status).JSON(response)
 }
 

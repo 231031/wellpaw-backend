@@ -1922,6 +1922,30 @@ paths:
       summary: Soft Delete Pet
       tags:
       - Pet
+    get:
+      consumes:
+      - application/json
+      description: get pet by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get User Pet By Pet ID
+      tags:
+      - Pet
   /pet/analysis/{pet_id}:
     get:
       consumes:
