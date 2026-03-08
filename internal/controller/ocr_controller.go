@@ -51,7 +51,7 @@ func (c *ocrController) ProcessOcrRequest(ctx *fiber.Ctx) error {
 	}
 	defer file.Close()
 
-	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 20*time.Second)
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 60*time.Second)
 	defer cancel()
 
 	response := c.ocrService.ProcessOcrRequest(ctxWithTimeout, file)

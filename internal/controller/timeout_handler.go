@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	defaultTimeout = 5 * time.Second
+	defaultTimeout = 15 * time.Second
 )
 
 func withTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {

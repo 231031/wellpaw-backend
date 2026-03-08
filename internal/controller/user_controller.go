@@ -121,7 +121,7 @@ func (c *userController) GetAllSubscriptionsByCustomerID(ctx *fiber.Ctx) error {
 	customerID := ctx.Locals("customer_id").(string)
 	lastID := ctx.Query("last_id", "")
 
-	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
 
 	response := c.userService.GetAllSubscriptionsByCustomerID(ctxWithTimeOut, customerID, lastID)
@@ -212,7 +212,7 @@ func (c *userController) UpdateSubscription(ctx *fiber.Ctx) error {
 		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
 
-	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
 
 	response := c.userService.UpdateSubscription(ctxWithTimeOut, customerID, payload)
@@ -232,7 +232,7 @@ func (c *userController) UpdateSubscription(ctx *fiber.Ctx) error {
 func (c *userController) CancelSubscription(ctx *fiber.Ctx) error {
 	subscriptionID := ctx.Params("subscription_id")
 
-	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), 5*time.Second)
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
 	defer cancel()
 
 	response := c.userService.CancelSubscription(ctxWithTimeOut, subscriptionID)
