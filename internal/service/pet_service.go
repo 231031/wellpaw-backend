@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -169,8 +170,35 @@ func (s *petService) UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *mod
 	}
 }
 
+// Gastation, Lactation, GestationStartDate, Neutered allowed
+func (s *petService) restrictedFieldsChanged(old *model.PetDetail, new *model.PetDetail) bool {
+	if old.Weight != new.Weight || old.BCS != new.BCS {
+		return true
+	}
+	if old.ActivityLevel != nil && new.ActivityLevel != nil {
+		if *old.ActivityLevel != *new.ActivityLevel {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *petService) restrictedChangedInWindow(details []model.PetDetail) bool {
+	for i := 0; i < len(details)-1; i++ {
+		curr := details[i]
+		prev := details[i+1]
+		if curr.Weight != prev.Weight ||
+			curr.ActivityLevel != prev.ActivityLevel ||
+			curr.BCS != prev.BCS {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse {
-	pet, err := s.petRepo.GetPetInfoByID(ctx, petDetail.PetID)
+	pet, err := s.petRepo.GetLatestOneMonthPetDetailByPetID(ctx, petDetail.PetID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &model.HTTPResponse{
@@ -185,21 +213,35 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	if len(pet.PetDetails) > 0 {
-		// Gastation, Lactation, GestationStartDate, Neutered (if true to false cannot)
-		created := pet.PetDetails[0].CreatedAt
-		now := time.Now()
+	if len(pet.PetDetails) == 0 {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to get pet detail to update",
+		}
+	}
 
-		createdDate := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, created.Location())
-		nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	created := pet.PetDetails[0].CreatedAt
+	now := time.Now()
 
-		if nowDate.Before(createdDate.AddDate(0, 1, 0)) {
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "cannot update now, user is allowed to update pet detail only one time per month",
+	createdDate := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, created.Location())
+	nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	// latest in range one month
+	if nowDate.Before(createdDate.AddDate(0, 1, 0)) {
+		latest := pet.PetDetails[0]
+		fmt.Printf("latest : %+v\n", latest)
+		fmt.Printf("new : %+v\n", petDetail)
+
+		if s.restrictedFieldsChanged(&latest, petDetail) {
+			if s.restrictedChangedInWindow(pet.PetDetails) {
+				return &model.HTTPResponse{
+					Status:  http.StatusBadRequest,
+					Message: "weight/activity/bcs can only be updated once per month",
+				}
 			}
 		}
 	}
+
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)

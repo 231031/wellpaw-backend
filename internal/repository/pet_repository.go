@@ -18,6 +18,7 @@ type PetRepository interface {
 	GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error)
 	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
+	GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) (*model.Pet, error)
 	GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error)
 	GetPetDetialsFromPetID(ctx context.Context, petID uint) ([]model.PetDetail, error)
 	SoftDeletePetByIDAndUserID(ctx context.Context, petID uint, userID uint) error
@@ -125,21 +126,32 @@ func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet
 	return pet, nil
 }
 
-// func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
-// 	// oneMonthRange :=
+func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) (*model.Pet, error) {
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
 
-// 	var petDetail []model.PetDetail
-// 	if err := r.db.WithContext(ctx).
-// 		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
-// 			return db.Where("created_at >= ").Order("created_at DESC")
-// 		}).
-// 		Where("pet_id = ?", petID).
-// 		Find(&petDetail).Error; err != nil {
-// 		return nil, fmt.Errorf("failed to get latest pet detail by pet id : %w", err)
-// 	}
+	var pet model.Pet
+	if err := r.db.WithContext(ctx).
+		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Where("created_at >= ?", oneMonthAgo).
+				Order("created_at DESC")
+		}).
+		First(&pet, petID).Error; err != nil {
+		return nil, fmt.Errorf("failed to get pet info: %w", err)
+	}
 
-// 	return petDetail, nil
-// }
+	if len(pet.PetDetails) == 0 {
+		if err := r.db.WithContext(ctx).
+			Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+				return db.Order("created_at DESC").Limit(1)
+			}).
+			First(&pet, petID).Error; err != nil {
+			return nil, fmt.Errorf("failed to get pet info: %w", err)
+		}
+	}
+
+	return &pet, nil
+}
 
 func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error) {
 	var petDetail model.PetDetail
