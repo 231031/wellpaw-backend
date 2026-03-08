@@ -2740,6 +2740,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "activity_level": {
+                    "description": "ExpectedWeight     float64        ` + "`" + `gorm:\"not null\" json:\"expected_weight\"` + "`" + `",
                     "enum": [
                         0,
                         1,
@@ -2763,9 +2764,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "energy": {
-                    "type": "number"
-                },
-                "expected_weight": {
                     "type": "number"
                 },
                 "fat": {
@@ -3016,6 +3014,9 @@ const docTemplate = `{
                 },
                 "month": {
                     "type": "integer"
+                },
+                "percent_weight_change": {
+                    "type": "number"
                 },
                 "protein": {
                     "type": "number"
@@ -3485,9 +3486,6 @@ const docTemplate = `{
                 "password"
             ],
             "properties": {
-                "bcs_free": {
-                    "type": "integer"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3501,6 +3499,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "disease_free": {
+                    "description": "BcsFree            int                    ` + "`" + `gorm:\"default:0;not null\" json:\"bcs_free\"` + "`" + `",
                     "type": "integer"
                 },
                 "email": {

@@ -137,7 +137,7 @@ func (s *authService) LoginUser(ctx context.Context, payload *model.LoginPayload
 		}
 	}
 
-	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, fmt.Sprintf("%d", user.ID), user.Tier, user.SubscriptionStatus)
+	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, user.ID, user.Tier, user.SubscriptionStatus)
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("failed to set subscription detail : %s", err.Error()), serviceLog)
 	}
@@ -249,7 +249,7 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 		}
 	}
 
-	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, fmt.Sprintf("%d", user.ID), user.Tier, user.SubscriptionStatus)
+	err = s.userRepo.SetCurrentSubscriptionDetail(ctx, user.ID, user.Tier, user.SubscriptionStatus)
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("failed to set subscription detail : %s", err.Error()), serviceLog)
 	}

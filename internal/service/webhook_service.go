@@ -42,7 +42,7 @@ func (s *webhookService) HandleSubscriptionUpdated(ctx context.Context, eventObj
 		return err
 	}
 
-	err = s.userRepository.SetCurrentSubscriptionDetail(ctx, fmt.Sprintf("%d", user.ID), tier, status)
+	err = s.userRepository.SetCurrentSubscriptionDetail(ctx, user.ID, tier, status)
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("webhook handler failed to set subscription detail in redsi : %s", err.Error()), serviceLog)
 		return err
@@ -72,7 +72,7 @@ func (s *webhookService) HandleSubscriptionFreeTierUpdated(ctx context.Context, 
 		return err
 	}
 
-	err = s.userRepository.SetCurrentSubscriptionDetail(ctx, fmt.Sprintf("%d", user.ID), model.FREE, model.ACTIVESUB)
+	err = s.userRepository.SetCurrentSubscriptionDetail(ctx, user.ID, model.FREE, model.ACTIVESUB)
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("webhook handler failed to set subscription free-tial detail in redsi : %s", err.Error()), serviceLog)
 		return err

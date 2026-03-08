@@ -28,9 +28,9 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, u *model.User) error
 	UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error
 	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
-	getSubscriptionDetailFromDB(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error)
-	GetSubscriptionDetail(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error)
-	SetCurrentSubscriptionDetail(ctx context.Context, userID string, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
+	GetSubscriptionDetailFromDB(ctx context.Context, userID uint) (*model.User, error)
+	GetSubscriptionDetail(ctx context.Context, userID uint) (*model.TierType, *model.SubscriptionStatusType, error)
+	SetCurrentSubscriptionDetail(ctx context.Context, userID uint, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) error
 	UpdatePasswordByEmail(ctx context.Context, email string, password string) error
 	UpdateCustomerID(ctx context.Context, id uint, customerID string) error
@@ -73,7 +73,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User,
 	err := r.db.WithContext(ctx).
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -89,7 +89,7 @@ func (r *userRepository) GetUserIdDetailByID(ctx context.Context, id uint) (*mod
 		Select("id", "email", "first_name", "last_name", "device_token",
 			"payment_method_id", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -107,7 +107,7 @@ func (r *userRepository) GetUserAllInfo(ctx context.Context, id uint) (*model.Us
 		Preload("Pets").
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "bcs_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -156,22 +156,22 @@ func (r *userRepository) UpdateCalendarNotification(ctx context.Context, id uint
 	return nil
 }
 
-func (r *userRepository) getSubscriptionDetailFromDB(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+func (r *userRepository) GetSubscriptionDetailFromDB(ctx context.Context, userID uint) (*model.User, error) {
 	var user *model.User
 	err := r.db.WithContext(ctx).
-		Select("tier", "subscription_status").Where("id = ?", userID).First(&user).Error
+		Select("tier", "subscription_status", "free_tier_usage", "profile_free", "food_free", "food_plan_free", "disease_free").Where("id = ?", userID).First(&user).Error
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get subscription detail from db : %w", err)
+		return nil, fmt.Errorf("failed to get subscription detail from db : %w", err)
 	}
 
-	return &user.Tier, &user.SubscriptionStatus, nil
+	return user, nil
 }
 
-func (r *userRepository) getRedisKey(userID string) string {
-	return fmt.Sprintf("sub:%s", userID)
+func (r *userRepository) getRedisKey(userID uint) string {
+	return fmt.Sprintf("sub:%d", userID)
 }
 
-func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, userID string, tier model.TierType, status model.SubscriptionStatusType) error {
+func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, userID uint, tier model.TierType, status model.SubscriptionStatusType) error {
 	key := r.getRedisKey(userID)
 	value := fmt.Sprintf("%d:%d", tier, status)
 	_, err := r.redisClient.SetArgs(ctx, key, value, redis.SetArgs{
@@ -189,22 +189,22 @@ func (r *userRepository) SetCurrentSubscriptionDetail(ctx context.Context, userI
 	return nil
 }
 
-func (r *userRepository) GetSubscriptionDetail(ctx context.Context, userID string) (*model.TierType, *model.SubscriptionStatusType, error) {
+func (r *userRepository) GetSubscriptionDetail(ctx context.Context, userID uint) (*model.TierType, *model.SubscriptionStatusType, error) {
 	key := r.getRedisKey(userID)
 	value, err := r.redisClient.Get(ctx, key).Result()
 	if err != nil {
 		applogger.LogError(fmt.Sprintf("redis failed to get subscription detail : %s", err.Error()), repoLog)
 
-		tier, status, err := r.getSubscriptionDetailFromDB(ctx, userID)
+		user, err := r.GetSubscriptionDetailFromDB(ctx, userID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get subscription detail : %w", err)
 		}
 
-		if err := r.SetCurrentSubscriptionDetail(ctx, userID, *tier, *status); err != nil {
-			return tier, status, nil
+		if err := r.SetCurrentSubscriptionDetail(ctx, userID, user.Tier, user.SubscriptionStatus); err != nil {
+			return &user.Tier, &user.SubscriptionStatus, nil
 		}
 
-		return tier, status, nil
+		return &user.Tier, &user.SubscriptionStatus, nil
 	}
 
 	result := strings.Split(value, ":")
