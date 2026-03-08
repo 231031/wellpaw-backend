@@ -19,9 +19,10 @@ var (
 	FailedToCreateMsg   = "failed to create "
 	FailedToUpdateMsg   = "failed to update "
 
-	ErrUnauth       = errors.New("the token is invalid")
-	ErrUnauthHeader = errors.New("the user is unauthorization")
-	ErrFailToGet    = errors.New("failed to get data")
+	ErrUnauth                   = errors.New("the token is invalid")
+	ErrUnauthHeader             = errors.New("the user is unauthorization")
+	ErrFailToGet                = errors.New("failed to get data")
+	ErrFailToCheckFreeTierUsage = errors.New("failed to check limatation of free tiral usage")
 )
 
 func HandleStripeError(msgFailed string, err error) *model.HTTPResponse {
