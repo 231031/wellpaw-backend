@@ -30,7 +30,7 @@ func NewFreeTierUsageRepository(db *gorm.DB, redisClient *redis.Client) FreeTier
 	return &freeTierUsageRepository{
 		db:          db,
 		redisClient: redisClient,
-		redisTTL:    15 * 24 * time.Hour,
+		redisTTL:    1 * 24 * time.Hour,
 	}
 }
 
