@@ -14,8 +14,9 @@ type PetCalendar struct {
 	EndDate       time.Time       `gorm:"type:date" json:"end_date"`
 	Frequently    *FrequentlyType `gorm:"not null" json:"frequently" validate:"required"`
 	Notation      string          `gorm:"type:varchar(512)" json:"notation"`
-	CreatedAt     time.Time       `gorm:"not null" json:"created_at"`
-	DeletedAt     gorm.DeletedAt  `gorm:"index" json:"deleted_at"`
+	// Notificate    bool            `gorm:"default:false;not null" json:"-"`
+	CreatedAt time.Time      `gorm:"not null" json:"created_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 
 	// Relationships
 	ActivityEvents []PetActivityCalendar `gorm:"foreignKey:PetCalendarID" json:"activity_events,omitempty"`

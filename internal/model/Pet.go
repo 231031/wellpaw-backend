@@ -20,7 +20,7 @@ type Pet struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
-	// User           *User                 `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User                *User                    `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	PetDetails          []PetDetail              `gorm:"foreignKey:PetID" json:"pet_details,omitempty"`
 	PetFoodPlans        []PetFoodPlan            `gorm:"foreignKey:PetID" json:"pet_food_plans,omitempty"`
 	PetFoodPlanHistorys []PetFoodPlanHistory     `gorm:"foreignKey:PetID" json:"pet_food_plan_historys,omitempty"`

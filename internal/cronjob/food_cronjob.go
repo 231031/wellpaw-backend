@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
@@ -13,7 +12,7 @@ import (
 
 func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 	logAt := "food cronjob"
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cj.defaultTimeout)
 	defer cancel()
 
 	var lastID uint

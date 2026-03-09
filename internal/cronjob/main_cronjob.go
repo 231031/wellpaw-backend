@@ -15,13 +15,17 @@ type mainCronjob struct {
 	calculationSerivce service.CalculationService
 	foodRepo           repository.FoodRepository
 	petFoodPlanRepo    repository.PetFoodPlanRepository
+	petCalendarRepo    repository.PetCalendarRepository
+	defaultTimeout     time.Duration
 }
 
-func CreateCronjob(calSerivce service.CalculationService, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository) {
+func CreateCronjob(calSerivce service.CalculationService, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository, petCalendarRepo repository.PetCalendarRepository) {
 	main := &mainCronjob{
 		calculationSerivce: calSerivce,
 		foodRepo:           foodRepo,
 		petFoodPlanRepo:    petFoodPlanRepo,
+		petCalendarRepo:    petCalendarRepo,
+		defaultTimeout:     10 * time.Second,
 	}
 
 	location, err := time.LoadLocation("Asia/Bangkok")
@@ -32,5 +36,6 @@ func CreateCronjob(calSerivce service.CalculationService, foodRepo repository.Fo
 
 	c := cron.New(cron.WithLocation(location))
 	c.AddFunc("59 23 * * *", main.UpdateQuatityFoodDaily)
+	c.AddFunc("*/5 * * * *", main.NotificateActivity)
 	c.Start()
 }
