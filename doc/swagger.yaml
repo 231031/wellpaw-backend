@@ -1,5 +1,19 @@
 basePath: /api
 definitions:
+  github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsData:
+    properties:
+      activity_calendars:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar'
+        type: array
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsData'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.ActivityLevel:
     enum:
     - 0
@@ -92,6 +106,13 @@ definitions:
     - pet_id
     - unit
     type: object
+  github_com_231031_wellpaw-backend_internal_model.CalendarResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CalendarType:
     enum:
     - 0
@@ -102,6 +123,36 @@ definitions:
     - VACCINE
     - DRUG
     - APPOINTMENT
+  github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary:
+    properties:
+      times:
+        type: integer
+      type:
+        type: string
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummaryResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary'
+        type: array
+      status:
+        type: integer
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.CalendarsData:
+    properties:
+      calendars:
+        items:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar'
+        type: array
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.CalendarsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarsData'
+      status:
+        type: integer
+    type: object
   github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload:
     properties:
       amount:
@@ -113,6 +164,19 @@ definitions:
     required:
     - amount
     - food_id
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.CreatePetCalendarPaylaod:
+    properties:
+      pet_calendar:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar'
+      pet_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - pet_calendar
+    - pet_ids
     type: object
   github_com_231031_wellpaw-backend_internal_model.CreatePetFoodPlanPayload:
     properties:
@@ -379,27 +443,6 @@ definitions:
       status:
         type: integer
     type: object
-  github_com_231031_wellpaw-backend_internal_model.Payment:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      price_id:
-        type: string
-      status:
-        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentStatusType'
-      subscription_id:
-        type: string
-      updated_at:
-        type: string
-      user:
-        allOf:
-        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
-        description: Relationships
-      user_id:
-        type: integer
-    type: object
   github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse:
     properties:
       data:
@@ -427,16 +470,6 @@ definitions:
     required:
     - payment_method_id
     type: object
-  github_com_231031_wellpaw-backend_internal_model.PaymentStatusType:
-    enum:
-    - 0
-    - 1
-    - 2
-    type: integer
-    x-enum-varnames:
-    - PENDING
-    - SUCCEEDED
-    - FAILED
   github_com_231031_wellpaw-backend_internal_model.Pet:
     properties:
       activity_events:
@@ -1090,10 +1123,6 @@ definitions:
         type: string
       payment_method_id:
         type: string
-      payments:
-        items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Payment'
-        type: array
       pets:
         description: Relationships
         items:
@@ -1300,6 +1329,132 @@ paths:
       summary: Reset Password
       tags:
       - Authentication
+  /calendar:
+    post:
+      consumes:
+      - application/json
+      description: create a calendar and activity events for multiple pets
+      parameters:
+      - description: Create pet calendar payload
+        in: body
+        name: CreatePetCalendarPaylaod
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CreatePetCalendarPaylaod'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Pet Calendar
+      tags:
+      - Pet Calendar
+  /calendars:
+    get:
+      consumes:
+      - application/json
+      description: get all pet calendars of current user and preload pet
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Pet Calendars By User ID
+      tags:
+      - Pet Calendar
+  /calendars/{pet_id}:
+    get:
+      consumes:
+      - application/json
+      description: get pet calendars by pet id and current user ownership example
+        of time 2025-03-10T21:00:00+07:00
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Pet Calendars By Pet ID
+      tags:
+      - Pet Calendar
+  /calendars/sum:
+    get:
+      consumes:
+      - application/json
+      description: get total calendars by type in current month of current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummaryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Current Month Pet Calendar Summary
+      tags:
+      - Pet Calendar
   /disease/labeled:
     patch:
       consumes:

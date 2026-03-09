@@ -140,3 +140,8 @@ type LabeledPetSkinDiseasePayload struct {
 	Labeled        *DiseaseType `json:"labeled" validate:"required"`
 	ImageEvidence  string       `json:"image_evidence" validate:"required"`
 }
+
+type CreatePetCalendarPaylaod struct {
+	PetIDs      []uint       `json:"pet_ids" validate:"required,min=1"`
+	PetCalendar *PetCalendar `json:"pet_calendar" validate:"required"`
+}

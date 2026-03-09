@@ -265,6 +265,204 @@ const docTemplate = `{
                 }
             }
         },
+        "/calendar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "create a calendar and activity events for multiple pets",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Calendar"
+                ],
+                "summary": "Create Pet Calendar",
+                "parameters": [
+                    {
+                        "description": "Create pet calendar payload",
+                        "name": "CreatePetCalendarPaylaod",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CreatePetCalendarPaylaod"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/calendars": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get all pet calendars of current user and preload pet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Calendar"
+                ],
+                "summary": "Get Pet Calendars By User ID",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/calendars/sum": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get total calendars by type in current month of current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Calendar"
+                ],
+                "summary": "Get Current Month Pet Calendar Summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/calendars/{pet_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get pet calendars by pet id and current user ownership example of time 2025-03-10T21:00:00+07:00",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pet Calendar"
+                ],
+                "summary": "Get Pet Calendars By Pet ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/disease/labeled": {
             "patch": {
                 "security": [
@@ -1957,6 +2155,28 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsData": {
+            "type": "object",
+            "properties": {
+                "activity_calendars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar"
+                    }
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.ActivityCalendarsData"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.ActivityLevel": {
             "type": "integer",
             "enum": [
@@ -2091,6 +2311,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_231031_wellpaw-backend_internal_model.CalendarType": {
             "type": "integer",
             "enum": [
@@ -2103,6 +2334,53 @@ const docTemplate = `{
                 "DRUG",
                 "APPOINTMENT"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary": {
+            "type": "object",
+            "properties": {
+                "times": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary"
+                    }
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarsData": {
+            "type": "object",
+            "properties": {
+                "calendars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar"
+                    }
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CalendarsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarsData"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload": {
             "type": "object",
@@ -2119,6 +2397,25 @@ const docTemplate = `{
                 },
                 "grams_per_cup": {
                     "type": "number"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.CreatePetCalendarPaylaod": {
+            "type": "object",
+            "required": [
+                "pet_calendar",
+                "pet_ids"
+            ],
+            "properties": {
+                "pet_calendar": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetCalendar"
+                },
+                "pet_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -2508,40 +2805,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_231031_wellpaw-backend_internal_model.Payment": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "price_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PaymentStatusType"
-                },
-                "subscription_id": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user": {
-                    "description": "Relationships",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
-                        }
-                    ]
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse": {
             "type": "object",
             "properties": {
@@ -2583,19 +2846,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "github_com_231031_wellpaw-backend_internal_model.PaymentStatusType": {
-            "type": "integer",
-            "enum": [
-                0,
-                1,
-                2
-            ],
-            "x-enum-varnames": [
-                "PENDING",
-                "SUCCEEDED",
-                "FAILED"
-            ]
         },
         "github_com_231031_wellpaw-backend_internal_model.Pet": {
             "type": "object",
@@ -3578,12 +3828,6 @@ const docTemplate = `{
                 },
                 "payment_method_id": {
                     "type": "string"
-                },
-                "payments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Payment"
-                    }
                 },
                 "pets": {
                     "description": "Relationships",

@@ -72,6 +72,40 @@ type PetsResponse struct {
 	Data   *PetsData `json:"data"`
 }
 
+type ActivityCalendarsData struct {
+	ActivityCalendars []PetActivityCalendar `json:"activity_calendars"`
+}
+
+type ActivityCalendarsResponse struct {
+	Status int                    `json:"status"`
+	Data   *ActivityCalendarsData `json:"data"`
+}
+
+type CalendarResponse struct {
+	Status int          `json:"status"`
+	Data   *PetCalendar `json:"data"`
+}
+
+type CalendarsData struct {
+	Calendars []PetCalendar `json:"calendars"`
+}
+
+type CalendarsResponse struct {
+	Status int            `json:"status"`
+	Data   *CalendarsData `json:"data"`
+}
+
+type CalendarTypeSummary struct {
+	CalendarType CalendarType `json:"calendar_type"`
+	Type         string       `json:"type"`
+	Times        int          `json:"times"`
+}
+
+type CalendarTypeSummaryResponse struct {
+	Status int                   `json:"status"`
+	Data   []CalendarTypeSummary `json:"data"`
+}
+
 type FoodResponse struct {
 	Status int   `json:"status"`
 	Data   *Food `json:"data"`

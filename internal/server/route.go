@@ -76,6 +76,15 @@ func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetF
 	petFoodPlanRoute.Get("/:pet_id", petFoodPlanController.GetLastestActivePlanDetailByPet)
 }
 
+func RoutePetCalendar(router fiber.Router, petCalendarController controller.PetCalendarController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/calendars", authMiddleware.AuthorizeUser(), petCalendarController.GetPetCalendarsByUserID)
+	router.Get("/calendars/sum", authMiddleware.AuthorizeUser(), petCalendarController.GetCurrentMonthCalendarTypeSummaryByUserID)
+	router.Get("/calendars/:pet_id", authMiddleware.AuthorizeUser(), petCalendarController.GetPetCalendarsByPetID)
+
+	petCalendarRoute := router.Group("/calendar", authMiddleware.AuthorizeUser())
+	petCalendarRoute.Post("/", petCalendarController.CreatePetCalendar)
+}
+
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
 	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
@@ -129,12 +138,16 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	petRepo := repository.NewPetRepository(db)
 	petFoodPlanRepo := repository.NewPetFoodPlanRepository(db)
+	petCalendarRepo := repository.NewPetCalendarRepository(db)
 
 	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo, freeTierValidationService)
 	petFoodPlanController := controller.NewPetFoodPlanController(petFoodPlanService)
 
 	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo, freeTierValidationService)
 	petController := controller.NewPetController(petService)
+
+	petCalendarService := service.NewPetCalendarService(petCalendarRepo)
+	petCalendarController := controller.NewPetCalendarController(petCalendarService)
 
 	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
 	modelService := service.NewModelService(cfg.MODEL_BASE_API)
@@ -150,6 +163,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	RoutePet(router, petController, authMiddlware)
 	RouteFood(router, foodController, authMiddlware)
 	RoutePetFoodPlan(router, petFoodPlanController, authMiddlware)
+	RoutePetCalendar(router, petCalendarController, authMiddlware)
 	RouteDisease(router, diseaseController, authMiddlware)
 
 	ocrService := service.NewOcrService(geminiClient, freeTierValidationService)
