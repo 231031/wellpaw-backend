@@ -9,6 +9,7 @@ import (
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/middleware"
 	"github.com/231031/wellpaw-backend/internal/migration"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 	"github.com/google/generative-ai-go/genai"
@@ -64,6 +65,18 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	}
 	applogger.LogInfo("connected to Stripe", serverLog)
 
+	var firebaseStorage *model.FirebaseStorage
+
+	// connect Firebase Storage (only if configured)
+	if cfg.FIREBASE_STORAGE_BUCKET != "" {
+		firebaseStorage, err = connectFirebaseStorage(cfg)
+		if err != nil {
+			applogger.LogError(fmt.Sprintln("failed to connect to Firebase Storage:", err), serverLog)
+		} else {
+			applogger.LogInfo("connected to Firebase Storage", serverLog)
+		}
+	}
+
 	// helath check
 	app.Get("health", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
@@ -73,6 +86,6 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	router := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain", "image/*"))
-	CreateRoute(router, db, redisClient, geminiClient, stripeClient, cfg)
+	CreateRoute(router, db, redisClient, geminiClient, stripeClient, firebaseStorage, cfg)
 
 }

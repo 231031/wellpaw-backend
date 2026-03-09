@@ -25,3 +25,17 @@ func ValidateBase64Image(image string) error {
 
 	return nil
 }
+
+func DetectContentType(contentType string) string {
+	ext := ".jpg"
+	switch contentType {
+	case "image/png":
+		ext = ".png"
+	case "image/webp":
+		ext = ".webp"
+	case "image/gif":
+		ext = ".gif"
+	}
+
+	return ext
+}

@@ -1,14 +1,22 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
+	"github.com/google/uuid"
+	gcpstorage "google.golang.org/api/storage/v1"
 	"gorm.io/gorm"
 )
 
@@ -17,6 +25,7 @@ type DiseaseService interface {
 	GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
 	LabeledPetSkinDisease(ctx context.Context, userID uint, payload *model.LabeledPetSkinDiseasePayload) *model.HTTPResponse
+	UploadSkinImage(petType model.PetType, predicted model.DiseaseType, imageBase64 string) (string, error)
 	mapPetSkinClassToDiseaseType(petType model.PetType, classIndex int) (model.DiseaseType, bool)
 }
 
@@ -25,14 +34,16 @@ type diseaseService struct {
 	petRepo               repository.PetRepository
 	petSkinImageRepo      repository.PetSkinImageRepository
 	freeValidationService FreeTierUsageValidationService
+	firebaseStorage       *model.FirebaseStorage
 }
 
-func NewDiseaseService(modelService ModelService, petRepo repository.PetRepository, petSkinImageRepo repository.PetSkinImageRepository, freeTierUsageValidationService FreeTierUsageValidationService) DiseaseService {
+func NewDiseaseService(modelService ModelService, petRepo repository.PetRepository, petSkinImageRepo repository.PetSkinImageRepository, freeTierUsageValidationService FreeTierUsageValidationService, firebaseStorage *model.FirebaseStorage) DiseaseService {
 	return &diseaseService{
 		modelService:          modelService,
 		petRepo:               petRepo,
 		petSkinImageRepo:      petSkinImageRepo,
 		freeValidationService: freeTierUsageValidationService,
+		firebaseStorage:       firebaseStorage,
 	}
 }
 
@@ -86,9 +97,17 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 		confident = 100
 	}
 
+	imagePath, err := s.UploadSkinImage(*pet.Type, predicted, payload.Image)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "failed to upload pet skin image",
+		}
+	}
+
 	petSkinImage := &model.PetSkinImage{
 		PetID:     pet.ID,
-		ImagePath: "",
+		ImagePath: imagePath,
 		Predicted: predicted,
 		Labeled:   -1,
 		Confident: confident,
@@ -265,4 +284,41 @@ func (s *diseaseService) mapPetSkinClassToDiseaseType(petType model.PetType, cla
 	default:
 		return 0, false
 	}
+}
+
+func (s *diseaseService) UploadSkinImage(petType model.PetType, predicted model.DiseaseType, imageBase64 string) (string, error) {
+	decodedImage, err := base64.StdEncoding.DecodeString(imageBase64)
+	if err != nil {
+		decodedImage, err = base64.RawStdEncoding.DecodeString(imageBase64)
+		if err != nil {
+			return "", fmt.Errorf("invalid base64 image: %w", err)
+		}
+	}
+
+	contentType := http.DetectContentType(decodedImage)
+	ext := utils.DetectContentType(contentType)
+
+	predictedPath := strings.ToLower(strings.ReplaceAll(predicted.String(), " ", "_"))
+	petTypePath := strings.ToLower(strings.ReplaceAll(petType.String(), " ", "_"))
+	objectName := fmt.Sprintf("disease/%s/%s/%s%s", predictedPath, petTypePath, uuid.NewString(), ext)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	_, err = s.firebaseStorage.Objects.Insert(s.firebaseStorage.BucketName, &gcpstorage.Object{
+		Name:        objectName,
+		ContentType: contentType,
+	}).Media(bytes.NewReader(decodedImage)).Context(ctx).Do()
+	if err != nil {
+		return "", fmt.Errorf("failed to upload image to firebase storage: %w", err)
+	}
+
+	encoded := url.PathEscape(objectName)
+	url := fmt.Sprintf(
+		"https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
+		s.firebaseStorage.BucketName,
+		encoded,
+	)
+
+	return url, nil
 }

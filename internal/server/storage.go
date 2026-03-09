@@ -3,9 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/redis/go-redis/v9"
+	gcpstorage "google.golang.org/api/storage/v1"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -42,4 +45,33 @@ func connectRedis(host, port, password string) (*redis.Client, error) {
 	defer cancel()
 
 	return client, client.Ping(ctxTimeout).Err()
+}
+
+func connectFirebaseStorage(cfg *Cfg) (*model.FirebaseStorage, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("firebase storage config is nil")
+	}
+
+	bucketName := strings.TrimSpace(cfg.FIREBASE_STORAGE_BUCKET)
+	if bucketName == "" {
+		return nil, fmt.Errorf("firebase storage bucket is not configured")
+	}
+
+	ctx := context.Background()
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	service, err := gcpstorage.NewService(ctxTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize firebase storage client: %w", err)
+	}
+
+	if _, err := service.Buckets.Get(bucketName).Context(ctxTimeout).Do(); err != nil {
+		return nil, fmt.Errorf("failed to access firebase storage bucket %s: %w", bucketName, err)
+	}
+
+	return &model.FirebaseStorage{
+		Objects:    service.Objects,
+		BucketName: bucketName,
+	}, nil
 }

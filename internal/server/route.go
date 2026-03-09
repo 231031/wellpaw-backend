@@ -4,6 +4,7 @@ import (
 	"github.com/231031/wellpaw-backend/internal/controller"
 	"github.com/231031/wellpaw-backend/internal/cronjob"
 	"github.com/231031/wellpaw-backend/internal/middleware"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -95,7 +96,7 @@ func RouteDisease(router fiber.Router, diseaseController controller.DiseaseContr
 	diseaseRoute.Patch("/labeled", diseaseController.LabeledPetSkinDisease)
 }
 
-func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, cfg *Cfg) {
+func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, firebaseStorage *model.FirebaseStorage, cfg *Cfg) {
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
@@ -137,7 +138,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
 	modelService := service.NewModelService(cfg.MODEL_BASE_API)
-	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo, freeTierValidationService)
+	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo, freeTierValidationService, firebaseStorage)
 	diseaseController := controller.NewDiseaseController(diseaseService)
 
 	// routing
