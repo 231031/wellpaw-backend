@@ -102,6 +102,7 @@ func RouteDisease(router fiber.Router, diseaseController controller.DiseaseContr
 
 	diseaseRoute := router.Group("/disease", authMiddleware.AuthorizeUser())
 	diseaseRoute.Post("/predict", diseaseController.PredictDisease)
+	diseaseRoute.Post("/predict/unknown", authMiddleware.AuthorizeUser(), diseaseController.PredictDiseaseUnknown)
 	diseaseRoute.Patch("/labeled", diseaseController.LabeledPetSkinDisease)
 }
 

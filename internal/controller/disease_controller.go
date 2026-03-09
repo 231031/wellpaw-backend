@@ -12,6 +12,7 @@ import (
 )
 
 type DiseaseController interface {
+	PredictDiseaseUnknown(ctx *fiber.Ctx) error
 	PredictDisease(ctx *fiber.Ctx) error
 	GetPetSkinImagesByUserID(ctx *fiber.Ctx) error
 	GetPetSkinImagesByPetID(ctx *fiber.Ctx) error
@@ -26,6 +27,39 @@ func NewDiseaseController(diseaseService service.DiseaseService) DiseaseControll
 	return &diseaseController{
 		diseaseService: diseaseService,
 	}
+}
+
+// @Summary Predict Disease Unknown Pet
+// @Description predict pet skin disease from base64 image without pet profile
+// @tags Disease
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param PredictPetSkinDiseaseUnknownPayload body model.PredictPetSkinDiseaseUnknownPayload true "Predict disease unknown payload"
+// @Success 201 {object} model.PredictPetSkinImageResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 401 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /predict/unknown [post]
+func (c *diseaseController) PredictDiseaseUnknown(ctx *fiber.Ctx) error {
+	var payload model.PredictPetSkinDiseaseUnknownPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+	}
+
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
+
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 60*time.Second)
+	defer cancel()
+
+	userID := ctx.Locals("id").(uint)
+	response := c.diseaseService.PredictPetSkinDiseaseUnknown(ctxWithTimeout, userID, &payload)
+	return ctx.Status(response.Status).JSON(response)
 }
 
 // @Summary Predict Disease

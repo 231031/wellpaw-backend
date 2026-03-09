@@ -14,7 +14,7 @@ import (
 )
 
 type ModelService interface {
-	PredictPetSkinDisease(ctx context.Context, petType model.PetType, payload *model.PredictPetSkinDiseasePayload) (*model.PetSkinModelResponse, *model.HTTPResponse)
+	PredictPetSkinDisease(ctx context.Context, imageBase string, petType model.PetType) (*model.PetSkinModelResponse, *model.HTTPResponse)
 }
 
 type modelService struct {
@@ -31,7 +31,7 @@ func NewModelService(modelBaseAPI string) ModelService {
 	}
 }
 
-func (s *modelService) PredictPetSkinDisease(ctx context.Context, petType model.PetType, payload *model.PredictPetSkinDiseasePayload) (*model.PetSkinModelResponse, *model.HTTPResponse) {
+func (s *modelService) PredictPetSkinDisease(ctx context.Context, imageBase string, petType model.PetType) (*model.PetSkinModelResponse, *model.HTTPResponse) {
 	predictURL, ok := s.buildPredictURL(petType)
 	if !ok {
 		return nil, &model.HTTPResponse{
@@ -40,7 +40,7 @@ func (s *modelService) PredictPetSkinDisease(ctx context.Context, petType model.
 		}
 	}
 
-	return s.callPredictAPI(ctx, predictURL, payload.Image)
+	return s.callPredictAPI(ctx, predictURL, imageBase)
 }
 
 func (s *modelService) buildPredictURL(petType model.PetType) (string, bool) {

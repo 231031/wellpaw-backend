@@ -21,6 +21,8 @@ import (
 )
 
 type DiseaseService interface {
+	validateAndPredictDisease(ctx context.Context, imageBase string, petType model.PetType) (model.DiseaseType, int, *model.HTTPResponse)
+	PredictPetSkinDiseaseUnknown(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseaseUnknownPayload) *model.HTTPResponse
 	PredictPetSkinDisease(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse
 	GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
@@ -47,6 +49,84 @@ func NewDiseaseService(modelService ModelService, petRepo repository.PetReposito
 	}
 }
 
+func (s *diseaseService) convertConfidentToRangeConfident(confident int) int {
+	switch {
+	case confident >= 80:
+		return 5
+	case confident >= 60:
+		return 4
+	case confident >= 40:
+		return 3
+	case confident >= 20:
+		return 2
+	default:
+		return 1
+	}
+}
+
+func (s *diseaseService) validateAndPredictDisease(ctx context.Context, imageBase string, petType model.PetType) (model.DiseaseType, int, *model.HTTPResponse) {
+	// check base64 format that valid or not if not return 400 status invalid image file
+	if err := utils.ValidateBase64Image(imageBase); err != nil {
+		return -1, 0, &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid image file",
+		}
+	}
+
+	modelResp, httpResp := s.modelService.PredictPetSkinDisease(ctx, imageBase, petType)
+	if httpResp != nil {
+		return -1, 0, httpResp
+	}
+
+	predicted, ok := s.mapPetSkinClassToDiseaseType(petType, modelResp.ClassIndex)
+	if !ok {
+		return -1, 0, &model.HTTPResponse{
+			Status:  http.StatusBadGateway,
+			Message: "invalid prediction from model api",
+		}
+	}
+
+	confident := int(math.Round(modelResp.Probability * 100))
+	if confident < 0 {
+		confident = 0
+	}
+	if confident > 100 {
+		confident = 100
+	}
+
+	return predicted, confident, nil
+}
+
+func (s *diseaseService) PredictPetSkinDiseaseUnknown(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseaseUnknownPayload) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
+	if resp != nil {
+		return resp
+	}
+
+	predicted, confident, resp := s.validateAndPredictDisease(ctx, payload.Image, *payload.PetType)
+	if resp != nil {
+		return resp
+	}
+	petSkinImage := &model.PetSkinImage{
+		ImagePath: "",
+		Predicted: predicted,
+		Labeled:   -1,
+		Confident: confident,
+	}
+
+	if tier != nil && *tier == model.FREE {
+		freeUsage.DiseaseFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
+	}
+
+	petSkinImage.Disease = petSkinImage.Predicted.String()
+	petSkinImage.Confident = s.convertConfidentToRangeConfident(petSkinImage.Confident)
+	return &model.HTTPResponse{
+		Status: http.StatusCreated,
+		Data:   petSkinImage,
+	}
+}
+
 func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse {
 	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
 	if resp != nil {
@@ -68,33 +148,9 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 		}
 	}
 
-	// check base64 format that valid or not if not return 400 status invalid image file
-	if err := utils.ValidateBase64Image(payload.Image); err != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Message: "invalid image file",
-		}
-	}
-
-	modelResp, httpResp := s.modelService.PredictPetSkinDisease(ctx, *pet.Type, payload)
-	if httpResp != nil {
-		return httpResp
-	}
-
-	predicted, ok := s.mapPetSkinClassToDiseaseType(*pet.Type, modelResp.ClassIndex)
-	if !ok {
-		return &model.HTTPResponse{
-			Status:  http.StatusBadGateway,
-			Message: "invalid class_index from model api",
-		}
-	}
-
-	confident := int(math.Round(modelResp.Probability * 100))
-	if confident < 0 {
-		confident = 0
-	}
-	if confident > 100 {
-		confident = 100
+	predicted, confident, resp := s.validateAndPredictDisease(ctx, payload.Image, *pet.Type)
+	if resp != nil {
+		return resp
 	}
 
 	imagePath, err := s.UploadSkinImage(*pet.Type, predicted, payload.Image)
@@ -126,6 +182,7 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 	}
 
 	petSkinImage.Disease = petSkinImage.Predicted.String()
+	petSkinImage.Confident = s.convertConfidentToRangeConfident(petSkinImage.Confident)
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data:   petSkinImage,
@@ -215,6 +272,7 @@ func (s *diseaseService) LabeledPetSkinDisease(ctx context.Context, userID uint,
 	}
 
 	updatedPetSkinImage.Disease = updatedPetSkinImage.Predicted.String()
+	updatedPetSkinImage.Confident = s.convertConfidentToRangeConfident(updatedPetSkinImage.Confident)
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   updatedPetSkinImage,
@@ -228,6 +286,7 @@ func (s *diseaseService) mapPetSkinImagesDisease(petSkinImages []model.PetSkinIm
 
 	for idx := range petSkinImages {
 		petSkinImages[idx].Disease = petSkinImages[idx].Predicted.String()
+		petSkinImages[idx].Confident = s.convertConfidentToRangeConfident(petSkinImages[idx].Confident)
 	}
 
 	return petSkinImages
