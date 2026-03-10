@@ -16,7 +16,7 @@ type PetFoodPlan struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
-	// Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`
+	Pet               *Pet               `gorm:"foreignKey:PetID" json:"pet,omitempty"`
 	FoodPetFoodPlans  []FoodPetFoodPlan  `gorm:"foreignKey:PetFoodPlanID" json:"food_pet_food_plans,omitempty"`
 	PetFoodPlanTotals []PetFoodPlanTotal `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan_totals,omitempty"`
 }

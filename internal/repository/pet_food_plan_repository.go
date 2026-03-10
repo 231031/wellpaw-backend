@@ -220,6 +220,8 @@ func (r *petFoodPlanRepository) GetNextActiveFoodPlanByID(ctx context.Context, l
 		Where("active = true AND id > ?", lastID).
 		Order("id ASC").
 		Limit(1).
+		Preload("Pet").
+		Preload("Pet.User").
 		Preload("FoodPetFoodPlans", func(db *gorm.DB) *gorm.DB {
 			return db.Order("id ASC")
 		}).

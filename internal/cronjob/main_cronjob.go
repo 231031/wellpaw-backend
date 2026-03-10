@@ -1,15 +1,31 @@
 package cronjob
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/robfig/cron/v3"
 )
 
-type MainCronjob interface{}
+type MainCronjob interface {
+	UpdateQuatityFoodDaily()
+	checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.FoodQuantity, bool)
+	checkNextQuatityFoodDaily(ctx context.Context, lastID uint) (*model.PetFoodPlan, bool)
+	sendFoodQuantitiesNotification(ctx context.Context, planInfficient []model.NotificationPlan)
+
+	NotificateActivity()
+	getCalendarMessageBody(c model.PetCalendar) string
+	sendCalendarNotification(ctx context.Context, notificationsMsg []model.SendNotificationParams)
+}
+
+var (
+	foodLog     = "food cronjob"
+	activityLog = "activity cronjob"
+)
 
 type mainCronjob struct {
 	calculationSerivce service.CalculationService

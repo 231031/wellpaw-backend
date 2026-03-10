@@ -4,18 +4,63 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"gorm.io/gorm"
 )
 
+func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planInfficient []model.NotificationPlan) {
+	notificationsMsg := make([]model.SendNotificationParams, 0)
+	for _, pi := range planInfficient {
+		p := pi.Plan
+
+		notificationMsg := model.SendNotificationParams{}
+		if pi.OutTime == model.NOW {
+			notificationMsg = model.SendNotificationParams{
+				Token: p.Pet.User.DeviceToken,
+				Title: fmt.Sprintf("%s Plan require update food quantities", p.Name),
+				Body:  fmt.Sprintf("foods in %s Plan already out of amount and WellPaw will cannot track your food amount even the plan is stil active", p.Name),
+			}
+		} else {
+			notificationMsg = model.SendNotificationParams{
+				Token: p.Pet.User.DeviceToken,
+				Title: fmt.Sprintf("%s Plan require update food quantities", p.Name),
+				Body:  fmt.Sprintf("foods in %s Plan will out of amount soon and WellPaw will cannot track your food amount even the plan is stil active", p.Name),
+			}
+		}
+		notificationsMsg = append(notificationsMsg, notificationMsg)
+
+	}
+
+	resp, err := cj.fcmService.SendNotifications(ctx, notificationsMsg)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to send notifications (%d) : %v", len(notificationsMsg), err), foodLog)
+	}
+	if resp == nil {
+		applogger.LogInfo("fcm response is nil", foodLog)
+	}
+
+	for i, r := range resp.Responses {
+		if !r.Success {
+			token := ""
+			if i < len(notificationsMsg) {
+				token = notificationsMsg[i].Token
+			}
+			errMsg := fmt.Sprintf("token failed: %s : %v", token, r.Error)
+			applogger.LogError(errMsg, foodLog)
+		}
+	}
+}
+
+// plan still active but not decrease the amount of food
 func (cj *mainCronjob) UpdateQuatityFoodDaily() {
-	logAt := "food cronjob"
 	ctx, cancel := context.WithTimeout(context.Background(), cj.defaultTimeout)
 	defer cancel()
 
 	var lastID uint
+	var planInfficient []model.NotificationPlan
 	for {
 		p, err := cj.petFoodPlanRepo.GetNextActiveFoodPlanByID(ctx, lastID)
 		if err != nil {
@@ -23,67 +68,112 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 				break
 			}
 
-			applogger.LogError("failed to get active plans to daily update food amount", logAt)
+			applogger.LogError("failed to get active plans to daily update food amount", foodLog)
 			return
 		}
+
+		fqInPlans, insufficinetAmount := cj.checkQuatityFoodDaily(p)
+		if insufficinetAmount {
+			notiPlan := model.NotificationPlan{
+				Plan:    *p,
+				OutTime: model.NOW,
+			}
+			planInfficient = append(planInfficient, notiPlan)
+			lastID = p.ID
+			continue
+		} else {
+			log.Println("updated plan id : ", p.ID)
+			err = cj.foodRepo.UpdateDailyFoodAmount(ctx, fqInPlans)
+			if err != nil {
+				msg := fmt.Sprintf("failed to daily update amount in plan %d : %v", p.ID, err)
+				applogger.LogError(msg, foodLog)
+			}
+		}
+
+		// check next meal to noti
+		plan, insufficinetAmount := cj.checkNextQuatityFoodDaily(ctx, lastID)
+		if insufficinetAmount {
+			notiPlan := model.NotificationPlan{
+				Plan:    *plan,
+				OutTime: model.NEXT,
+			}
+			planInfficient = append(planInfficient, notiPlan)
+			fmt.Printf("%+v\n", notiPlan)
+		}
+
 		lastID = p.ID
+	}
 
-		var fqInPlans []model.FoodQuantity
-		insufficinetAmount := false
-		for _, fp := range p.FoodPetFoodPlans {
-			if len(fp.PetFoodPlanDetails) == 0 {
-				applogger.LogInfo(fmt.Sprintf("food pet food plan : id (%d) not have pet food plan detials\n", fp.ID), logAt)
-				insufficinetAmount = true
-				break
-			}
+	if len(planInfficient) > 0 {
+		cj.sendFoodQuantitiesNotification(ctx, planInfficient)
+	}
 
-			amountIntake := fp.PetFoodPlanDetails[0].Amount
-			var checkFq []model.FoodQuantity
-			for idx, fq := range fp.Food.FoodQuantities {
-				foodAmount := fq.Amount
-				if amountIntake > foodAmount {
-					if idx == len(fp.Food.FoodQuantities)-1 {
-						insufficinetAmount = true
-					} else {
-						amountIntake = amountIntake - fq.Amount
-						checkFq = append(checkFq, model.FoodQuantity{
-							ID:     fq.ID,
-							Amount: 0,
-						})
-					}
+}
+
+func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.FoodQuantity, bool) {
+	fqInPlans := []model.FoodQuantity{}
+	insufficinetAmount := false
+	for _, fp := range p.FoodPetFoodPlans {
+		if len(fp.PetFoodPlanDetails) == 0 {
+			applogger.LogInfo(fmt.Sprintf("food pet food plan : id (%d) not have pet food plan detials\n", fp.ID), foodLog)
+			insufficinetAmount = true
+			break
+		}
+
+		amountIntake := fp.PetFoodPlanDetails[0].Amount
+		var checkFq []model.FoodQuantity
+		for idx, fq := range fp.Food.FoodQuantities {
+			foodAmount := fq.Amount
+			if amountIntake > foodAmount {
+				if idx == len(fp.Food.FoodQuantities)-1 {
+					insufficinetAmount = true
 				} else {
-					if len(checkFq) > 0 {
-						fqInPlans = append(fqInPlans, checkFq...)
-					}
-					fqInPlans = append(fqInPlans, model.FoodQuantity{
+					amountIntake = amountIntake - fq.Amount
+					checkFq = append(checkFq, model.FoodQuantity{
 						ID:     fq.ID,
-						Amount: foodAmount - amountIntake,
+						Amount: 0,
 					})
-					break
 				}
-			}
-			if insufficinetAmount {
+			} else {
+				if len(checkFq) > 0 {
+					fqInPlans = append(fqInPlans, checkFq...)
+				}
+				fqInPlans = append(fqInPlans, model.FoodQuantity{
+					ID:     fq.ID,
+					Amount: foodAmount - amountIntake,
+				})
 				break
 			}
 		}
 		if insufficinetAmount {
-			err = cj.petFoodPlanRepo.InactivePetFoodPlan(ctx, []model.PetFoodPlan{{
-				ID:     p.ID,
-				Active: false,
-			}})
-			if err != nil {
-				msg := fmt.Sprintf("failed to daily inactive plan %d that has insufficient food amount: %v", p.ID, err)
-				applogger.LogError(msg, logAt)
-			}
-		} else {
-			err = cj.foodRepo.UpdateDailyFoodAmount(ctx, fqInPlans)
-			if err != nil {
-				msg := fmt.Sprintf("failed to daily update amount in plan %d : %v", p.ID, err)
-				applogger.LogError(msg, logAt)
-			}
+			break
 		}
 	}
 
-	// notification to notify user
-
+	return fqInPlans, insufficinetAmount
 }
+
+func (cj *mainCronjob) checkNextQuatityFoodDaily(ctx context.Context, lastID uint) (*model.PetFoodPlan, bool) {
+	p, err := cj.petFoodPlanRepo.GetNextActiveFoodPlanByID(ctx, lastID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, false
+		}
+
+		applogger.LogError("failed to get active plans to daily check next meal food amount", foodLog)
+		return nil, false
+	}
+
+	_, insufficinetAmount := cj.checkQuatityFoodDaily(p)
+	return p, insufficinetAmount
+}
+
+// plan := []model.PetFoodPlan{{
+// 	ID:     p.ID,
+// 	Active: false,
+// }}
+// err = cj.petFoodPlanRepo.InactivePetFoodPlan(ctx, plan)
+// if err != nil {
+// 	msg := fmt.Sprintf("failed to daily inactive plan %d that has insufficient food amount: %v", p.ID, err)
+// 	applogger.LogError(msg, foodLog)
+// }
