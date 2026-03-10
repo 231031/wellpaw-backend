@@ -1,6 +1,7 @@
 package server
 
 import (
+	"firebase.google.com/go/v4/messaging"
 	"github.com/231031/wellpaw-backend/internal/controller"
 	"github.com/231031/wellpaw-backend/internal/cronjob"
 	"github.com/231031/wellpaw-backend/internal/middleware"
@@ -106,7 +107,7 @@ func RouteDisease(router fiber.Router, diseaseController controller.DiseaseContr
 	diseaseRoute.Patch("/labeled", diseaseController.LabeledPetSkinDisease)
 }
 
-func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, firebaseStorage *model.FirebaseStorage, cfg *Cfg) {
+func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, firebaseStorage *model.FirebaseStorage, fcmClient *messaging.Client, cfg *Cfg) {
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
@@ -174,6 +175,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
 	RouteWebhook(router, webhookController)
 
+	fcmService := service.NewFCMService(fcmClient)
 	// cronjob
-	cronjob.CreateCronjob(calculationService, foodRepo, petFoodPlanRepo, petCalendarRepo)
+	cronjob.CreateCronjob(calculationService, fcmService, foodRepo, petFoodPlanRepo, petCalendarRepo)
 }

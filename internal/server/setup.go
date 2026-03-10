@@ -66,15 +66,18 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	applogger.LogInfo("connected to Stripe", serverLog)
 
 	var firebaseStorage *model.FirebaseStorage
+	firebaseStorage, err = connectFirebaseStorage(cfg)
+	if err != nil {
+		applogger.LogError(fmt.Sprintln("failed to connect to Firebase Storage:", err), serverLog)
+	} else {
+		applogger.LogInfo("connected to Firebase Storage", serverLog)
+	}
 
-	// connect Firebase Storage (only if configured)
-	if cfg.FIREBASE_STORAGE_BUCKET != "" {
-		firebaseStorage, err = connectFirebaseStorage(cfg)
-		if err != nil {
-			applogger.LogError(fmt.Sprintln("failed to connect to Firebase Storage:", err), serverLog)
-		} else {
-			applogger.LogInfo("connected to Firebase Storage", serverLog)
-		}
+	fcmClient, err := connectFirebaseMessaging(cfg)
+	if err != nil {
+		applogger.LogError(fmt.Sprintln("failed to connect to Firebase Messaging Cloud:", err), serverLog)
+	} else {
+		applogger.LogInfo("connected to Firebase Messaging Cloud", serverLog)
 	}
 
 	// helath check
@@ -86,6 +89,6 @@ func Setup(app *fiber.App, cfg *Cfg) {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	router := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain", "image/*"))
-	CreateRoute(router, db, redisClient, geminiClient, stripeClient, firebaseStorage, cfg)
+	CreateRoute(router, db, redisClient, geminiClient, stripeClient, firebaseStorage, fcmClient, cfg)
 
 }

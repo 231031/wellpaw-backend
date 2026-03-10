@@ -13,15 +13,17 @@ type MainCronjob interface{}
 
 type mainCronjob struct {
 	calculationSerivce service.CalculationService
+	fcmService         service.FcmService
 	foodRepo           repository.FoodRepository
 	petFoodPlanRepo    repository.PetFoodPlanRepository
 	petCalendarRepo    repository.PetCalendarRepository
 	defaultTimeout     time.Duration
 }
 
-func CreateCronjob(calSerivce service.CalculationService, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository, petCalendarRepo repository.PetCalendarRepository) {
+func CreateCronjob(calSerivce service.CalculationService, fcmService service.FcmService, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository, petCalendarRepo repository.PetCalendarRepository) {
 	main := &mainCronjob{
 		calculationSerivce: calSerivce,
+		fcmService:         fcmService,
 		foodRepo:           foodRepo,
 		petFoodPlanRepo:    petFoodPlanRepo,
 		petCalendarRepo:    petCalendarRepo,

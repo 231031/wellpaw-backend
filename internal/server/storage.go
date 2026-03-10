@@ -6,8 +6,11 @@ import (
 	"strings"
 	"time"
 
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/api/option"
 	gcpstorage "google.golang.org/api/storage/v1"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -74,4 +77,23 @@ func connectFirebaseStorage(cfg *Cfg) (*model.FirebaseStorage, error) {
 		Objects:    service.Objects,
 		BucketName: bucketName,
 	}, nil
+}
+
+func connectFirebaseMessaging(cfg *Cfg) (*messaging.Client, error) {
+	ctx := context.Background()
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	opt := option.WithCredentialsFile(cfg.GOOGLE_APPLICATION_CREDENTIALS)
+	app, err := firebase.NewApp(ctxTimeout, nil, opt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize create new firebase app: %w", err)
+	}
+
+	client, err := app.Messaging(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize firebase messaging cloud: %w", err)
+	}
+
+	return client, nil
 }
