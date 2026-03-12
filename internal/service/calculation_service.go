@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/utils"
 )
 
 type CalculationService interface {
@@ -14,6 +15,8 @@ type CalculationService interface {
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
 	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail
 	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
+	ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan)
+	CalculateGramsToCup(foodPetFoodPlan model.PetFoodPlanDetail) float64
 }
 
 type calculationService struct {
@@ -168,8 +171,23 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 	return foodPlanDetails
 }
 
-func (s *calculationService) ConvertGramsToCup(foodPetFoodPlan *model.FoodPetFoodPlan) float64 {
-	return 1.0
+func (s *calculationService) CalculateGramsToCup(foodInPlan model.PetFoodPlanDetail) float64 {
+	grams := foodInPlan.FoodPetFoodPlan.GramsPerCup
+	if grams == 0.0 {
+		grams = 200.0
+	}
+	cupFeed := foodInPlan.Amount / grams
+	return utils.RoundFloat(cupFeed, 2)
+}
+
+func (s *calculationService) ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan) {
+	if len(foodPlan.PetFoodPlanTotals) > 0 {
+		for idx, ft := range foodPlan.PetFoodPlanTotals[0].PetFoodPlanDetails {
+			cup := s.CalculateGramsToCup(ft)
+			foodPlan.PetFoodPlanTotals[0].PetFoodPlanDetails[idx].FoodPetFoodPlan.Cup = cup
+		}
+
+	}
 }
 
 func (s *calculationService) CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth {

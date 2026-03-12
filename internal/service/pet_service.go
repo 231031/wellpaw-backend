@@ -172,6 +172,17 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 		pet.MonthlyNutritionTWA[i].PercentWeightChange = ((curr - prev) / prev) * 100
 	}
 
+	for _, p := range planUsageHistories {
+		if p.PetFoodPlanTotal.PetFoodPlan.Unit == model.CUP {
+			if len(p.PetFoodPlanTotal.PetFoodPlanDetails) > 0 {
+				for idx, d := range p.PetFoodPlanTotal.PetFoodPlanDetails {
+					cup := s.calculationService.CalculateGramsToCup(d)
+					p.PetFoodPlanTotal.PetFoodPlanDetails[idx].FoodPetFoodPlan.Cup = cup
+				}
+			}
+		}
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
@@ -299,6 +310,9 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
+	if activePlanDetail.Unit == model.CUP {
+		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
+	}
 	responseData := map[string]interface{}{
 		"pet_info":      pet,
 		"pet_detail":    petDetail,

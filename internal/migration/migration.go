@@ -25,7 +25,6 @@ func NewMigrationManager(db *gorm.DB) *MigrationManager {
 		&model.PetDetail{},
 		&model.Food{},
 		&model.FoodQuantity{},
-		&model.CupFoodPet{},
 		&model.PetFoodPlan{},
 		&model.FoodPetFoodPlan{},
 		&model.PetFoodPlanTotal{},
