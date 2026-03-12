@@ -1703,6 +1703,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/predict/unknown": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "predict pet skin disease from base64 image without pet profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disease"
+                ],
+                "summary": "Predict Disease Unknown Pet",
+                "parameters": [
+                    {
+                        "description": "Predict disease unknown payload",
+                        "name": "PredictPetSkinDiseaseUnknownPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseaseUnknownPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "get": {
                 "security": [
@@ -2338,6 +2395,9 @@ const docTemplate = `{
         "github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary": {
             "type": "object",
             "properties": {
+                "calendar_type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarType"
+                },
                 "times": {
                     "type": "integer"
                 },
@@ -2454,20 +2514,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_231031_wellpaw-backend_internal_model.CupFoodPet": {
-            "type": "object",
-            "properties": {
-                "food_pet_food_plan_id": {
-                    "type": "integer"
-                },
-                "grams": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_231031_wellpaw-backend_internal_model.DiseaseType": {
             "type": "integer",
             "enum": [
@@ -2578,11 +2624,8 @@ const docTemplate = `{
         "github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan": {
             "type": "object",
             "properties": {
-                "cup_food_pet": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.CupFoodPet"
-                    }
+                "cups": {
+                    "type": "number"
                 },
                 "food": {
                     "description": "Relationships\nPetFoodPlan       *PetFoodPlan       ` + "`" + `gorm:\"foreignKey:PetFoodPlanID\" json:\"pet_food_plan,omitempty\"` + "`" + `",
@@ -2594,6 +2637,9 @@ const docTemplate = `{
                 },
                 "food_id": {
                     "type": "integer"
+                },
+                "grams_per_cup": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "integer"
@@ -2892,7 +2938,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "pet_details": {
-                    "description": "Relationships\nUser           *User                 ` + "`" + `gorm:\"foreignKey:UserID\" json:\"user,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail"
@@ -2941,6 +2986,14 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
+                "user": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.User"
+                        }
+                    ]
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -2988,6 +3041,7 @@ const docTemplate = `{
                     }
                 },
                 "created_at": {
+                    "description": "Notificate    bool            ` + "`" + `gorm:\"default:false;not null\" json:\"-\"` + "`" + `",
                     "type": "string"
                 },
                 "deleted_at": {
@@ -3120,7 +3174,6 @@ const docTemplate = `{
                     "$ref": "#/definitions/gorm.DeletedAt"
                 },
                 "food_pet_food_plans": {
-                    "description": "Relationships\nPet                *Pet                 ` + "`" + `gorm:\"foreignKey:PetID\" json:\"pet,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan"
@@ -3131,6 +3184,14 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "pet": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet"
+                        }
+                    ]
                 },
                 "pet_food_plan_totals": {
                     "type": "array",
@@ -3482,6 +3543,21 @@ const docTemplate = `{
                 },
                 "pet_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseaseUnknownPayload": {
+            "type": "object",
+            "required": [
+                "image",
+                "pet_type"
+            ],
+            "properties": {
+                "image": {
+                    "type": "string"
+                },
+                "pet_type": {
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType"
                 }
             }
         },

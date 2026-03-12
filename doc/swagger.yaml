@@ -125,6 +125,8 @@ definitions:
     - APPOINTMENT
   github_com_231031_wellpaw-backend_internal_model.CalendarTypeSummary:
     properties:
+      calendar_type:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CalendarType'
       times:
         type: integer
       type:
@@ -200,15 +202,6 @@ definitions:
     - name
     - pet_id
     - unit
-    type: object
-  github_com_231031_wellpaw-backend_internal_model.CupFoodPet:
-    properties:
-      food_pet_food_plan_id:
-        type: integer
-      grams:
-        type: number
-      id:
-        type: integer
     type: object
   github_com_231031_wellpaw-backend_internal_model.DiseaseType:
     enum:
@@ -288,10 +281,8 @@ definitions:
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan:
     properties:
-      cup_food_pet:
-        items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.CupFoodPet'
-        type: array
+      cups:
+        type: number
       food:
         allOf:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
@@ -300,6 +291,8 @@ definitions:
           PetFoodPlan       *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
       food_id:
         type: integer
+      grams_per_cup:
+        type: number
       id:
         type: integer
       pet_food_plan_detail:
@@ -495,9 +488,6 @@ definitions:
       name:
         type: string
       pet_details:
-        description: |-
-          Relationships
-          User           *User                 `gorm:"foreignKey:UserID" json:"user,omitempty"`
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetDetail'
         type: array
@@ -527,6 +517,10 @@ definitions:
         - 1
       updated_at:
         type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.User'
+        description: Relationships
       user_id:
         type: integer
     required:
@@ -560,6 +554,8 @@ definitions:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetActivityCalendar'
         type: array
       created_at:
+        description: Notificate    bool            `gorm:"default:false;not null"
+          json:"-"`
         type: string
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
@@ -656,9 +652,6 @@ definitions:
       deleted_at:
         $ref: '#/definitions/gorm.DeletedAt'
       food_pet_food_plans:
-        description: |-
-          Relationships
-          Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan'
         type: array
@@ -666,6 +659,10 @@ definitions:
         type: integer
       name:
         type: string
+      pet:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Pet'
+        description: Relationships
       pet_food_plan_totals:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanTotal'
@@ -893,6 +890,16 @@ definitions:
     required:
     - image
     - pet_id
+    type: object
+  github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseaseUnknownPayload:
+    properties:
+      image:
+        type: string
+      pet_type:
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetType'
+    required:
+    - image
+    - pet_type
     type: object
   github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse:
     properties:
@@ -2245,6 +2252,42 @@ paths:
       summary: Get User Pets
       tags:
       - Pet
+  /predict/unknown:
+    post:
+      consumes:
+      - application/json
+      description: predict pet skin disease from base64 image without pet profile
+      parameters:
+      - description: Predict disease unknown payload
+        in: body
+        name: PredictPetSkinDiseaseUnknownPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinDiseaseUnknownPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PredictPetSkinImageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Predict Disease Unknown Pet
+      tags:
+      - Disease
   /user:
     get:
       consumes:
