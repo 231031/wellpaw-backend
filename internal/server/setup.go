@@ -115,7 +115,7 @@ func policyHandler(c *fiber.Ctx) error {
 		
 		<div class="section">
 			<h2>Business Name & Description</h2>
-			<p><strong>Business Name:</strong> Kanlayaphat Prakobwaitayakij (Individual)</p>
+			<p><strong>Business Name:</strong> WellPaw (Individual)</p>
 			<p><strong>Description:</strong> WellPaw is a health care service application for pets. It helps owners track pet nutrition, manage weight, and identify potential skin diseases.</p>
 		</div>
 
@@ -133,7 +133,7 @@ func policyHandler(c *fiber.Ctx) error {
 			<h2>Refund & Cancellation Policy</h2>
 			<p>Subscriptions can be canceled at any time directly through the application settings.</p>
 			<p>Because our products are digital services, <strong>we do not offer cash refunds or returns</strong> to your original payment method for completed transactions, one-time purchases, or canceled subscription periods.</p>
-			<p>If you choose to cancel your subscription before the end of your billing cycle, your premium access will end immediately. However, the remaining unused value of your current billing cycle will be automatically converted into account credit. This credit is securely managed by our payment processor and will be automatically applied to any of your future purchases within the application.</p>
+			<p>If you choose to cancel your subscription before the end of your billing cycle, <strong>your premium access will end immediately</strong>. However, the remaining unused value of your current billing cycle will be automatically converted into account credit. This credit is securely managed by our payment processor and will be automatically applied to any of your future purchases within the application.</p>
 		</div>
 
 		<div class="section">
