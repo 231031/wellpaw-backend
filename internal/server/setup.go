@@ -111,43 +111,74 @@ func policyHandler(c *fiber.Ctx) error {
 		</style>
 	</head>
 	<body>
+
 		<h1>WellPaw - Business Information & Policies</h1>
-		
+
 		<div class="section">
-			<h2>Business Name & Description</h2>
-			<p><strong>Business Name:</strong> WellPaw (Individual)</p>
-			<p><strong>Description:</strong> WellPaw is a health care service application for pets. It helps owners track pet nutrition, manage weight, and identify potential skin diseases.</p>
+			<h2>Business Information</h2>
+			<p><strong>Business Name:</strong> WellPaw (Individual Developer)</p>
+			<p><strong>Location:</strong> Thailand</p>
+			<p><strong>Description:</strong> WellPaw is a digital pet health care service application that helps pet owners track nutrition, manage pet weight, and monitor potential skin health issues.</p>
 		</div>
 
 		<div class="section">
 			<h2>Pricing & Products</h2>
-			<p>We offer digital access to our platform via the following plans. We accept major credit cards for all transactions.</p>
+			<p>WellPaw provides digital services through the following plans. Payments are processed securely via Stripe and major credit cards are accepted.</p>
+
 			<ul>
-				<li><strong>Free Trial:</strong> Access to basic features for a limited time.</li>
-				<li><strong>Monthly Plan:</strong> ฿69.00 THB per month.</li>
-				<li><strong>Yearly Plan:</strong> ฿690.00 THB per year.</li>
+				<li><strong>Free Trial:</strong> Provides temporary access to limited features for evaluation.</li>
+				<li><strong>Monthly Subscription:</strong> ฿69.00 THB per month.</li>
+				<li><strong>Yearly Subscription:</strong> ฿690.00 THB per year.</li>
 			</ul>
+
+			<p>Subscriptions automatically renew at the end of each billing period unless cancelled before the renewal date.</p>
 		</div>
 
 		<div class="section">
 			<h2>Refund & Cancellation Policy</h2>
-			<p>Subscriptions can be canceled at any time directly through the application settings.</p>
-			<p>Because our products are digital services, <strong>we do not offer cash refunds or returns</strong> to your original payment method for completed transactions, one-time purchases, or canceled subscription periods.</p>
-			<p>If you choose to cancel your subscription before the end of your billing cycle, <strong>your premium access will end immediately</strong>. However, the remaining unused value of your current billing cycle will be automatically converted into account credit. This credit is securely managed by our payment processor and will be automatically applied to any of your future purchases within the application.</p>
+
+			<p>Subscriptions can be cancelled at any time through the application settings.</p>
+
+			<p>When a subscription is cancelled, access to premium features will end immediately.</p>
+
+			<p>Because our services are digital products delivered instantly, 
+			<strong>we do not offer refunds for completed payments or partially used subscription periods.</strong></p>
+
+			<p>Users may continue using any remaining active subscription time until cancellation takes effect if applicable.</p>
+		</div>
+
+		<div class="section">
+			<h2>Terms of Service</h2>
+
+			<p>By using WellPaw, you agree to use the application only for personal pet care tracking and management purposes.</p>
+
+			<p>WellPaw provides informational tools and does not replace professional veterinary advice or diagnosis.</p>
+
+			<p>Subscriptions provide access to premium features during the active billing period and renew automatically unless cancelled.</p>
+		</div>
+
+		<div class="section">
+			<h2>Privacy Policy</h2>
+
+			<p>WellPaw collects limited information necessary to operate the service, such as email address, account data, and pet-related information entered by users.</p>
+
+			<p>Payment information is securely processed by Stripe. WellPaw does not store credit card numbers on its servers.</p>
+
+			<p>User information is used only to provide and improve the service and is not sold to third parties.</p>
 		</div>
 
 		<div class="section">
 			<h2>Customer Support</h2>
-			<p>If you have any questions or need assistance with your account or billing, please contact us at:</p>
-			<p><strong>Email:</strong> mybile.e70e@gmail.com</p> 
+
+			<p>If you have questions about billing, subscriptions, or your account, please contact:</p>
+
+			<p><strong>Email:</strong> mybile.e70e@gmail.com</p>
 		</div>
+
 	</body>
 	</html>
 	`
 
-	// c.Type("html") automatically sets the "Content-Type: text/html" header
 	c.Type("html")
-
-	// c.SendString returns the HTML string to the browser
 	return c.SendString(htmlContent)
 }
