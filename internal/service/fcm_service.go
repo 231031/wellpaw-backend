@@ -2,20 +2,24 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"firebase.google.com/go/v4/messaging"
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 )
 
 type FcmService interface {
 	SendNotifications(ctx context.Context, params []model.SendNotificationParams) (*messaging.BatchResponse, error)
+	SendSilentSubscriptionNotification(ctx context.Context, token string, tier model.TierType, status model.SubscriptionStatusType) (string, error)
 }
 
 type fcmService struct {
 	fcmClient *messaging.Client
 }
 
-func NewFCMService(fcmClient *messaging.Client) *fcmService {
+func NewFCMService(fcmClient *messaging.Client) FcmService {
 	return &fcmService{fcmClient: fcmClient}
 }
 
@@ -67,4 +71,48 @@ func (s *fcmService) SendNotifications(
 	}
 
 	return resp, nil
+}
+
+func (s *fcmService) SendSilentSubscriptionNotification(
+	ctx context.Context,
+	token string,
+	tier model.TierType,
+	status model.SubscriptionStatusType,
+) (string, error) {
+
+	msg := &messaging.Message{
+		Token: token,
+
+		Data: map[string]string{
+			"type":                      "subscription_update",
+			"tier":                      strconv.Itoa(int(tier)),
+			"subscription_status":       strconv.Itoa(int(status)),
+			"tier_label":                tier.String(),
+			"subscription_status_label": status.String(),
+		},
+
+		Android: &messaging.AndroidConfig{
+			Priority: "normal",
+		},
+
+		APNS: &messaging.APNSConfig{
+			Headers: map[string]string{
+				"apns-priority":  "5",
+				"apns-push-type": "background",
+			},
+			Payload: &messaging.APNSPayload{
+				Aps: &messaging.Aps{
+					ContentAvailable: true,
+				},
+			},
+		},
+	}
+
+	messageID, err := s.fcmClient.Send(ctx, msg)
+	if err != nil {
+		applogger.LogError(fmt.Sprintf("failed to send silent notification : %v", err), serviceLog)
+		return "", err
+	}
+
+	return messageID, nil
 }

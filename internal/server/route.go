@@ -121,8 +121,6 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	authMiddlware := middleware.NewAuthMiddleware(tokenService)
 
 	paymentService := service.NewPaymentService(stripeClient)
-	webhookService := service.NewWebhookService(userRepo)
-
 	userService := service.NewUserService(userRepo, paymentService)
 	userController := controller.NewUserController(userService)
 
@@ -172,10 +170,12 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	ocrController := controller.NewOcrController(ocrService)
 	RouteOcr(router, ocrController, authMiddlware)
 
+	fcmService := service.NewFCMService(fcmClient)
+
+	webhookService := service.NewWebhookService(userRepo, fcmService)
 	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
 	RouteWebhook(router, webhookController)
 
-	fcmService := service.NewFCMService(fcmClient)
 	// cronjob
 	cronjob.CreateCronjob(calculationService, fcmService, foodRepo, petFoodPlanRepo, petCalendarRepo)
 }

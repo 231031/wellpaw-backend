@@ -18,11 +18,13 @@ type WebhookService interface {
 }
 
 type webhookService struct {
+	fcmService     FcmService
 	userRepository repository.UserRepository
 }
 
-func NewWebhookService(userRepository repository.UserRepository) WebhookService {
+func NewWebhookService(userRepository repository.UserRepository, fcmService FcmService) WebhookService {
 	return &webhookService{
+		fcmService:     fcmService,
 		userRepository: userRepository,
 	}
 }
@@ -47,6 +49,8 @@ func (s *webhookService) HandleSubscriptionUpdated(ctx context.Context, eventObj
 		applogger.LogError(fmt.Sprintf("webhook handler failed to set subscription detail in redsi : %s", err.Error()), serviceLog)
 		return err
 	}
+
+	s.fcmService.SendSilentSubscriptionNotification(ctx, user.DeviceToken, tier, status)
 
 	return nil
 }
@@ -77,6 +81,8 @@ func (s *webhookService) HandleSubscriptionFreeTierUpdated(ctx context.Context, 
 		applogger.LogError(fmt.Sprintf("webhook handler failed to set subscription free-tial detail in redsi : %s", err.Error()), serviceLog)
 		return err
 	}
+
+	s.fcmService.SendSilentSubscriptionNotification(ctx, user.DeviceToken, model.FREE, model.ACTIVESUB)
 
 	return nil
 }
