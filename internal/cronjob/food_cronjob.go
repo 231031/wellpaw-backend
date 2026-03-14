@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
@@ -54,7 +53,6 @@ func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planI
 	}
 }
 
-// plan still active but not decrease the amount of food
 func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 	ctx, cancel := context.WithTimeout(context.Background(), cj.defaultTimeout)
 	defer cancel()
@@ -82,23 +80,11 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 			lastID = p.ID
 			continue
 		} else {
-			log.Println("updated plan id : ", p.ID)
 			err = cj.foodRepo.UpdateDailyFoodAmount(ctx, fqInPlans)
 			if err != nil {
 				msg := fmt.Sprintf("failed to daily update amount in plan %d : %v", p.ID, err)
 				applogger.LogError(msg, foodLog)
 			}
-		}
-
-		// check next meal to noti
-		plan, insufficinetAmount := cj.checkNextQuatityFoodDaily(ctx, lastID)
-		if insufficinetAmount {
-			notiPlan := model.NotificationPlan{
-				Plan:    *plan,
-				OutTime: model.NEXT,
-			}
-			planInfficient = append(planInfficient, notiPlan)
-			fmt.Printf("%+v\n", notiPlan)
 		}
 
 		lastID = p.ID
@@ -152,28 +138,3 @@ func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.Food
 
 	return fqInPlans, insufficinetAmount
 }
-
-func (cj *mainCronjob) checkNextQuatityFoodDaily(ctx context.Context, lastID uint) (*model.PetFoodPlan, bool) {
-	p, err := cj.petFoodPlanRepo.GetNextActiveFoodPlanByID(ctx, lastID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, false
-		}
-
-		applogger.LogError("failed to get active plans to daily check next meal food amount", foodLog)
-		return nil, false
-	}
-
-	_, insufficinetAmount := cj.checkQuatityFoodDaily(p)
-	return p, insufficinetAmount
-}
-
-// plan := []model.PetFoodPlan{{
-// 	ID:     p.ID,
-// 	Active: false,
-// }}
-// err = cj.petFoodPlanRepo.InactivePetFoodPlan(ctx, plan)
-// if err != nil {
-// 	msg := fmt.Sprintf("failed to daily inactive plan %d that has insufficient food amount: %v", p.ID, err)
-// 	applogger.LogError(msg, foodLog)
-// }
