@@ -8,7 +8,7 @@ type FoodPetFoodPlan struct {
 	Cup           float64 `gorm:"-" json:"cups"`
 
 	// Relationships
-	// PetFoodPlan       *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
+	PetFoodPlan        *PetFoodPlan        `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
 	Food               *Food               `gorm:"foreignKey:FoodID" json:"food,omitempty"`
 	PetFoodPlanDetails []PetFoodPlanDetail `gorm:"foreignKey:FoodPetFoodPlanID" json:"pet_food_plan_detail,omitempty"`
 }

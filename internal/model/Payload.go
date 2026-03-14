@@ -77,7 +77,8 @@ type PetFoodPlanDetailsPayload struct {
 }
 
 type CalculateFoodPlanFoodPayload struct {
-	FoodID      uint     `json:"food_id" validate:"required"`
+	FoodID uint `json:"food_id" validate:"required"`
+	// @Description if user filled this the intake will calculate from this amount and if user doesn't filled the amount will calculate as recommend amount
 	Amount      float64  `json:"amount,omitempty"`
 	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
 }
@@ -90,16 +91,19 @@ type CalculatePetFoodPlanPayload struct {
 }
 
 type CreateFoodPlanFoodPayload struct {
-	FoodID      uint     `json:"food_id" validate:"required"`
+	FoodID uint `json:"food_id" validate:"required"`
+	// @Description always send both self_define is true (amount from user) or false (recomented amount from calculation)
 	Amount      float64  `json:"amount" validate:"required,gt=0"`
 	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
 }
 
 type CreatePetFoodPlanPayload struct {
-	Name  string                      `json:"name" validate:"required"`
-	PetID uint                        `json:"pet_id" validate:"required"`
-	Unit  *UnitType                   `json:"unit" validate:"required,oneof=0 1"`
-	Foods []CreateFoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
+	Name  string    `json:"name" validate:"required"`
+	PetID uint      `json:"pet_id" validate:"required"`
+	Unit  *UnitType `json:"unit" validate:"required,oneof=0 1"`
+	// @Description If user change the recommend amount or use self define amount checked this
+	SelfDefine *bool                       `json:"self_define" validate:"required"`
+	Foods      []CreateFoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
 }
 
 type UpdateFoodDetailPayload struct {
@@ -108,7 +112,7 @@ type UpdateFoodDetailPayload struct {
 	ImagePath *string  `json:"image_path,omitempty"`
 	Weight    *float64 `json:"weight,omitempty" validate:"omitempty,gt=0"`
 	Quantity  *int     `json:"quantity,omitempty" validate:"omitempty,gt=0"`
-	Quality   *int     `json:"quality,omitempty" validate:"omitempty,gt=0"`
+	// Quality   *int     `json:"quality,omitempty" validate:"omitempty,gt=0"`
 }
 
 type AmountFoodDetail struct {

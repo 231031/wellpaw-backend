@@ -989,69 +989,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/foodplan/amount": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "update feeding amount in latest active pet food plan and recalculate total intake",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Pet Food Plan"
-                ],
-                "summary": "Update Feeding Amount In Pet Food Plan",
-                "parameters": [
-                    {
-                        "description": "Adjust feeding amount payload",
-                        "name": "AdjustAmountFoodInPetFoodPlanPayload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/foodplan/calculate": {
             "post": {
                 "security": [
@@ -2249,25 +2186,6 @@ const docTemplate = `{
                 "VERYACTIVE"
             ]
         },
-        "github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload": {
-            "type": "object",
-            "required": [
-                "pet_food_plan_details",
-                "pet_food_plan_id"
-            ],
-            "properties": {
-                "pet_food_plan_details": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail"
-                    }
-                },
-                "pet_food_plan_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_231031_wellpaw-backend_internal_model.AgeType": {
             "type": "integer",
             "enum": [
@@ -2280,21 +2198,6 @@ const docTemplate = `{
                 "ADULT",
                 "SENIOR"
             ]
-        },
-        "github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail": {
-            "type": "object",
-            "required": [
-                "amount",
-                "food_pet_food_plan_id"
-            ],
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "food_pet_food_plan_id": {
-                    "type": "integer"
-                }
-            }
         },
         "github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth": {
             "type": "object",
@@ -2323,6 +2226,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "amount": {
+                    "description": "@Description if user filled this the intake will calculate from this amount and if user doesn't filled the amount will calculate as recommend amount",
                     "type": "number"
                 },
                 "food_id": {
@@ -2450,6 +2354,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "amount": {
+                    "description": "@Description always send both self_define is true (amount from user) or false (recomented amount from calculation)",
                     "type": "number"
                 },
                 "food_id": {
@@ -2485,6 +2390,7 @@ const docTemplate = `{
                 "foods",
                 "name",
                 "pet_id",
+                "self_define",
                 "unit"
             ],
             "properties": {
@@ -2500,6 +2406,10 @@ const docTemplate = `{
                 },
                 "pet_id": {
                     "type": "integer"
+                },
+                "self_define": {
+                    "description": "@Description If user change the recommend amount or use self define amount checked this",
+                    "type": "boolean"
                 },
                 "unit": {
                     "enum": [
@@ -2628,12 +2538,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "food": {
-                    "description": "Relationships\nPetFoodPlan       *PetFoodPlan       ` + "`" + `gorm:\"foreignKey:PetFoodPlanID\" json:\"pet_food_plan,omitempty\"` + "`" + `",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
-                        }
-                    ]
+                    "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
                 },
                 "food_id": {
                     "type": "integer"
@@ -2643,6 +2548,14 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "pet_food_plan": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan"
+                        }
+                    ]
                 },
                 "pet_food_plan_detail": {
                     "type": "array",
@@ -3201,6 +3114,9 @@ const docTemplate = `{
                 },
                 "pet_id": {
                     "type": "integer"
+                },
+                "self_define": {
+                    "type": "boolean"
                 },
                 "unit": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType"
@@ -3817,9 +3733,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "minLength": 1
-                },
-                "quality": {
-                    "type": "integer"
                 },
                 "quantity": {
                     "type": "integer"

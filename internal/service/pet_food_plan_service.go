@@ -257,11 +257,12 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 	}
 
 	plan := &model.PetFoodPlan{
-		PetID:     payload.PetID,
-		Name:      payload.Name,
-		Active:    true,
-		Unit:      *payload.Unit,
-		CreatedAt: time.Now(),
+		PetID:      payload.PetID,
+		Name:       payload.Name,
+		Active:     true,
+		Unit:       *payload.Unit,
+		SelfDefine: *payload.SelfDefine,
+		CreatedAt:  time.Now(),
 	}
 
 	foodsInPlan := make([]*model.FoodPetFoodPlan, 0, len(foods))

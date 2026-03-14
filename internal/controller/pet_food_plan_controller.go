@@ -125,19 +125,6 @@ func (c *petFoodPlanController) GetLastestActivePlanDetailByPet(ctx *fiber.Ctx) 
 	return ctx.Status(response.Status).JSON(response)
 }
 
-// @Summary Update Feeding Amount In Pet Food Plan
-// @Description update feeding amount in latest active pet food plan and recalculate total intake
-// @tags Pet Food Plan
-// @Security BearerAuth
-// @Accept application/json
-// @Produce application/json
-// @Param   AdjustAmountFoodInPetFoodPlanPayload body model.AdjustAmountFoodInPetFoodPlanPayload true "Adjust feeding amount payload"
-// @Success 200 {object} model.PetFoodPlanResponse
-// @Failure 400 {object} model.HTTPResponse
-// @Failure 401 {object} model.HTTPResponse
-// @Failure 404 {object} model.HTTPResponse
-// @Failure 500 {object} model.HTTPResponse
-// @Router /foodplan/amount [put]
 func (c *petFoodPlanController) UpdateFeedingAmountFromUser(ctx *fiber.Ctx) error {
 	var payload model.AdjustAmountFoodInPetFoodPlanPayload
 	if err := ctx.BodyParser(&payload); err != nil {

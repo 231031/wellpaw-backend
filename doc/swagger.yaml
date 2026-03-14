@@ -26,19 +26,6 @@ definitions:
     - SOMEACTIVE
     - ACTIVE
     - VERYACTIVE
-  github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload:
-    properties:
-      pet_food_plan_details:
-        items:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail'
-        minItems: 1
-        type: array
-      pet_food_plan_id:
-        type: integer
-    required:
-    - pet_food_plan_details
-    - pet_food_plan_id
-    type: object
   github_com_231031_wellpaw-backend_internal_model.AgeType:
     enum:
     - 0
@@ -49,16 +36,6 @@ definitions:
     - JUNIOR
     - ADULT
     - SENIOR
-  github_com_231031_wellpaw-backend_internal_model.AmountFoodDetail:
-    properties:
-      amount:
-        type: number
-      food_pet_food_plan_id:
-        type: integer
-    required:
-    - amount
-    - food_pet_food_plan_id
-    type: object
   github_com_231031_wellpaw-backend_internal_model.AvgPercentWeightChangePerMonth:
     properties:
       calculated_percent:
@@ -75,6 +52,9 @@ definitions:
   github_com_231031_wellpaw-backend_internal_model.CalculateFoodPlanFoodPayload:
     properties:
       amount:
+        description: '@Description if user filled this the intake will calculate from
+          this amount and if user doesn''t filled the amount will calculate as recommend
+          amount'
         type: number
       food_id:
         type: integer
@@ -158,6 +138,8 @@ definitions:
   github_com_231031_wellpaw-backend_internal_model.CreateFoodPlanFoodPayload:
     properties:
       amount:
+        description: '@Description always send both self_define is true (amount from
+          user) or false (recomented amount from calculation)'
         type: number
       food_id:
         type: integer
@@ -191,6 +173,10 @@ definitions:
         type: string
       pet_id:
         type: integer
+      self_define:
+        description: '@Description If user change the recommend amount or use self
+          define amount checked this'
+        type: boolean
       unit:
         allOf:
         - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
@@ -201,6 +187,7 @@ definitions:
     - foods
     - name
     - pet_id
+    - self_define
     - unit
     type: object
   github_com_231031_wellpaw-backend_internal_model.DiseaseType:
@@ -284,17 +271,17 @@ definitions:
       cups:
         type: number
       food:
-        allOf:
-        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
-        description: |-
-          Relationships
-          PetFoodPlan       *PetFoodPlan       `gorm:"foreignKey:PetFoodPlanID" json:"pet_food_plan,omitempty"`
+        $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
       food_id:
         type: integer
       grams_per_cup:
         type: number
       id:
         type: integer
+      pet_food_plan:
+        allOf:
+        - $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlan'
+        description: Relationships
       pet_food_plan_detail:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanDetail'
@@ -669,6 +656,8 @@ definitions:
         type: array
       pet_id:
         type: integer
+      self_define:
+        type: boolean
       unit:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UnitType'
     type: object
@@ -1074,8 +1063,6 @@ definitions:
       name:
         minLength: 1
         type: string
-      quality:
-        type: integer
       quantity:
         type: integer
       weight:
@@ -1834,47 +1821,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Latest Active Pet Food Plan Detail
-      tags:
-      - Pet Food Plan
-  /foodplan/amount:
-    put:
-      consumes:
-      - application/json
-      description: update feeding amount in latest active pet food plan and recalculate
-        total intake
-      parameters:
-      - description: Adjust feeding amount payload
-        in: body
-        name: AdjustAmountFoodInPetFoodPlanPayload
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.AdjustAmountFoodInPetFoodPlanPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.PetFoodPlanResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
-      security:
-      - BearerAuth: []
-      summary: Update Feeding Amount In Pet Food Plan
       tags:
       - Pet Food Plan
   /foodplan/calculate:

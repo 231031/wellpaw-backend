@@ -95,6 +95,11 @@ func (r *petFoodPlanRepository) GetFoodsInLastestActivePlanByPetID(ctx context.C
 	var foodsInPlan []model.FoodPetFoodPlan
 	if err := r.db.WithContext(ctx).
 		Model(&model.FoodPetFoodPlan{}).
+		Preload("PetFoodPlan").
+		Preload("PetFoodPlan.PetFoodPlanTotals", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC, id DESC").Limit(1)
+		}).
+		Preload("PetFoodPlan.PetFoodPlanTotals.PetFoodPlanDetails").
 		Preload("Food").
 		Where("pet_food_plan_id = ?", latestPlanID).
 		Order("food_pet_food_plans.id ASC").

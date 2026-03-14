@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
@@ -221,6 +223,35 @@ func (s *petService) UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *mod
 	}
 }
 
+func (s *petService) mapUpdatePetDetailNotTrigger(plan *model.PetFoodPlan) (*model.PetFoodPlanTotal, []*model.PetFoodPlanDetail, *model.HTTPResponse) {
+	if len(plan.PetFoodPlanTotals) <= 0 {
+		applogger.LogInfo(fmt.Sprintf("plan id %d doesn't have pet food total", plan.ID), serviceLog)
+		return nil, nil, &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	foodPlanDetails := []*model.PetFoodPlanDetail{}
+	foodPlanTotal := &model.PetFoodPlanTotal{
+		PetFoodPlanID:      plan.ID,
+		TotalEnergyIntake:  plan.PetFoodPlanTotals[0].TotalEnergyIntake,
+		TotalProteinIntake: plan.PetFoodPlanTotals[0].TotalProteinIntake,
+		TotalFatIntake:     plan.PetFoodPlanTotals[0].TotalFatIntake,
+	}
+
+	for _, d := range plan.PetFoodPlanTotals[0].PetFoodPlanDetails {
+		foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
+			FoodPetFoodPlanID: d.FoodPetFoodPlanID,
+			Amount:            d.Amount,
+			EnergyIntake:      d.EnergyIntake,
+			ProteinIntake:     d.ProteinIntake,
+			FatIntake:         d.FatIntake,
+		})
+	}
+	return foodPlanTotal, foodPlanDetails, nil
+}
+
 func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse {
 	pet, err := s.petRepo.GetPetInfoByID(ctx, petDetail.PetID)
 	if err != nil {
@@ -237,25 +268,9 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	if len(pet.PetDetails) > 0 {
-		// Gastation, Lactation, GestationStartDate, Neutered (if true to false cannot)
-		created := pet.PetDetails[0].CreatedAt
-		now := time.Now()
-
-		createdDate := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, created.Location())
-		nowDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
-		if nowDate.Before(createdDate.AddDate(0, 1, 0)) {
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "cannot update now, user is allowed to update pet detail only one time per month",
-			}
-		}
-	}
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)
-	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	latestPlanID, foodsInActivePlan, err := s.petFoodPlanRepo.GetFoodsInLastestActivePlanByPetID(ctx, pet.ID)
 	if err != nil {
@@ -282,18 +297,36 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	var foods []model.Food
-	for _, fp := range foodsInActivePlan {
-		foods = append(foods, *fp.Food)
-	}
-	foodPlanDetails := s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
-	for idx := range foodsInActivePlan {
-		foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
+	if len(foodsInActivePlan) <= 0 {
+		applogger.LogInfo(fmt.Sprintf("plan id : %d not found any food in plan", latestPlanID), serviceLog)
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "pet detail",
+		}
 	}
 
-	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
-	foodPlanTotal.PetFoodPlanID = latestPlanID
-	foodPlanTotal.PetDetailID = petDetail.ID
+	var foods []model.Food
+	var resp *model.HTTPResponse
+	foodPlanDetails := []*model.PetFoodPlanDetail{}
+	foodPlanTotal := &model.PetFoodPlanTotal{}
+
+	if foodsInActivePlan[0].PetFoodPlan.SelfDefine {
+		foodPlanTotal, foodPlanDetails, resp = s.mapUpdatePetDetailNotTrigger(foodsInActivePlan[0].PetFoodPlan)
+		if resp != nil {
+			return resp
+		}
+	} else {
+		for _, fp := range foodsInActivePlan {
+			foods = append(foods, *fp.Food)
+		}
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+		for idx := range foodsInActivePlan {
+			foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
+		}
+
+		foodPlanTotal = s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
+		foodPlanTotal.PetFoodPlanID = latestPlanID
+	}
 
 	if err := s.petRepo.UpdatePetDetailsAndPlan(ctx, pet.ID, petDetail, foodPlanTotal, foodPlanDetails); err != nil {
 		return &model.HTTPResponse{
