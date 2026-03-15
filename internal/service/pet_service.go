@@ -179,7 +179,7 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 			if len(p.PetFoodPlanTotal.PetFoodPlanDetails) > 0 {
 				for idx, d := range p.PetFoodPlanTotal.PetFoodPlanDetails {
 					cup := s.calculationService.CalculateGramsToCup(d)
-					p.PetFoodPlanTotal.PetFoodPlanDetails[idx].FoodPetFoodPlan.Cup = cup
+					p.PetFoodPlanTotal.PetFoodPlanDetails[idx].Cup = cup
 				}
 			}
 		}

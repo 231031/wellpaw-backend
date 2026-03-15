@@ -75,7 +75,6 @@ func (s *petFoodPlanService) getInfoForPetFoodPlan(ctx context.Context, userID u
 func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse {
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
-	gramsPerCupByFoodID := make(map[uint]float64, len(payload.Foods))
 
 	for _, f := range payload.Foods {
 		if _, exists := seenFoodIDs[f.FoodID]; exists {
@@ -85,24 +84,6 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 			}
 		}
 		seenFoodIDs[f.FoodID] = true
-
-		if *payload.Unit == model.CUP && f.GramsPerCup == nil {
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "grams per cup is required for unit cup",
-			}
-		}
-
-		if f.GramsPerCup != nil {
-			if *f.GramsPerCup <= 0.0 {
-				return &model.HTTPResponse{
-					Status:  http.StatusBadRequest,
-					Message: "grams per cup must more than 0",
-				}
-			}
-			gramsPerCupByFoodID[f.FoodID] = *f.GramsPerCup
-		}
-
 		foodIDs = append(foodIDs, f.FoodID)
 	}
 
@@ -112,12 +93,12 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 	}
 
 	foodPlanDetails := make([]*model.PetFoodPlanDetail, 0, len(payload.Foods))
-	if payload.Foods[0].Amount > 0 {
-		foodsDetail := map[uint]model.Food{}
-		for _, food := range foods {
-			foodsDetail[food.ID] = food
-		}
+	foodsDetail := map[uint]model.Food{}
+	for _, food := range foods {
+		foodsDetail[food.ID] = food
+	}
 
+	if payload.Foods[0].Amount > 0 {
 		for _, food := range payload.Foods {
 			if food.Amount <= 0 {
 				return &model.HTTPResponse{
@@ -146,10 +127,6 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		}
 	}
 
-	for idx := range foods {
-		foodPlanDetails[idx].FoodPetFoodPlanID = foods[idx].ID
-	}
-
 	plan := &model.PetFoodPlan{
 		PetID:     payload.PetID,
 		Name:      payload.Name,
@@ -160,14 +137,20 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 
 	foodsInPlan := make([]model.FoodPetFoodPlan, 0, len(foods))
 	for _, food := range payload.Foods {
-		gramsPerCup := 0.0
-		if *payload.Unit == model.CUP {
-			gramsPerCup = gramsPerCupByFoodID[food.FoodID]
-		}
-
 		foodsInPlan = append(foodsInPlan, model.FoodPetFoodPlan{
-			FoodID:      food.FoodID,
-			GramsPerCup: gramsPerCup,
+			FoodID: food.FoodID,
+			Food: &model.Food{
+				ID:          foodsDetail[food.FoodID].ID,
+				Name:        foodsDetail[food.FoodID].Name,
+				ImagePath:   foodsDetail[food.FoodID].ImagePath,
+				Brand:       foodsDetail[food.FoodID].Brand,
+				Type:        foodsDetail[food.FoodID].Type,
+				Energy:      foodsDetail[food.FoodID].Energy,
+				Protein:     foodsDetail[food.FoodID].Protein,
+				Fat:         foodsDetail[food.FoodID].Fat,
+				Moist:       foodsDetail[food.FoodID].Moist,
+				GramsPerCup: foodsDetail[food.FoodID].GramsPerCup,
+			},
 		})
 
 	}
@@ -184,8 +167,8 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		plan.PetFoodPlanTotals[0].PetFoodPlanDetails = append(plan.PetFoodPlanTotals[0].PetFoodPlanDetails, *detail)
 	}
 
-	plan.FoodPetFoodPlans = foodsInPlan
-	for idx, fp := range plan.FoodPetFoodPlans {
+	// plan.FoodPetFoodPlans = foodsInPlan
+	for idx, fp := range foodsInPlan {
 		plan.PetFoodPlanTotals[0].PetFoodPlanDetails[idx].FoodPetFoodPlan = &fp
 	}
 
@@ -208,7 +191,6 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
-	gramsPerCupByFoodID := make(map[uint]float64, len(payload.Foods))
 
 	for _, f := range payload.Foods {
 		if _, exists := seenFoodIDs[f.FoodID]; exists {
@@ -218,18 +200,6 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 			}
 		}
 		seenFoodIDs[f.FoodID] = true
-
-		if *payload.Unit == model.CUP && f.GramsPerCup == nil {
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "grams per cup is required for unit cup",
-			}
-		}
-
-		if f.GramsPerCup != nil {
-			gramsPerCupByFoodID[f.FoodID] = *f.GramsPerCup
-		}
-
 		foodIDs = append(foodIDs, f.FoodID)
 	}
 
@@ -267,14 +237,8 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 
 	foodsInPlan := make([]*model.FoodPetFoodPlan, 0, len(foods))
 	for _, food := range payload.Foods {
-		gramsPerCup := 0.0
-		if *payload.Unit == model.CUP {
-			gramsPerCup = gramsPerCupByFoodID[food.FoodID]
-		}
-
 		foodsInPlan = append(foodsInPlan, &model.FoodPetFoodPlan{
-			FoodID:      food.FoodID,
-			GramsPerCup: gramsPerCup,
+			FoodID: food.FoodID,
 		})
 	}
 

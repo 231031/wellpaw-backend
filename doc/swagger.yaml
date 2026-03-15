@@ -58,8 +58,6 @@ definitions:
         type: number
       food_id:
         type: integer
-      grams_per_cup:
-        type: number
     required:
     - food_id
     type: object
@@ -143,8 +141,6 @@ definitions:
         type: number
       food_id:
         type: integer
-      grams_per_cup:
-        type: number
     required:
     - amount
     - food_id
@@ -226,6 +222,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity'
         type: array
+      grams_per_cup:
+        type: number
       id:
         type: integer
       image_path:
@@ -268,14 +266,10 @@ definitions:
     type: object
   github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan:
     properties:
-      cups:
-        type: number
       food:
         $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.Food'
       food_id:
         type: integer
-      grams_per_cup:
-        type: number
       id:
         type: integer
       pet_food_plan:
@@ -667,6 +661,8 @@ definitions:
         type: number
       created_at:
         type: string
+      cups:
+        type: number
       energy_intake:
         type: number
       fat_intake:
@@ -1058,15 +1054,13 @@ definitions:
     properties:
       food_id:
         type: integer
+      grams_per_cup:
+        type: number
       image_path:
         type: string
       name:
         minLength: 1
         type: string
-      quantity:
-        type: integer
-      weight:
-        type: number
     required:
     - food_id
     type: object

@@ -159,11 +159,9 @@ func (s *foodService) UpdateFoodDetail(ctx context.Context, userID uint, foodID 
 	if payload.ImagePath != nil {
 		updates["image_path"] = *payload.ImagePath
 	}
-	if payload.Weight != nil {
-		updates["weight"] = *payload.Weight
-	}
-	if payload.Quantity != nil {
-		updates["quantity"] = *payload.Quantity
+
+	if payload.GramsPerCup != nil && *payload.GramsPerCup > 0 {
+		updates["grams_per_cup"] = *payload.GramsPerCup
 	}
 
 	if len(updates) == 0 {

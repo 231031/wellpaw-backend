@@ -79,8 +79,7 @@ type PetFoodPlanDetailsPayload struct {
 type CalculateFoodPlanFoodPayload struct {
 	FoodID uint `json:"food_id" validate:"required"`
 	// @Description if user filled this the intake will calculate from this amount and if user doesn't filled the amount will calculate as recommend amount
-	Amount      float64  `json:"amount,omitempty"`
-	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
+	Amount float64 `json:"amount,omitempty"`
 }
 
 type CalculatePetFoodPlanPayload struct {
@@ -93,8 +92,7 @@ type CalculatePetFoodPlanPayload struct {
 type CreateFoodPlanFoodPayload struct {
 	FoodID uint `json:"food_id" validate:"required"`
 	// @Description always send both self_define is true (amount from user) or false (recomented amount from calculation)
-	Amount      float64  `json:"amount" validate:"required,gt=0"`
-	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
+	Amount float64 `json:"amount" validate:"required,gt=0"`
 }
 
 type CreatePetFoodPlanPayload struct {
@@ -107,12 +105,10 @@ type CreatePetFoodPlanPayload struct {
 }
 
 type UpdateFoodDetailPayload struct {
-	FoodID    uint     `json:"food_id" validate:"required"`
-	Name      *string  `json:"name,omitempty" validate:"omitempty,min=1"`
-	ImagePath *string  `json:"image_path,omitempty"`
-	Weight    *float64 `json:"weight,omitempty" validate:"omitempty,gt=0"`
-	Quantity  *int     `json:"quantity,omitempty" validate:"omitempty,gt=0"`
-	// Quality   *int     `json:"quality,omitempty" validate:"omitempty,gt=0"`
+	FoodID      uint     `json:"food_id" validate:"required"`
+	Name        *string  `json:"name,omitempty" validate:"omitempty,min=1"`
+	ImagePath   *string  `json:"image_path,omitempty"`
+	GramsPerCup *float64 `json:"grams_per_cup"`
 }
 
 type AmountFoodDetail struct {

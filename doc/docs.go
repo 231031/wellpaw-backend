@@ -2231,9 +2231,6 @@ const docTemplate = `{
                 },
                 "food_id": {
                     "type": "integer"
-                },
-                "grams_per_cup": {
-                    "type": "number"
                 }
             }
         },
@@ -2359,9 +2356,6 @@ const docTemplate = `{
                 },
                 "food_id": {
                     "type": "integer"
-                },
-                "grams_per_cup": {
-                    "type": "number"
                 }
             }
         },
@@ -2484,6 +2478,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodQuantity"
                     }
                 },
+                "grams_per_cup": {
+                    "type": "number"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -2534,17 +2531,11 @@ const docTemplate = `{
         "github_com_231031_wellpaw-backend_internal_model.FoodPetFoodPlan": {
             "type": "object",
             "properties": {
-                "cups": {
-                    "type": "number"
-                },
                 "food": {
                     "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
                 },
                 "food_id": {
                     "type": "integer"
-                },
-                "grams_per_cup": {
-                    "type": "number"
                 },
                 "id": {
                     "type": "integer"
@@ -3131,6 +3122,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "cups": {
+                    "type": "number"
                 },
                 "energy_intake": {
                     "type": "number"
@@ -3727,18 +3721,15 @@ const docTemplate = `{
                 "food_id": {
                     "type": "integer"
                 },
+                "grams_per_cup": {
+                    "type": "number"
+                },
                 "image_path": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string",
                     "minLength": 1
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "weight": {
-                    "type": "number"
                 }
             }
         },
