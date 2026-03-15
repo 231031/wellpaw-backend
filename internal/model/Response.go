@@ -52,14 +52,72 @@ type OcrPetFoodResponse struct {
 	Data   *PetFoodAnalysisResponse `json:"data"`
 }
 
+type PetSkinModelResponse struct {
+	ClassIndex  int     `json:"class_index"`
+	Label       string  `json:"label"`
+	Probability float64 `json:"probability"`
+}
+
 type PetResponse struct {
 	Status int         `json:"status"`
 	Data   *PetPayload `json:"data"`
 }
 
+type PetsData struct {
+	Pets []Pet `json:"pets"`
+}
+
+type PetsResponse struct {
+	Status int       `json:"status"`
+	Data   *PetsData `json:"data"`
+}
+
+type ActivityCalendarsData struct {
+	ActivityCalendars []PetActivityCalendar `json:"activity_calendars"`
+}
+
+type ActivityCalendarsResponse struct {
+	Status int                    `json:"status"`
+	Data   *ActivityCalendarsData `json:"data"`
+}
+
+type CalendarResponse struct {
+	Status int          `json:"status"`
+	Data   *PetCalendar `json:"data"`
+}
+
+type CalendarsData struct {
+	Calendars []PetCalendar `json:"calendars"`
+}
+
+type CalendarsResponse struct {
+	Status int            `json:"status"`
+	Data   *CalendarsData `json:"data"`
+}
+
+type CalendarTypeSummary struct {
+	CalendarType CalendarType `json:"calendar_type"`
+	Type         string       `json:"type"`
+	Times        int          `json:"times"`
+}
+
+type CalendarTypeSummaryResponse struct {
+	Status int                   `json:"status"`
+	Data   []CalendarTypeSummary `json:"data"`
+}
+
 type FoodResponse struct {
 	Status int   `json:"status"`
 	Data   *Food `json:"data"`
+}
+
+type FoodsData struct {
+	Foods []Food `json:"foods"`
+}
+
+type FoodsResponse struct {
+	Status int        `json:"status"`
+	Data   *FoodsData `json:"data"`
 }
 
 type PetFoodPlanDetailResponse struct {
@@ -71,6 +129,26 @@ type PetFoodPlanDetailResponse struct {
 type PetFoodPlanResponse struct {
 	Status int                        `json:"status"`
 	Data   *PetFoodPlanDetailResponse `json:"data"`
+}
+
+type PetPlanAnalysis struct {
+	Pet                            *Pet                            `json:"pet,omitempty"`
+	PetFoodPlanHistory             *PetFoodPlanHistory             `json:"pet_food_plan_histories,omitempty"`
+	AvgPercentWeightChangePerMonth *AvgPercentWeightChangePerMonth `json:"avg_percent_weight_change_per_month,omitempty"`
+}
+type PetPlanAnalysisResponse struct {
+	Status int              `json:"status"`
+	Data   *PetPlanAnalysis `json:"data"`
+}
+
+type PetSkinImageResponse struct {
+	Status int            `json:"status"`
+	Data   []PetSkinImage `json:"data"`
+}
+
+type PredictPetSkinImageResponse struct {
+	Status int           `json:"status"`
+	Data   *PetSkinImage `json:"data"`
 }
 
 // type SubscriptionScheduleResponse struct {

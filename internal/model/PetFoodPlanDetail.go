@@ -10,6 +10,7 @@ type PetFoodPlanDetail struct {
 	EnergyIntake       float64   `gorm:"not null" json:"energy_intake"`
 	ProteinIntake      float64   `gorm:"not null" json:"protein_intake"`
 	FatIntake          float64   `gorm:"not null" json:"fat_intake"`
+	Cup                float64   `gorm:"-" json:"cups"`
 	CreatedAt          time.Time `gorm:"not null" json:"created_at"`
 
 	// Relationships

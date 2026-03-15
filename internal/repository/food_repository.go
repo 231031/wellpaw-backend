@@ -10,10 +10,16 @@ import (
 )
 
 type FoodRepository interface {
-	CreateFood(ctx context.Context, food *model.Food) (*model.Food, error)
-	UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error
+	CreateFood(ctx context.Context, food *model.Food, foodQuantity *model.FoodQuantity) error
+	GetFoodsByUserID(ctx context.Context, userID uint) ([]model.Food, error)
+	GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) ([]model.Food, error)
+	CreateNewFoodQuantity(ctx context.Context, foodQuantity *model.FoodQuantity) error
+	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, updates map[string]interface{}) error
 	GetFoodsByIDsAndUserID(ctx context.Context, userID uint, foodIDs []uint) ([]model.Food, error)
+	GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) (*model.Food, error)
 	SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error
+
+	UpdateDailyFoodAmount(ctx context.Context, updatedAmount []model.FoodQuantity) error
 }
 
 type foodRepository struct {
@@ -26,28 +32,54 @@ func NewFoodRepository(db *gorm.DB) FoodRepository {
 	}
 }
 
-func (r *foodRepository) CreateFood(ctx context.Context, food *model.Food) (*model.Food, error) {
-	if err := r.db.WithContext(ctx).Create(food).Error; err != nil {
-		return nil, err
-	}
-	return food, nil
+func (r *foodRepository) CreateFood(ctx context.Context, food *model.Food, foodQuantity *model.FoodQuantity) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(food).Error; err != nil {
+			return err
+		}
+
+		foodQuantity.FoodID = food.ID
+		if err := tx.Create(foodQuantity).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
-// not test
-func (r *foodRepository) UpdateFoodWeightAndQuantity(ctx context.Context, userID uint, id uint, weight float64, quantity int) error {
-	result := r.db.WithContext(ctx).
-		Model(&model.Food{}).
-		Where("id = ? AND user_id = ?", id, userID).
-		Updates(map[string]interface{}{
-			"weight":   weight,
-			"quantity": quantity,
-		})
-	if result.Error != nil {
-		return result.Error
+func (r *foodRepository) GetFoodsByUserID(ctx context.Context, userID uint) ([]model.Food, error) {
+	var foods []model.Food
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Preload("FoodQuantities", func(db *gorm.DB) *gorm.DB {
+			return db.Where("amount > ?", 0).Order("created_at ASC")
+		}).
+		Order("brand DESC, id DESC").
+		Find(&foods).Error; err != nil {
+		return nil, fmt.Errorf("failed to get foods by user id : %w", err)
 	}
 
-	if result.RowsAffected == 0 {
-		return utils.ErrNoRowsUpdated
+	return foods, nil
+}
+
+func (r *foodRepository) GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) ([]model.Food, error) {
+	var foods []model.Food
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND type = ?", userID, foodType).
+		Preload("FoodQuantities", func(db *gorm.DB) *gorm.DB {
+			return db.Where("amount > ?", 0).Order("created_at ASC")
+		}).
+		Order("brand DESC, id DESC").
+		Find(&foods).Error; err != nil {
+		return nil, fmt.Errorf("failed to get foods by food type : %w", err)
+	}
+
+	return foods, nil
+}
+
+func (r *foodRepository) CreateNewFoodQuantity(ctx context.Context, foodQuantity *model.FoodQuantity) error {
+	result := r.db.WithContext(ctx).Create(foodQuantity)
+	if result.Error != nil {
+		return result.Error
 	}
 
 	return nil
@@ -66,6 +98,55 @@ func (r *foodRepository) GetFoodsByIDsAndUserID(ctx context.Context, userID uint
 	}
 
 	return foods, nil
+}
+
+func (r *foodRepository) GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) (*model.Food, error) {
+	var food *model.Food
+
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", foodID, userID).
+		Preload("FoodQuantities", func(db *gorm.DB) *gorm.DB {
+			return db.Where("amount > ?", 0).Order("created_at ASC")
+		}).
+		Find(&food).Error; err != nil {
+		return nil, fmt.Errorf("failed to get food by ids and user id : %w", err)
+	}
+
+	return food, nil
+}
+
+func (r *foodRepository) UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	result := r.db.WithContext(ctx).
+		Model(&model.Food{}).
+		Where("id = ? AND user_id = ?", foodID, userID).
+		Updates(updates)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update food detail : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *foodRepository) UpdateDailyFoodAmount(ctx context.Context, updatedAmount []model.FoodQuantity) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, q := range updatedAmount {
+			err := tx.Model(&model.FoodQuantity{}).Where("id = ?", q.ID).
+				Updates(map[string]interface{}{"amount": q.Amount}).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *foodRepository) SoftDeleteFoodByIDAndUserID(ctx context.Context, foodID uint, userID uint) error {

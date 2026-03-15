@@ -34,6 +34,8 @@ func NewOcrController(ocrService service.OcrService) OcrController {
 // @Failure 500 {object} model.HTTPResponse
 // @Router /ocr/request [post]
 func (c *ocrController) ProcessOcrRequest(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
 	fileHeader, err := ctx.FormFile("image")
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -51,9 +53,9 @@ func (c *ocrController) ProcessOcrRequest(ctx *fiber.Ctx) error {
 	}
 	defer file.Close()
 
-	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 20*time.Second)
+	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 60*time.Second)
 	defer cancel()
 
-	response := c.ocrService.ProcessOcrRequest(ctxWithTimeout, file)
+	response := c.ocrService.ProcessOcrRequest(ctxWithTimeout, userID, file)
 	return ctx.Status(response.Status).JSON(response)
 }

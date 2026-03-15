@@ -185,17 +185,19 @@ func isEmptyRow(record []string) bool {
 }
 
 func mapBcsScore(score int) model.BcsType {
-	switch {
-	case score <= 2:
+	switch score {
+	case 1, 2:
 		return model.VERYTHIN
-	case score <= 4:
+	case 3, 4:
 		return model.THIN
-	case score == 5:
+	case 5:
 		return model.IDEAL
-	case score <= 7:
+	case 6, 7:
 		return model.OVERWEIGHT
-	default:
+	case 8, 9:
 		return model.OBESITY
+	default:
+		return model.IDEAL
 	}
 }
 

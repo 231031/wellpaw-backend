@@ -1,8 +1,11 @@
 package server
 
 import (
+	"firebase.google.com/go/v4/messaging"
 	"github.com/231031/wellpaw-backend/internal/controller"
+	"github.com/231031/wellpaw-backend/internal/cronjob"
 	"github.com/231031/wellpaw-backend/internal/middleware"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/gofiber/fiber/v2"
@@ -44,29 +47,49 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 }
 
 func RoutePet(router fiber.Router, petController controller.PetController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/pets", authMiddleware.AuthorizeUser(), petController.GetPetsByUserID)
+
 	petRoute := router.Group("/pet", authMiddleware.AuthorizeUser())
 	petRoute.Post("/", petController.CreateNewPet)
-	petRoute.Patch("/info", petController.UpdatePetInfo)
+	petRoute.Get("/:pet_id", petController.GetPetByPetID)
+	petRoute.Get("/analysis/:pet_id", petController.GetPetAnalysisByPetID)
+	petRoute.Put("/info", petController.UpdatePetInfo)
 	petRoute.Post("/detail", petController.UpdatePetDetail)
 	petRoute.Delete("/:pet_id", petController.SoftDeletePet)
 }
 
 func RouteFood(router fiber.Router, foodController controller.FoodController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/foods", authMiddleware.AuthorizeUser(), foodController.GetFoodsByUserID)
+	router.Get("/foods/:food_type", authMiddleware.AuthorizeUser(), foodController.GetFoodsByFoodType)
+
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
+	foodRoute.Post("/quantity", foodController.CreateNewFoodQuantity)
+	foodRoute.Patch("/", foodController.UpdateFoodDetail)
 	foodRoute.Delete("/:food_id", foodController.SoftDeleteFood)
 }
 
 func RoutePetFoodPlan(router fiber.Router, petFoodPlanController controller.PetFoodPlanController, authMiddleware middleware.AuthMiddleware) {
 	petFoodPlanRoute := router.Group("/foodplan", authMiddleware.AuthorizeUser())
+	petFoodPlanRoute.Post("/calculate", petFoodPlanController.CalculatePetFoodPlan)
 	petFoodPlanRoute.Post("/", petFoodPlanController.CreatePetFoodPlan)
-	petFoodPlanRoute.Put("/amount", petFoodPlanController.UpdateFeedingAmountFromUser)
+	// petFoodPlanRoute.Put("/amount", petFoodPlanController.UpdateFeedingAmountFromUser)
 	petFoodPlanRoute.Get("/:pet_id", petFoodPlanController.GetLastestActivePlanDetailByPet)
+}
+
+func RoutePetCalendar(router fiber.Router, petCalendarController controller.PetCalendarController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/calendars", authMiddleware.AuthorizeUser(), petCalendarController.GetPetCalendarsByUserID)
+	router.Get("/calendars/sum", authMiddleware.AuthorizeUser(), petCalendarController.GetCurrentMonthCalendarTypeSummaryByUserID)
+	router.Get("/calendars/:pet_id", authMiddleware.AuthorizeUser(), petCalendarController.GetPetCalendarsByPetID)
+
+	petCalendarRoute := router.Group("/calendar", authMiddleware.AuthorizeUser())
+	petCalendarRoute.Post("/", petCalendarController.CreatePetCalendar)
 }
 
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
 	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
+	webhookRoute.Post("/subscription/freetiral", webhookController.HandleSubscriptionFreeTiralUpdated)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {
@@ -74,7 +97,17 @@ func RouteOcr(router fiber.Router, ocrController controller.OcrController, authM
 	ocrRoute.Post("/request", ocrController.ProcessOcrRequest)
 }
 
-func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, cfg *Cfg) {
+func RouteDisease(router fiber.Router, diseaseController controller.DiseaseController, authMiddleware middleware.AuthMiddleware) {
+	router.Get("/diseases", authMiddleware.AuthorizeUser(), diseaseController.GetPetSkinImagesByUserID)
+	router.Get("/diseases/:pet_id", authMiddleware.AuthorizeUser(), diseaseController.GetPetSkinImagesByPetID)
+
+	diseaseRoute := router.Group("/disease", authMiddleware.AuthorizeUser())
+	diseaseRoute.Post("/predict", diseaseController.PredictDisease)
+	diseaseRoute.Post("/predict/unknown", authMiddleware.AuthorizeUser(), diseaseController.PredictDiseaseUnknown)
+	diseaseRoute.Patch("/labeled", diseaseController.LabeledPetSkinDisease)
+}
+
+func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, geminiClient *genai.Client, stripeClient *stripe.Client, firebaseStorage *model.FirebaseStorage, fcmClient *messaging.Client, cfg *Cfg) {
 	tokenCfg := ConfigGenerateKey(cfg)
 	googleOauthConfig := ConfigGoogleOauthConfig(cfg)
 
@@ -88,27 +121,38 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	authMiddlware := middleware.NewAuthMiddleware(tokenService)
 
 	paymentService := service.NewPaymentService(stripeClient)
-	webhookService := service.NewWebhookService(userRepo)
-
 	userService := service.NewUserService(userRepo, paymentService)
 	userController := controller.NewUserController(userService)
 
 	energyReqService := service.NewEnergyRequirementService()
 	nutritientReqService := service.NewNutritientRequirementService()
-	calculationService := service.NewCalculationService(energyReqService, nutritientReqService)
+	expectedWeightService := service.NewExpectedWeightService()
+	calculationService := service.NewCalculationService(energyReqService, nutritientReqService, expectedWeightService)
+
+	freeTierRepo := repository.NewFreeTierUsageRepository(db, redisClient)
+	freeTierValidationService := service.NewFreeTierUsageValidationService(userRepo, freeTierRepo)
 
 	foodRepo := repository.NewFoodRepository(db)
-	foodService := service.NewFoodService(calculationService, foodRepo)
+	foodService := service.NewFoodService(calculationService, foodRepo, freeTierValidationService)
 	foodController := controller.NewFoodController(foodService)
 
 	petRepo := repository.NewPetRepository(db)
 	petFoodPlanRepo := repository.NewPetFoodPlanRepository(db)
+	petCalendarRepo := repository.NewPetCalendarRepository(db)
 
-	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo)
+	petFoodPlanService := service.NewPetFoodPlanService(calculationService, petFoodPlanRepo, petRepo, foodRepo, freeTierValidationService)
 	petFoodPlanController := controller.NewPetFoodPlanController(petFoodPlanService)
 
-	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo)
+	petService := service.NewPetService(calculationService, petRepo, petFoodPlanRepo, freeTierValidationService)
 	petController := controller.NewPetController(petService)
+
+	petCalendarService := service.NewPetCalendarService(petCalendarRepo)
+	petCalendarController := controller.NewPetCalendarController(petCalendarService)
+
+	petSkinImageRepo := repository.NewPetSkinImageRepository(db)
+	modelService := service.NewModelService(cfg.MODEL_BASE_API)
+	diseaseService := service.NewDiseaseService(modelService, petRepo, petSkinImageRepo, freeTierValidationService, firebaseStorage)
+	diseaseController := controller.NewDiseaseController(diseaseService)
 
 	// routing
 	authService := service.NewAuthService(userRepo, tokenService, paymentService, otpService, googleOauthConfig)
@@ -119,11 +163,19 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	RoutePet(router, petController, authMiddlware)
 	RouteFood(router, foodController, authMiddlware)
 	RoutePetFoodPlan(router, petFoodPlanController, authMiddlware)
+	RoutePetCalendar(router, petCalendarController, authMiddlware)
+	RouteDisease(router, diseaseController, authMiddlware)
 
-	ocrService := service.NewOcrService(geminiClient)
+	ocrService := service.NewOcrService(geminiClient, freeTierValidationService)
 	ocrController := controller.NewOcrController(ocrService)
 	RouteOcr(router, ocrController, authMiddlware)
 
+	fcmService := service.NewFCMService(fcmClient)
+
+	webhookService := service.NewWebhookService(userRepo, fcmService)
 	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
 	RouteWebhook(router, webhookController)
+
+	// cronjob
+	cronjob.CreateCronjob(calculationService, fcmService, foodRepo, petFoodPlanRepo, petCalendarRepo)
 }

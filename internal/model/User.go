@@ -7,20 +7,21 @@ import (
 )
 
 type User struct {
-	ID                 uint                   `gorm:"primaryKey;autoIncrement" json:"id"`
-	Email              string                 `gorm:"unique;not null;type:varchar(255)" json:"email" validate:"required,email"`
-	Password           string                 `gorm:"not null;type:varchar(255)" json:"password,omitempty" validate:"required"`
-	CustomerID         string                 `gorm:"type:varchar(255)" json:"customer_id,omitempty"`
-	PaymentMethodID    string                 `gorm:"type:varchar(255)" json:"payment_method_id,omitempty"`
-	DeviceToken        string                 `gorm:"not null;type:varchar(512)" json:"device_token,omitempty" validate:"required"`
-	FirstName          string                 `gorm:"not null;type:varchar(255)" json:"first_name" validate:"required"`
-	LastName           string                 `gorm:"not null;type:varchar(255)" json:"last_name" validate:"required"`
-	NotiFood           bool                   `gorm:"type:boolean;default:true;not null" json:"noti_food"`
-	NotiCalendars      bool                   `gorm:"type:boolean;default:true;not null" json:"noti_calendars"`
-	ProfileFree        int                    `gorm:"default:0;not null" json:"profile_free"`
-	FoodFree           int                    `gorm:"default:0;not null" json:"food_free"`
-	FoodPlanFree       int                    `gorm:"default:0;not null" json:"food_plan_free"`
-	BcsFree            int                    `gorm:"default:0;not null" json:"bcs_free"`
+	ID              uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	Email           string `gorm:"unique;not null;type:varchar(255)" json:"email" validate:"required,email"`
+	Password        string `gorm:"not null;type:varchar(255)" json:"password,omitempty" validate:"required"`
+	CustomerID      string `gorm:"type:varchar(255)" json:"customer_id,omitempty"`
+	PaymentMethodID string `gorm:"type:varchar(255)" json:"payment_method_id,omitempty"`
+	DeviceToken     string `gorm:"not null;type:varchar(512)" json:"device_token,omitempty" validate:"required"`
+	FirstName       string `gorm:"not null;type:varchar(255)" json:"first_name" validate:"required"`
+	LastName        string `gorm:"not null;type:varchar(255)" json:"last_name" validate:"required"`
+	NotiFood        bool   `gorm:"type:boolean;default:true;not null" json:"noti_food"`
+	NotiCalendars   bool   `gorm:"type:boolean;default:true;not null" json:"noti_calendars"`
+	FreeTierUsage   bool   `gorm:"type:boolean;default:false;not null" json:"free_tier_usage"`
+	ProfileFree     int    `gorm:"default:0;not null" json:"profile_free"`
+	FoodFree        int    `gorm:"default:0;not null" json:"food_free"`
+	FoodPlanFree    int    `gorm:"default:0;not null" json:"food_plan_free"`
+	// BcsFree            int                    `gorm:"default:0;not null" json:"bcs_free"`
 	DiseaseFree        int                    `gorm:"default:0;not null" json:"disease_free"`
 	SubscriptionStatus SubscriptionStatusType `gorm:"default:0;not null" json:"subscription_status"`
 	Tier               TierType               `gorm:"default:0;not null" json:"tier"`
@@ -29,7 +30,6 @@ type User struct {
 	DeletedAt          gorm.DeletedAt         `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
-	Pets     []Pet     `gorm:"foreignKey:UserID" json:"pets,omitempty"`
-	Foods    []Food    `gorm:"foreignKey:UserID" json:"foods,omitempty"`
-	Payments []Payment `gorm:"foreignKey:UserID" json:"payments,omitempty"`
+	Pets  []Pet  `gorm:"foreignKey:UserID" json:"pets,omitempty"`
+	Foods []Food `gorm:"foreignKey:UserID" json:"foods,omitempty"`
 }

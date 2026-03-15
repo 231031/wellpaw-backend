@@ -1,18 +1,32 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 )
 
-func ConvertStripeTimeToTimeStr(stripeTime int64) time.Time {
-	thaiLocation, err := time.LoadLocation("Asia/Bangkok")
-	if err != nil {
-		fmt.Println("Error loading timezone:", err)
-		return time.Time{}
+const thaiTimezone = "Asia/Bangkok"
+
+func ConvertTimeToThaiTimezone(dateTime time.Time) time.Time {
+	if dateTime.IsZero() {
+		return dateTime
 	}
 
-	timeLocThai := time.Unix(stripeTime, 0).In(thaiLocation)
+	thaiLocation, err := time.LoadLocation(thaiTimezone)
+	if err != nil {
+		return dateTime
+	}
 
-	return timeLocThai
+	return dateTime.In(thaiLocation)
+}
+
+func ConvertStripeTimeToTimeStr(stripeTime int64) time.Time {
+	return ConvertTimeToThaiTimezone(time.Unix(stripeTime, 0))
+}
+
+func GetMonthRangeInThai(now time.Time) (time.Time, time.Time) {
+	thaiNow := ConvertTimeToThaiTimezone(now)
+	monthStart := time.Date(thaiNow.Year(), thaiNow.Month(), 1, 0, 0, 0, 0, thaiNow.Location())
+	nextMonthStart := monthStart.AddDate(0, 1, 0)
+
+	return monthStart, nextMonthStart
 }

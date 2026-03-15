@@ -8,14 +8,18 @@ const (
 	HEALTHY
 	DEMODICOSIS
 	PYODERMA
+	OTHER
+	BACTERIAL_DERMATOSIS
 )
 
 var DiseaseTypeLabel = map[DiseaseType]string{
-	RINGWORM:    "Ringworm",
-	SCABIES:     "Scabies",
-	DEMODICOSIS: "Demodicosis",
-	PYODERMA:    "Pyoderma",
-	HEALTHY:     "Healthy",
+	RINGWORM:             "Ringworm",
+	SCABIES:              "Scabies",
+	DEMODICOSIS:          "Demodicosis",
+	PYODERMA:             "Pyoderma",
+	HEALTHY:              "Healthy",
+	OTHER:                "Other",
+	BACTERIAL_DERMATOSIS: "Bacterial Dermatosis",
 }
 
 func (disease DiseaseType) String() string {

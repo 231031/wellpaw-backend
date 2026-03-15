@@ -13,14 +13,16 @@ import (
 var (
 	ErrNoRowsUpdated    = errors.New("no rows affected when updating")
 	ErrFoodInActivePlan = errors.New("food is in active plan")
+	ErrInvalidImageFile = errors.New("invalid image file")
 	FailedToGetMsg      = "failed to get "
 	NotFoundMsg         = " not found"
 	FailedToCreateMsg   = "failed to create "
 	FailedToUpdateMsg   = "failed to update "
 
-	ErrUnauth       = errors.New("the token is invalid")
-	ErrUnauthHeader = errors.New("the user is unauthorization")
-	ErrFailToGet    = errors.New("failed to get data")
+	ErrUnauth                   = errors.New("the token is invalid")
+	ErrUnauthHeader             = errors.New("the user is unauthorization")
+	ErrFailToGet                = errors.New("failed to get data")
+	ErrFailToCheckFreeTierUsage = errors.New("failed to check limatation of free tiral usage")
 )
 
 func HandleStripeError(msgFailed string, err error) *model.HTTPResponse {

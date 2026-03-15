@@ -21,11 +21,10 @@ type MigrationManager struct {
 func NewMigrationManager(db *gorm.DB) *MigrationManager {
 	models := []interface{}{
 		&model.User{},
-		&model.Payment{},
 		&model.Pet{},
 		&model.PetDetail{},
 		&model.Food{},
-		&model.CupFoodPet{},
+		&model.FoodQuantity{},
 		&model.PetFoodPlan{},
 		&model.FoodPetFoodPlan{},
 		&model.PetFoodPlanTotal{},

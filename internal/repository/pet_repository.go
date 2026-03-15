@@ -15,8 +15,11 @@ type PetRepository interface {
 	UpdatePetInfo(ctx context.Context, pet *model.Pet) error
 	UpdatePetDetails(ctx context.Context, petDetails *model.PetDetail) error
 	UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
+	GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error)
+	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error)
+	GetPetDetialsFromPetID(ctx context.Context, petID uint) ([]model.PetDetail, error)
 	SoftDeletePetByIDAndUserID(ctx context.Context, petID uint, userID uint) error
 }
 
@@ -112,13 +115,31 @@ func (r *petRepository) UpdatePetDetailsAndPlan(ctx context.Context, petID uint,
 
 func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error) {
 	var pet *model.Pet
-	err := r.db.WithContext(ctx).First(&pet, id).Error
+	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC, id DESC").Limit(1)
+	}).First(&pet, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pet by id : %w", err)
 	}
 
 	return pet, nil
 }
+
+// func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
+// 	// oneMonthRange :=
+
+// 	var petDetail []model.PetDetail
+// 	if err := r.db.WithContext(ctx).
+// 		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+// 			return db.Where("created_at >= ").Order("created_at DESC")
+// 		}).
+// 		Where("pet_id = ?", petID).
+// 		Find(&petDetail).Error; err != nil {
+// 		return nil, fmt.Errorf("failed to get latest pet detail by pet id : %w", err)
+// 	}
+
+// 	return petDetail, nil
+// }
 
 func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error) {
 	var petDetail model.PetDetail
@@ -132,25 +153,216 @@ func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uin
 	return &petDetail, nil
 }
 
-func (r *petRepository) GetPetByID(ctx context.Context, id uint) (*model.Pet, error) {
+func (r *petRepository) GetPetDetialsFromPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
 	currentDate := time.Now()
 	oneYearAgo := currentDate.AddDate(-1, 0, 0)
 
-	// use Time-Weighted Average - TWA to cal avg per month
-	var pet *model.Pet
+	query := `
+		WITH in_window_details AS (
+			SELECT *
+			FROM pet_details
+			WHERE pet_id = ?
+				AND created_at >= ?
+				AND created_at <= ?
+		),
+		last_before_window AS (
+			SELECT *
+			FROM pet_details
+			WHERE pet_id = ?
+				AND created_at < ?
+			ORDER BY created_at DESC, id DESC
+			LIMIT 1
+		),
+		relevant_details AS (
+			SELECT * FROM in_window_details
+			UNION ALL
+			SELECT * FROM last_before_window
+		)
+		SELECT *
+		FROM relevant_details
+		ORDER BY created_at ASC, id ASC;
+	`
+
+	var petDetails []model.PetDetail
+	if err := r.db.WithContext(ctx).Raw(
+		query,
+		petID,
+		oneYearAgo,
+		currentDate,
+		petID,
+		oneYearAgo,
+	).Scan(&petDetails).Error; err != nil {
+		return nil, fmt.Errorf("failed to get pet detail by pet id : %w", err)
+	}
+
+	return petDetails, nil
+}
+
+// not test
+func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error) {
+	currentDate := time.Now()
+	oneYearAgo := currentDate.AddDate(-1, 0, 0)
+
+	var pet model.Pet
 	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
-		return db.Preload("PetFoodPlanTotals.PetFoodPlanDetails.FoodPetFoodPlan.Food").Where("created_at >= ?", oneYearAgo).Order("created_at asc")
+		return db.Order("created_at DESC").Limit(1)
 	}).First(&pet, id).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pet by id : %w", err)
 	}
 
-	return pet, nil
+	// Time-Weighted Average (TWA) by month over the last year.
+	monthlyTWA := []model.PetMonthlyNutritionTWA{}
+	twaQuery := `
+		WITH in_window_history AS (
+			SELECT
+				h.id,
+				h.created_at,
+				h.pet_food_plan_total_id
+			FROM pets p
+			JOIN pet_food_plan_histories h ON h.pet_id = p.id
+			WHERE p.id = ?
+				AND p.deleted_at IS NULL
+				AND h.created_at >= ?
+				AND h.created_at <= ?
+		),
+		last_before_window AS (
+			SELECT
+				h.id,
+				h.created_at,
+				h.pet_food_plan_total_id
+			FROM pets p
+			JOIN pet_food_plan_histories h ON h.pet_id = p.id
+			WHERE p.id = ?
+				AND p.deleted_at IS NULL
+				AND h.created_at < ?
+			ORDER BY h.created_at DESC, h.id DESC
+			LIMIT 1
+		),
+		relevant_history AS (
+			SELECT * FROM in_window_history
+			UNION ALL
+			SELECT * FROM last_before_window
+		),
+		history_intervals AS (
+			SELECT
+				h.id AS history_id,
+				h.created_at AS interval_start,
+				COALESCE(
+					LEAD(h.created_at) OVER (ORDER BY h.created_at, h.id),
+					?
+				) AS interval_end,
+				t.total_energy_intake,
+				t.total_protein_intake,
+				t.total_fat_intake,
+				d.energy,
+				d.protein,
+				d.fat,
+				d.weight,
+				d.activity_level
+			FROM relevant_history h
+			JOIN pet_food_plan_totals t ON t.id = h.pet_food_plan_total_id
+			JOIN pet_details d ON d.id = t.pet_detail_id
+		),
+		bounded_intervals AS (
+			SELECT
+				history_id,
+				interval_start AS source_created_at,
+				GREATEST(interval_start, ?) AS effective_start,
+				LEAST(interval_end, ?) AS effective_end,
+				total_energy_intake,
+				total_protein_intake,
+				total_fat_intake,
+				energy,
+				protein,
+				fat,
+				weight,
+				activity_level
+			FROM history_intervals
+		),
+		split_by_month AS (
+			SELECT
+				gs.month_start,
+				b.history_id,
+				b.source_created_at,
+				GREATEST(b.effective_start, gs.month_start) AS segment_start,
+				LEAST(b.effective_end, gs.month_start + INTERVAL '1 month') AS segment_end,
+				b.total_energy_intake,
+				b.total_protein_intake,
+				b.total_fat_intake,
+				b.energy,
+				b.protein,
+				b.fat,
+				b.weight,
+				b.activity_level
+			FROM bounded_intervals b
+			JOIN LATERAL generate_series(
+				date_trunc('month', b.effective_start),
+				date_trunc('month', b.effective_end),
+				INTERVAL '1 month'
+			) AS gs(month_start) ON TRUE
+			WHERE b.effective_end > b.effective_start
+		),
+		weighted_data AS (
+			SELECT
+				EXTRACT(YEAR FROM month_start)::int AS year,
+				EXTRACT(MONTH FROM month_start)::int AS month,
+				history_id,
+				source_created_at,
+				total_energy_intake,
+				total_protein_intake,
+				total_fat_intake,
+				energy,
+				protein,
+				fat,
+				weight,
+				activity_level,
+				EXTRACT(EPOCH FROM (segment_end - segment_start)) AS weight_seconds
+			FROM split_by_month
+			WHERE segment_end > segment_start
+		)
+		SELECT
+			year,
+			month,
+			SUM(total_energy_intake * weight_seconds) / SUM(weight_seconds) AS total_energy_intake,
+			SUM(total_protein_intake * weight_seconds) / SUM(weight_seconds) AS total_protein_intake,
+			SUM(total_fat_intake * weight_seconds) / SUM(weight_seconds) AS total_fat_intake,
+			SUM(energy * weight_seconds) / SUM(weight_seconds) AS energy,
+			SUM(protein * weight_seconds) / SUM(weight_seconds) AS protein,
+			SUM(fat * weight_seconds) / SUM(weight_seconds) AS fat,
+			(ARRAY_AGG(weight ORDER BY source_created_at DESC, history_id DESC))[1] AS weight,
+			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level
+		FROM weighted_data
+		GROUP BY year, month
+		ORDER BY year, month;
+	`
+	if err := r.db.WithContext(ctx).Raw(
+		twaQuery,
+		// cte1
+		id,
+		oneYearAgo,  // lower bound of analysis window
+		currentDate, // upper bound of analysis window
+		// cte2
+		id,
+		oneYearAgo, // pick latest row before analysis window
+		// cte4
+		currentDate, // fallback interval_end for latest history row
+		// cte5
+		oneYearAgo,  // lower bound of analysis window
+		currentDate, // upper bound of analysis window
+	).Scan(&monthlyTWA).Error; err != nil {
+		return nil, fmt.Errorf("failed to get monthly TWA by pet id : %w", err)
+	}
+
+	pet.MonthlyNutritionTWA = monthlyTWA
+	return &pet, nil
 }
 
-func (r *petRepository) GetPetByUserID(ctx context.Context, id uint) ([]model.Pet, error) {
+func (r *petRepository) GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error) {
 	var pets []model.Pet
-	err := r.db.WithContext(ctx).Where("user_id = ?", id).Find(&pets).Error
+	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
+		return db.Order("created_at DESC").Limit(1)
+	}).Where("user_id = ?", id).Find(&pets).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pet by user id : %w", err)
 	}

@@ -3,16 +3,20 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/231031/wellpaw-backend/internal/model"
 	"gorm.io/gorm"
 )
 
 type PetFoodPlanRepository interface {
-	CreatePetFoodPlan(ctx context.Context, petID uint, plan *model.PetFoodPlan, foodsInFoodPlan []*model.FoodPetFoodPlan, foodPlanTotal *model.PetFoodPlanTotal, intakeDetailPerFood []*model.PetFoodPlanDetail, cupFood []*model.CupFoodPet) error
+	CreatePetFoodPlan(ctx context.Context, petID uint, plan *model.PetFoodPlan, foodsInFoodPlan []*model.FoodPetFoodPlan, foodPlanTotal *model.PetFoodPlanTotal, intakeDetailPerFood []*model.PetFoodPlanDetail) error
 	GetFoodsInLastestActivePlanByPetID(ctx context.Context, petID uint) (uint, []model.FoodPetFoodPlan, error)
 	GetFoodsInLastestActivePlanByPlanID(ctx context.Context, planID uint) (*model.PetFoodPlan, error)
 	GetLastestActivePlanDetailByPet(ctx context.Context, petID uint, petDetailID uint) (*model.PetFoodPlan, error)
+	GetPlanUsageHistoryByPetID(ctx context.Context, petID uint) ([]model.PetFoodPlanHistory, error)
+	GetNextActiveFoodPlanByID(ctx context.Context, lastID uint) (*model.PetFoodPlan, error)
+	InactivePetFoodPlan(ctx context.Context, plans []model.PetFoodPlan) error
 	UpdateFeedingAmountFromUser(ctx context.Context, petID uint, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
 }
 
@@ -26,7 +30,7 @@ func NewPetFoodPlanRepository(db *gorm.DB) PetFoodPlanRepository {
 	}
 }
 
-func (r *petFoodPlanRepository) CreatePetFoodPlan(ctx context.Context, petID uint, plan *model.PetFoodPlan, foodsInFoodPlan []*model.FoodPetFoodPlan, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail, cupFood []*model.CupFoodPet) error {
+func (r *petFoodPlanRepository) CreatePetFoodPlan(ctx context.Context, petID uint, plan *model.PetFoodPlan, foodsInFoodPlan []*model.FoodPetFoodPlan, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&model.PetFoodPlan{}).Where("pet_id = ? AND active = ?", plan.PetID, true).Update("active", false).Error; err != nil {
 			return err
@@ -60,15 +64,6 @@ func (r *petFoodPlanRepository) CreatePetFoodPlan(ctx context.Context, petID uin
 			return err
 		}
 
-		for idx, cup := range cupFood {
-			cup.FoodPetFoodPlanID = foodsInFoodPlan[idx].ID
-		}
-		if len(cupFood) > 0 {
-			if err := tx.Create(cupFood).Error; err != nil {
-				return err
-			}
-		}
-
 		foodPlanHistory := &model.PetFoodPlanHistory{
 			PetID:              petID,
 			PetFoodPlanTotalID: foodPlanTotal.ID,
@@ -100,6 +95,11 @@ func (r *petFoodPlanRepository) GetFoodsInLastestActivePlanByPetID(ctx context.C
 	var foodsInPlan []model.FoodPetFoodPlan
 	if err := r.db.WithContext(ctx).
 		Model(&model.FoodPetFoodPlan{}).
+		Preload("PetFoodPlan").
+		Preload("PetFoodPlan.PetFoodPlanTotals", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC, id DESC").Limit(1)
+		}).
+		Preload("PetFoodPlan.PetFoodPlanTotals.PetFoodPlanDetails").
 		Preload("Food").
 		Where("pet_food_plan_id = ?", latestPlanID).
 		Order("food_pet_food_plans.id ASC").
@@ -143,13 +143,45 @@ func (r *petFoodPlanRepository) GetLastestActivePlanDetailByPet(ctx context.Cont
 			return db.Order("id ASC")
 		}).
 		Preload("PetFoodPlanTotals.PetFoodPlanDetails.FoodPetFoodPlan").
-		Preload("PetFoodPlanTotals.PetFoodPlanDetails.FoodPetFoodPlan.CupFoodPet").
 		Preload("PetFoodPlanTotals.PetFoodPlanDetails.FoodPetFoodPlan.Food").
 		First(&foodPlan).Error; err != nil {
 		return nil, fmt.Errorf("failed to get latest active pet food plan detail : %w", err)
 	}
 
 	return &foodPlan, nil
+}
+
+func (r *petFoodPlanRepository) GetPlanUsageHistoryByPetID(ctx context.Context, petID uint) ([]model.PetFoodPlanHistory, error) {
+	var histories []model.PetFoodPlanHistory
+	if err := r.db.WithContext(ctx).
+		Preload("PetFoodPlanTotal").
+		Preload("PetFoodPlanTotal.PetFoodPlan").
+		Preload("PetFoodPlanTotal.PetFoodPlanDetails", func(db *gorm.DB) *gorm.DB {
+			return db.Order("id ASC")
+		}).
+		Preload("PetFoodPlanTotal.PetFoodPlanDetails.FoodPetFoodPlan").
+		Preload("PetFoodPlanTotal.PetFoodPlanDetails.FoodPetFoodPlan.Food").
+		Where("pet_id = ?", petID).
+		Order("created_at DESC, id DESC").
+		Limit(2).
+		Find(&histories).Error; err != nil {
+		return nil, fmt.Errorf("failed to get plan usage history by pet id : %w", err)
+	}
+
+	if len(histories) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	now := time.Now()
+	for idx := range histories {
+		if idx == 0 {
+			histories[idx].PlanUsageEndDate = now
+			continue
+		}
+		histories[idx].PlanUsageEndDate = histories[idx-1].CreatedAt
+	}
+
+	return histories, nil
 }
 
 // not test
@@ -179,6 +211,45 @@ func (r *petFoodPlanRepository) UpdateFeedingAmountFromUser(ctx context.Context,
 
 		return nil
 	})
+}
+
+func (r *petFoodPlanRepository) GetNextActiveFoodPlanByID(ctx context.Context, lastID uint) (*model.PetFoodPlan, error) {
+	var foodPlan model.PetFoodPlan
+
+	err := r.db.WithContext(ctx).Model(&model.PetFoodPlan{}).
+		Where("active = true AND id > ?", lastID).
+		Order("id ASC").
+		Limit(1).
+		Preload("Pet").
+		Preload("Pet.User").
+		Preload("FoodPetFoodPlans", func(db *gorm.DB) *gorm.DB {
+			return db.Order("id ASC")
+		}).
+		Preload("FoodPetFoodPlans.Food").
+		Preload("FoodPetFoodPlans.Food.FoodQuantities", func(db *gorm.DB) *gorm.DB {
+			return db.Where("amount >= 0").Order("created_at ASC")
+		}).
+		Preload("FoodPetFoodPlans.PetFoodPlanDetails", func(db *gorm.DB) *gorm.DB {
+			return db.Where("id IN (SELECT MAX(id) FROM pet_food_plan_details GROUP BY food_pet_food_plan_id)")
+		}).
+		First(&foodPlan).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &foodPlan, nil
+}
+
+func (r *petFoodPlanRepository) InactivePetFoodPlan(ctx context.Context, plans []model.PetFoodPlan) error {
+	ids := make([]uint, 0, len(plans))
+	for _, p := range plans {
+		ids = append(ids, p.ID)
+	}
+
+	return r.db.WithContext(ctx).
+		Model(&model.PetFoodPlan{}).
+		Where("id IN ?", ids).
+		Update("active", false).Error
 }
 
 // func (r *petFoodPlanRepository) UpdateActivePetFoodPlan(ctx context.Context, petFoodPlanID uint) error {

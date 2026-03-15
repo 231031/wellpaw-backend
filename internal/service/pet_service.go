@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
@@ -14,22 +16,27 @@ import (
 
 type PetService interface {
 	CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse
+	GetPetByID(ctx context.Context, petID uint) *model.HTTPResponse
+	GetPetsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
+	GetPetAnalysisByPetID(ctx context.Context, petID uint) *model.HTTPResponse
 	UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *model.HTTPResponse
 	UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse
 	SoftDeletePet(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
 }
 
 type petService struct {
-	calculationService CalculationService
-	petRepo            repository.PetRepository
-	petFoodPlanRepo    repository.PetFoodPlanRepository
+	calculationService    CalculationService
+	petRepo               repository.PetRepository
+	petFoodPlanRepo       repository.PetFoodPlanRepository
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewPetService(calculationService CalculationService, petRepo repository.PetRepository, petFoodPlanRepo repository.PetFoodPlanRepository) PetService {
+func NewPetService(calculationService CalculationService, petRepo repository.PetRepository, petFoodPlanRepo repository.PetFoodPlanRepository, freeTierUsageValidationService FreeTierUsageValidationService) PetService {
 	return &petService{
-		calculationService: calculationService,
-		petRepo:            petRepo,
-		petFoodPlanRepo:    petFoodPlanRepo,
+		calculationService:    calculationService,
+		petRepo:               petRepo,
+		petFoodPlanRepo:       petFoodPlanRepo,
+		freeValidationService: freeTierUsageValidationService,
 	}
 }
 
@@ -58,15 +65,21 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 }
 
 func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse {
+	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
+	if resp != nil {
+		return resp
+	}
+
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
 
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
-	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(&petDetail, *petInfo.Type)
-	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, &petDetail, *petInfo.Type)
+	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
+	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
 
-	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
-	err := s.petRepo.CreateNewPet(ctx, &petInfo, &petDetail)
+	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
+
+	err := s.petRepo.CreateNewPet(ctx, petInfo, petDetail)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
@@ -74,11 +87,110 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 		}
 	}
 
+	if tier != nil && *tier == model.FREE {
+		freeUsage.ProfileFree += 1
+		s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
 			"pet_info":   petInfo,
 			"pet_detail": petDetail,
+		},
+	}
+}
+
+func (s *petService) GetPetsByUserID(ctx context.Context, userID uint) *model.HTTPResponse {
+	pets, err := s.petRepo.GetPetsByUserID(ctx, userID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pets",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"pets": pets,
+		},
+	}
+}
+
+func (s *petService) GetPetByID(ctx context.Context, petID uint) *model.HTTPResponse {
+	pet, err := s.petRepo.GetPetInfoByID(ctx, petID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "not found pet",
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	petDetail := model.PetDetail{}
+	if len(pet.PetDetails) > 0 {
+		petDetail = pet.PetDetails[0]
+	}
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"pet_info":   pet,
+			"pet_detail": petDetail,
+		},
+	}
+}
+
+func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *model.HTTPResponse {
+	pet, err := s.petRepo.GetPetAnalysisByID(ctx, petID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{}
+		}
+		return &model.HTTPResponse{}
+	}
+
+	planUsageHistories, err := s.petFoodPlanRepo.GetPlanUsageHistoryByPetID(ctx, petID)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{}
+		}
+		planUsageHistories = []model.PetFoodPlanHistory{}
+	}
+
+	avgWeight := s.calculationService.CalAvgPercentWeightChangePerMonth(pet.MonthlyNutritionTWA, pet.PetDetails[0].BCS, *pet.Type, pet.PetDetails[0].AgeRange)
+	for i := 1; i < len(pet.MonthlyNutritionTWA); i++ {
+		prev := pet.MonthlyNutritionTWA[i-1].Weight
+		curr := pet.MonthlyNutritionTWA[i].Weight
+		if prev <= 0 {
+			continue
+		}
+
+		pet.MonthlyNutritionTWA[i].PercentWeightChange = ((curr - prev) / prev) * 100
+	}
+
+	for _, p := range planUsageHistories {
+		if p.PetFoodPlanTotal.PetFoodPlan.Unit == model.CUP {
+			if len(p.PetFoodPlanTotal.PetFoodPlanDetails) > 0 {
+				for idx, d := range p.PetFoodPlanTotal.PetFoodPlanDetails {
+					cup := s.calculationService.CalculateGramsToCup(d)
+					p.PetFoodPlanTotal.PetFoodPlanDetails[idx].Cup = cup
+				}
+			}
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusCreated,
+		Data: map[string]interface{}{
+			"pet":                                 pet,
+			"pet_food_plan_histories":             planUsageHistories,
+			"avg_percent_weight_change_per_month": avgWeight,
 		},
 	}
 }
@@ -111,6 +223,35 @@ func (s *petService) UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *mod
 	}
 }
 
+func (s *petService) mapUpdatePetDetailNotTrigger(plan *model.PetFoodPlan) (*model.PetFoodPlanTotal, []*model.PetFoodPlanDetail, *model.HTTPResponse) {
+	if len(plan.PetFoodPlanTotals) <= 0 {
+		applogger.LogInfo(fmt.Sprintf("plan id %d doesn't have pet food total", plan.ID), serviceLog)
+		return nil, nil, &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	foodPlanDetails := []*model.PetFoodPlanDetail{}
+	foodPlanTotal := &model.PetFoodPlanTotal{
+		PetFoodPlanID:      plan.ID,
+		TotalEnergyIntake:  plan.PetFoodPlanTotals[0].TotalEnergyIntake,
+		TotalProteinIntake: plan.PetFoodPlanTotals[0].TotalProteinIntake,
+		TotalFatIntake:     plan.PetFoodPlanTotals[0].TotalFatIntake,
+	}
+
+	for _, d := range plan.PetFoodPlanTotals[0].PetFoodPlanDetails {
+		foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
+			FoodPetFoodPlanID: d.FoodPetFoodPlanID,
+			Amount:            d.Amount,
+			EnergyIntake:      d.EnergyIntake,
+			ProteinIntake:     d.ProteinIntake,
+			FatIntake:         d.FatIntake,
+		})
+	}
+	return foodPlanTotal, foodPlanDetails, nil
+}
+
 func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse {
 	pet, err := s.petRepo.GetPetInfoByID(ctx, petDetail.PetID)
 	if err != nil {
@@ -130,7 +271,6 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)
-	petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	latestPlanID, foodsInActivePlan, err := s.petFoodPlanRepo.GetFoodsInLastestActivePlanByPetID(ctx, pet.ID)
 	if err != nil {
@@ -157,18 +297,36 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	var foods []model.Food
-	for _, fp := range foodsInActivePlan {
-		foods = append(foods, *fp.Food)
-	}
-	foodPlanDetails := s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
-	for idx := range foodsInActivePlan {
-		foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
+	if len(foodsInActivePlan) <= 0 {
+		applogger.LogInfo(fmt.Sprintf("plan id : %d not found any food in plan", latestPlanID), serviceLog)
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "pet detail",
+		}
 	}
 
-	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
-	foodPlanTotal.PetFoodPlanID = latestPlanID
-	foodPlanTotal.PetDetailID = petDetail.ID
+	var foods []model.Food
+	var resp *model.HTTPResponse
+	foodPlanDetails := []*model.PetFoodPlanDetail{}
+	foodPlanTotal := &model.PetFoodPlanTotal{}
+
+	if foodsInActivePlan[0].PetFoodPlan.SelfDefine {
+		foodPlanTotal, foodPlanDetails, resp = s.mapUpdatePetDetailNotTrigger(foodsInActivePlan[0].PetFoodPlan)
+		if resp != nil {
+			return resp
+		}
+	} else {
+		for _, fp := range foodsInActivePlan {
+			foods = append(foods, *fp.Food)
+		}
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+		for idx := range foodsInActivePlan {
+			foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
+		}
+
+		foodPlanTotal = s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
+		foodPlanTotal.PetFoodPlanID = latestPlanID
+	}
 
 	if err := s.petRepo.UpdatePetDetailsAndPlan(ctx, pet.ID, petDetail, foodPlanTotal, foodPlanDetails); err != nil {
 		return &model.HTTPResponse{
@@ -185,6 +343,9 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
+	if activePlanDetail.Unit == model.CUP {
+		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
+	}
 	responseData := map[string]interface{}{
 		"pet_info":      pet,
 		"pet_detail":    petDetail,

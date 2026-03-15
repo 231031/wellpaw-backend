@@ -1,12 +1,12 @@
 package service
 
 import (
-	"log"
-
 	"github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/utils"
 )
 
 type CalculationService interface {
+	MapBcsScoreToBcsRange(bcsScore int) model.BcsType
 	CalMerEnergyRequirement(petDetail *model.PetDetail, petType model.PetType) float64
 	CalNutritientRequirement(mer float64, petDetail *model.PetDetail, petType model.PetType) (float64, float64)
 	CalTotalIntakeFoodPlan(foodPlanDetails []*model.PetFoodPlanDetail) *model.PetFoodPlanTotal
@@ -14,31 +14,53 @@ type CalculationService interface {
 	CalNutritientIntakeFromGramIntake(gramsIntake, proteinFood, fatFood float64, typeFood model.FoodType) (float64, float64)
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
 	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail
-	CalExpectedWeight(currentWeight float64, bcs model.BcsType) float64
+	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
+	ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan)
+	CalculateGramsToCup(foodPetFoodPlan model.PetFoodPlanDetail) float64
 }
 
 type calculationService struct {
 	energyRequirementService     EnergyRequirementService
 	nutritientRequirementService NutritientRequirementService
+	expectedWeightService        ExpectedWeightService
 }
 
-func NewCalculationService(energyRequirementService EnergyRequirementService, nutritientRequirementService NutritientRequirementService) CalculationService {
+func NewCalculationService(energyRequirementService EnergyRequirementService, nutritientRequirementService NutritientRequirementService, exexpectedWeightService ExpectedWeightService) CalculationService {
 	return &calculationService{
 		energyRequirementService:     energyRequirementService,
 		nutritientRequirementService: nutritientRequirementService,
+		expectedWeightService:        exexpectedWeightService,
+	}
+}
+
+func (s *calculationService) MapBcsScoreToBcsRange(bcsScore int) model.BcsType {
+	switch bcsScore {
+	case 1, 2:
+		return model.VERYTHIN
+	case 3, 4:
+		return model.THIN
+	case 5:
+		return model.IDEAL
+	case 6, 7:
+		return model.OVERWEIGHT
+	case 8, 9:
+		return model.OBESITY
+	default:
+		return model.IDEAL
 	}
 }
 
 func (s *calculationService) CalMerEnergyRequirement(petDetail *model.PetDetail, petType model.PetType) float64 {
+	bcs := s.MapBcsScoreToBcsRange(petDetail.BCS)
 	return s.energyRequirementService.GetMerEnergy(
 		petDetail.Weight,
 		petDetail.AgeRange,
 		*petDetail.ActivityLevel,
-		petDetail.BCS,
-		petDetail.Gestation,
+		bcs,
+		*petDetail.Gestation,
 		petDetail.GestationStartDate,
-		petDetail.Lactation,
-		petDetail.Neutered,
+		*petDetail.Lactation,
+		*petDetail.Neutered,
 		petType,
 	)
 }
@@ -110,7 +132,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		checkType[*f.Type] = f.Energy
 	}
 
-	threadHold := 0.2 * petDetail.Energy
+	threadHold := 0.1 * petDetail.Energy
 	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok && supEnergy > threadHold {
 		// energy per serving
 		reqEnergy = reqEnergy - supEnergy
@@ -122,15 +144,12 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		foodPercent := 1.0 - checkType[model.TREATS]
 		checkType[model.DRY] = foodPercent * 0.70
 		checkType[model.WET] = foodPercent * 0.30
-		log.Println("dry, wet, treat food")
 	} else if _, ok := checkType[model.WET]; ok {
 		checkType[model.DRY] = 0.70
 		checkType[model.WET] = 0.30
 		checkType[model.TREATS] = 0
-		log.Println("dry and wet food")
 	} else {
 		checkType[model.DRY] = 1.0
-		log.Println("just dry food")
 	}
 
 	var foodPlanDetails []*model.PetFoodPlanDetail
@@ -138,7 +157,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		if *f.Type == model.SUPPLEMENTS {
 			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
 				// feeding base on recommended of specific supplement
-				Amount:        0,
+				Amount:        1,
 				EnergyIntake:  f.Energy,
 				ProteinIntake: f.Protein,
 				FatIntake:     f.Fat,
@@ -152,10 +171,27 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 	return foodPlanDetails
 }
 
-func (s *calculationService) ConvertGramsToCup(foodPetFoodPlan *model.FoodPetFoodPlan) float64 {
-	return 1.0
+func (s *calculationService) CalculateGramsToCup(foodInPlan model.PetFoodPlanDetail) float64 {
+	grams := foodInPlan.FoodPetFoodPlan.Food.GramsPerCup
+	if grams == 0.0 {
+		grams = 200.0
+	}
+	cupFeed := foodInPlan.Amount / grams
+	return utils.RoundFloat(cupFeed, 2)
 }
 
-func (s *calculationService) CalExpectedWeight(currentWeight float64, bcs model.BcsType) float64 {
-	return 1.0
+func (s *calculationService) ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan) {
+	if len(foodPlan.PetFoodPlanTotals) > 0 {
+		for idx, ft := range foodPlan.PetFoodPlanTotals[0].PetFoodPlanDetails {
+			cup := s.CalculateGramsToCup(ft)
+			foodPlan.PetFoodPlanTotals[0].PetFoodPlanDetails[idx].Cup = cup
+		}
+
+	}
+}
+
+func (s *calculationService) CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth {
+	bcs := s.MapBcsScoreToBcsRange(bcsScore)
+	avgWeight := s.expectedWeightService.GetAvgPercentWeightChangePerMonth(monthlyDetails, bcs, petType, ageRange)
+	return avgWeight
 }

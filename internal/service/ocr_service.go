@@ -13,18 +13,27 @@ import (
 )
 
 type OcrService interface {
-	ProcessOcrRequest(ctx context.Context, file io.Reader) *model.HTTPResponse
+	ProcessOcrRequest(ctx context.Context, userID uint, file io.Reader) *model.HTTPResponse
 }
 
 type ocrService struct {
-	geminiClient *genai.Client
+	geminiClient          *genai.Client
+	freeValidationService FreeTierUsageValidationService
 }
 
-func NewOcrService(geminiClient *genai.Client) OcrService {
-	return &ocrService{geminiClient: geminiClient}
+func NewOcrService(geminiClient *genai.Client, freeTierUsageValidationService FreeTierUsageValidationService) OcrService {
+	return &ocrService{
+		geminiClient:          geminiClient,
+		freeValidationService: freeTierUsageValidationService,
+	}
 }
 
-func (s *ocrService) ProcessOcrRequest(ctx context.Context, file io.Reader) *model.HTTPResponse {
+func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, file io.Reader) *model.HTTPResponse {
+	_, _, usageResp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
+	if usageResp != nil {
+		return usageResp
+	}
+
 	if s.geminiClient == nil {
 		return &model.HTTPResponse{
 			Status:  fiber.StatusInternalServerError,

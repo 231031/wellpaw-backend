@@ -29,7 +29,7 @@ type PaymentMethodUpdatePayload struct {
 
 type StartSubscriptionPayload struct {
 	SubscriptionPlanID string `json:"subscription_plan_id" validate:"required"`
-	PaymentMethodID    string `json:"payment_method_id,omitempty" validate:"required"`
+	// PaymentMethodID    string `json:"payment_method_id,omitempty" validate:"omitempty"`
 }
 
 type SubscriptionPlan struct {
@@ -76,16 +76,39 @@ type PetFoodPlanDetailsPayload struct {
 	Unit   *UnitType `json:"unit" validate:"required,oneof=0 1"`
 }
 
-type FoodPlanFoodPayload struct {
-	FoodID      uint     `json:"food_id" validate:"required"`
-	GramsPerCup *float64 `json:"grams_per_cup,omitempty"`
+type CalculateFoodPlanFoodPayload struct {
+	FoodID uint `json:"food_id" validate:"required"`
+	// @Description if user filled this the intake will calculate from this amount and if user doesn't filled the amount will calculate as recommend amount
+	Amount float64 `json:"amount,omitempty"`
+}
+
+type CalculatePetFoodPlanPayload struct {
+	Name  string                         `json:"name" validate:"required"`
+	PetID uint                           `json:"pet_id" validate:"required"`
+	Unit  *UnitType                      `json:"unit" validate:"required,oneof=0 1"`
+	Foods []CalculateFoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
+}
+
+type CreateFoodPlanFoodPayload struct {
+	FoodID uint `json:"food_id" validate:"required"`
+	// @Description always send both self_define is true (amount from user) or false (recomented amount from calculation)
+	Amount float64 `json:"amount" validate:"required,gt=0"`
 }
 
 type CreatePetFoodPlanPayload struct {
-	Name  string                `json:"name" validate:"required"`
-	PetID uint                  `json:"pet_id" validate:"required"`
-	Unit  *UnitType             `json:"unit" validate:"required,oneof=0 1"`
-	Foods []FoodPlanFoodPayload `json:"foods" validate:"required"`
+	Name  string    `json:"name" validate:"required"`
+	PetID uint      `json:"pet_id" validate:"required"`
+	Unit  *UnitType `json:"unit" validate:"required,oneof=0 1"`
+	// @Description If user change the recommend amount or use self define amount checked this
+	SelfDefine *bool                       `json:"self_define" validate:"required"`
+	Foods      []CreateFoodPlanFoodPayload `json:"foods" validate:"required,min=1,dive"`
+}
+
+type UpdateFoodDetailPayload struct {
+	FoodID      uint     `json:"food_id" validate:"required"`
+	Name        *string  `json:"name,omitempty" validate:"omitempty,min=1"`
+	ImagePath   *string  `json:"image_path,omitempty"`
+	GramsPerCup *float64 `json:"grams_per_cup"`
 }
 
 type AmountFoodDetail struct {
@@ -94,10 +117,36 @@ type AmountFoodDetail struct {
 }
 type AdjustAmountFoodInPetFoodPlanPayload struct {
 	PetFoodPlanID      uint               `json:"pet_food_plan_id" validate:"required"`
-	PetFoodPlanDetails []AmountFoodDetail `json:"pet_food_plan_details" validate:"required"`
+	PetFoodPlanDetails []AmountFoodDetail `json:"pet_food_plan_details" validate:"required,min=1,dive"`
 }
 
 type PetPayload struct {
-	PetInfo   Pet       `json:"pet_info" validate:"required"`
-	PetDetail PetDetail `json:"pet_detail" validate:"required"`
+	PetInfo   *Pet       `json:"pet_info" validate:"required"`
+	PetDetail *PetDetail `json:"pet_detail" validate:"required"`
+}
+
+type PredictPetSkinDiseaseUnknownPayload struct {
+	PetType *PetType `json:"pet_type" validate:"required"`
+	Image   string   `json:"image" validate:"required"`
+}
+
+type PredictPetSkinDiseasePayload struct {
+	PetID uint   `json:"pet_id" validate:"required"`
+	Image string `json:"image" validate:"required"`
+}
+
+type PredictPetSkinModelPayload struct {
+	Image string `json:"image"`
+}
+
+type LabeledPetSkinDiseasePayload struct {
+	PetSkinImageID uint         `json:"pet_skin_image_id" validate:"required"`
+	PetID          uint         `json:"pet_id" validate:"required"`
+	Labeled        *DiseaseType `json:"labeled" validate:"required"`
+	ImageEvidence  string       `json:"image_evidence" validate:"required"`
+}
+
+type CreatePetCalendarPaylaod struct {
+	PetIDs      []uint       `json:"pet_ids" validate:"required,min=1"`
+	PetCalendar *PetCalendar `json:"pet_calendar" validate:"required"`
 }

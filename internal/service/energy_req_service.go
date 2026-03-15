@@ -9,7 +9,6 @@ import (
 )
 
 type EnergyRequirementService interface {
-	getGestationFactor(gestationStartDate time.Time, p model.PetType) float64
 	getNeuteredFactor(neutered bool, p model.PetType) float64
 	getActivityBcsFactor(al model.ActivityLevel, bcs model.BcsType) (float64, float64)
 	RERJuniorCat(bw float64) float64
@@ -21,26 +20,16 @@ type EnergyRequirementService interface {
 }
 
 type energyRequirementService struct {
-	stageThreeDays                 int
-	gestationEarlyFactorByPet      map[model.PetType]float64
-	gestationStageThreeFactorByPet map[model.PetType]float64
-	neuteredFactorByPet            map[model.PetType]map[bool]float64
-	activityFactorByLevel          map[model.ActivityLevel]float64
-	bcsFactorByType                map[model.BcsType]float64
-	rerByPetAge                    map[model.PetType]map[model.AgeType]RerOperation
+	stageThreeDays        int
+	neuteredFactorByPet   map[model.PetType]map[bool]float64
+	activityFactorByLevel map[model.ActivityLevel]float64
+	bcsFactorByType       map[model.BcsType]float64
+	rerByPetAge           map[model.PetType]map[model.AgeType]RerOperation
 }
 
 func NewEnergyRequirementService() EnergyRequirementService {
 	service := &energyRequirementService{
 		stageThreeDays: 42,
-		gestationEarlyFactorByPet: map[model.PetType]float64{
-			model.CAT: 1.6,
-			model.DOG: 1.8, // normal adult not neutered dog
-		},
-		gestationStageThreeFactorByPet: map[model.PetType]float64{
-			model.CAT: 2.0,
-			model.DOG: 3.0,
-		},
 		neuteredFactorByPet: map[model.PetType]map[bool]float64{
 			model.CAT: {
 				false: 1.4,
@@ -82,24 +71,6 @@ func NewEnergyRequirementService() EnergyRequirementService {
 }
 
 type RerOperation func(bw float64) float64
-
-func (s *energyRequirementService) getGestationFactor(gestationStartDate time.Time, p model.PetType) float64 {
-	daysPregnant := int(time.Since(gestationStartDate).Hours() / 24)
-	if daysPregnant >= s.stageThreeDays {
-		if factor, ok := s.gestationStageThreeFactorByPet[p]; ok {
-			return factor
-		}
-		return 1.0
-	}
-	if factor, ok := s.gestationEarlyFactorByPet[p]; ok {
-		return factor
-	}
-	return 1.0
-}
-
-// func (s *energyRequirementService) getLactationFactor(p model.PetType) float64 {
-// 	return 1.0
-// }
 
 func (s *energyRequirementService) getNeuteredFactor(neutered bool, p model.PetType) float64 {
 	if byNeutered, ok := s.neuteredFactorByPet[p]; ok {
@@ -164,11 +135,6 @@ func (s *energyRequirementService) GetMerEnergy(bw float64, rangeAge model.AgeTy
 
 	alFactor, bcsFactor := s.getActivityBcsFactor(al, bcs)
 	reproductionFactor := s.getNeuteredFactor(neutered, pet)
-	if gestation {
-		reproductionFactor = s.getGestationFactor(gestationDate, pet)
-	} else if lactation {
-		// update later for lactation factor
-		reproductionFactor = 1.0
-	}
+
 	return rerFormula(bw) * alFactor * bcsFactor * reproductionFactor
 }

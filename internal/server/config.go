@@ -21,27 +21,30 @@ var (
 )
 
 type Cfg struct {
-	BACKEND_PORT             string
-	DB_HOST                  string
-	DB_PORT                  string
-	DB_USER                  string
-	DB_PASSWORD              string
-	DB_NAME                  string
-	REDIS_HOST               string
-	REDIS_PORT               string
-	REDIS_PASSWORD           string
-	SECRET_KEY               string
-	FILE_PUB_PATH            string
-	FILE_PRI_PATH            string
-	GOOGLE_WEB_CLIENT_ID     string
-	GOOGLE_WEB_CLIENT_SECRET string
-	GEMINI_API_KEY           string
-	STRIPE_API_KEY           string
-	STRIPE_WEBHOOK_SECRET    string
-	MAILJET_API_KEY          string
-	MAILJET_API_SECRET       string
-	MAILJET_SENDER_EMAIL     string
-	MAILJET_SENDER_NAME      string
+	BACKEND_PORT                   string
+	DB_HOST                        string
+	DB_PORT                        string
+	DB_USER                        string
+	DB_PASSWORD                    string
+	DB_NAME                        string
+	REDIS_HOST                     string
+	REDIS_PORT                     string
+	REDIS_PASSWORD                 string
+	SECRET_KEY                     string
+	FILE_PUB_PATH                  string
+	FILE_PRI_PATH                  string
+	GOOGLE_WEB_CLIENT_ID           string
+	GOOGLE_WEB_CLIENT_SECRET       string
+	GEMINI_API_KEY                 string
+	STRIPE_API_KEY                 string
+	STRIPE_WEBHOOK_SECRET          string
+	MAILJET_API_KEY                string
+	MAILJET_API_SECRET             string
+	MAILJET_SENDER_EMAIL           string
+	MAILJET_SENDER_NAME            string
+	MODEL_BASE_API                 string
+	GOOGLE_APPLICATION_CREDENTIALS string
+	FIREBASE_STORAGE_BUCKET        string
 }
 
 func getAllENV() *Cfg {
@@ -67,6 +70,9 @@ func getAllENV() *Cfg {
 		"MAILJET_API_SECRET",
 		"MAILJET_SENDER_EMAIL",
 		"MAILJET_SENDER_NAME",
+		"MODEL_BASE_API",
+		"GOOGLE_APPLICATION_CREDENTIALS",
+		"FIREBASE_STORAGE_BUCKET",
 	}
 
 	allValue := make(map[string]string)
@@ -79,27 +85,30 @@ func getAllENV() *Cfg {
 	}
 
 	cfg := &Cfg{
-		BACKEND_PORT:             allValue[allKey[0]],
-		DB_HOST:                  allValue[allKey[1]],
-		DB_PORT:                  allValue[allKey[2]],
-		DB_USER:                  allValue[allKey[3]],
-		DB_PASSWORD:              allValue[allKey[4]],
-		DB_NAME:                  allValue[allKey[5]],
-		REDIS_HOST:               allValue[allKey[6]],
-		REDIS_PORT:               allValue[allKey[7]],
-		REDIS_PASSWORD:           allValue[allKey[8]],
-		SECRET_KEY:               allValue[allKey[9]],
-		FILE_PUB_PATH:            allValue[allKey[10]],
-		FILE_PRI_PATH:            allValue[allKey[11]],
-		GOOGLE_WEB_CLIENT_ID:     allValue[allKey[12]],
-		GOOGLE_WEB_CLIENT_SECRET: allValue[allKey[13]],
-		GEMINI_API_KEY:           allValue[allKey[14]],
-		STRIPE_API_KEY:           allValue[allKey[15]],
-		STRIPE_WEBHOOK_SECRET:    allValue[allKey[16]],
-		MAILJET_API_KEY:          allValue[allKey[17]],
-		MAILJET_API_SECRET:       allValue[allKey[18]],
-		MAILJET_SENDER_EMAIL:     allValue[allKey[19]],
-		MAILJET_SENDER_NAME:      allValue[allKey[20]],
+		BACKEND_PORT:                   allValue[allKey[0]],
+		DB_HOST:                        allValue[allKey[1]],
+		DB_PORT:                        allValue[allKey[2]],
+		DB_USER:                        allValue[allKey[3]],
+		DB_PASSWORD:                    allValue[allKey[4]],
+		DB_NAME:                        allValue[allKey[5]],
+		REDIS_HOST:                     allValue[allKey[6]],
+		REDIS_PORT:                     allValue[allKey[7]],
+		REDIS_PASSWORD:                 allValue[allKey[8]],
+		SECRET_KEY:                     allValue[allKey[9]],
+		FILE_PUB_PATH:                  allValue[allKey[10]],
+		FILE_PRI_PATH:                  allValue[allKey[11]],
+		GOOGLE_WEB_CLIENT_ID:           allValue[allKey[12]],
+		GOOGLE_WEB_CLIENT_SECRET:       allValue[allKey[13]],
+		GEMINI_API_KEY:                 allValue[allKey[14]],
+		STRIPE_API_KEY:                 allValue[allKey[15]],
+		STRIPE_WEBHOOK_SECRET:          allValue[allKey[16]],
+		MAILJET_API_KEY:                allValue[allKey[17]],
+		MAILJET_API_SECRET:             allValue[allKey[18]],
+		MAILJET_SENDER_EMAIL:           allValue[allKey[19]],
+		MAILJET_SENDER_NAME:            allValue[allKey[20]],
+		MODEL_BASE_API:                 allValue[allKey[21]],
+		GOOGLE_APPLICATION_CREDENTIALS: allValue[allKey[22]],
+		FIREBASE_STORAGE_BUCKET:        allValue[allKey[23]],
 	}
 
 	return cfg
