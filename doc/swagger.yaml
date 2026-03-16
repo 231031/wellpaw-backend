@@ -410,6 +410,13 @@ definitions:
       status:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.LogoutPayload:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   github_com_231031_wellpaw-backend_internal_model.OcrPetFoodResponse:
     properties:
       data:
@@ -1217,6 +1224,38 @@ paths:
           schema:
             $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
       summary: Login User With Google
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: logout user and remove auth caches from redis
+      parameters:
+      - description: Logout payload
+        in: body
+        name: LogoutPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.LogoutPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout User
       tags:
       - Authentication
   /auth/otp:

@@ -15,12 +15,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func RouteAuth(router fiber.Router, authController controller.AuthController, userController controller.UserController) {
+func RouteAuth(router fiber.Router, authController controller.AuthController, authMiddleware middleware.AuthMiddleware) {
 	authRoute := router.Group("/auth")
 	authRoute.Post("/register", authController.CreateUser)
 	authRoute.Post("/login", authController.LoginUser)
 	authRoute.Post("/login/google", authController.LoginUserWithGoogle)
 	authRoute.Post("/refreshtoken", authController.RefreshToken)
+	authRoute.Post("/logout", authMiddleware.AuthorizeUser(), authController.LogoutUser)
 	authRoute.Post("/otp", authController.RequestOTP)
 	authRoute.Post("/resetpassword", authController.ResetPassword)
 }
@@ -157,7 +158,7 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	// routing
 	authService := service.NewAuthService(userRepo, tokenService, paymentService, otpService, googleOauthConfig)
 	authController := controller.NewAuthController(authService)
-	RouteAuth(router, authController, userController)
+	RouteAuth(router, authController, authMiddlware)
 
 	RouteUser(router, userController, authMiddlware)
 	RoutePet(router, petController, authMiddlware)

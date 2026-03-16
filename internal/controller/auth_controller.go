@@ -14,6 +14,7 @@ type AuthController interface {
 	LoginUser(ctx *fiber.Ctx) error
 	LoginUserWithGoogle(ctx *fiber.Ctx) error
 	RefreshToken(ctx *fiber.Ctx) error
+	LogoutUser(ctx *fiber.Ctx) error
 	RequestOTP(ctx *fiber.Ctx) error
 	ResetPassword(ctx *fiber.Ctx) error
 }
@@ -187,5 +188,36 @@ func (c *authController) RefreshToken(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.authService.RefreshToken(ctxWithTimeOut, payload.RefreshToken)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Logout User
+// @Description logout user and remove auth caches from redis
+// @tags Authentication
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param   LogoutPayload body model.LogoutPayload true "Logout payload"
+// @Success 200 {object} model.HTTPResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /auth/logout [post]
+func (c *authController) LogoutUser(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	var payload model.LogoutPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.authService.LogoutUser(ctxWithTimeOut, userID, payload.RefreshToken)
 	return ctx.Status(response.Status).JSON(response)
 }

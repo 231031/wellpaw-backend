@@ -16,7 +16,7 @@ var (
 type TokenRepository interface {
 	SetRefreshToken(ctx context.Context, key string, value string, expIn time.Duration) error
 	GetandDelRefreshToken(ctx context.Context, key string) (string, error)
-	DeleteRefreshToken(ctx context.Context, key string) error
+	DeleteValueFromKey(ctx context.Context, key string) error
 }
 
 type tokenRepository struct {
@@ -49,7 +49,7 @@ func (r *tokenRepository) GetandDelRefreshToken(ctx context.Context, key string)
 	return val, nil
 }
 
-func (r *tokenRepository) DeleteRefreshToken(ctx context.Context, key string) error {
+func (r *tokenRepository) DeleteValueFromKey(ctx context.Context, key string) error {
 	err := r.client.Del(ctx, key).Err()
 	if err != nil {
 		applogger.LogError(fmt.Sprintln("failed to del refresh token on redis", err), repoLog)
