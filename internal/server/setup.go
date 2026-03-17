@@ -73,7 +73,7 @@ func Setup(app *fiber.App, cfg *Cfg) {
 		applogger.LogInfo("connected to Firebase Storage", serverLog)
 	}
 
-	fcmClient, err := connectFirebaseMessaging(cfg)
+	fcmClient, err := connectFirebaseMessaging()
 	if err != nil {
 		applogger.LogError(fmt.Sprintln("failed to connect to Firebase Messaging Cloud:", err), serverLog)
 	} else {
