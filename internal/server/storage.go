@@ -41,6 +41,7 @@ func connectRedis(host, port, password string) (*redis.Client, error) {
 		Addr:     addr,
 		Password: password,
 		DB:       0,
+		PoolSize: 3,
 	})
 
 	ctx := context.Background()

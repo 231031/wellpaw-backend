@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "time/tzdata"
+
 	_ "github.com/231031/wellpaw-backend/doc"
 	"github.com/231031/wellpaw-backend/internal/server"
 )

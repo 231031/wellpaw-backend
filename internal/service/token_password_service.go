@@ -26,6 +26,7 @@ type TokenService interface {
 	VerifyPassword(password string, hashedPassword string) (bool, error)
 
 	GenerateNewPairToken(ctx context.Context, userAuth *model.UserAuth, prevToken string) (*model.TokenPair, error)
+	LogoutUserSessions(ctx context.Context, userID uint, refreshToken string) error
 	generateAccessToken(user *model.UserAuth, key *rsa.PrivateKey, exp int64) (string, error)
 	generateRefreshToken(id uint, key string, exp int64) (*model.RefreshTokenData, error)
 	ValidateRefreshToken(refreshTokenStr string) (*model.RefreshTokenClaims, error)
@@ -276,4 +277,23 @@ func (s *tokenService) ValidateToken(tokenStr string) (*model.TokenClaims, error
 	}
 
 	return claims, nil
+}
+
+func (s *tokenService) LogoutUserSessions(ctx context.Context, userID uint, refreshToken string) error {
+	cacheKeys := []string{
+		fmt.Sprintf("sub:%d", userID),
+		fmt.Sprintf("free:%d", userID),
+	}
+	if strings.TrimSpace(refreshToken) != "" {
+		cacheKeys = append([]string{fmt.Sprintf("refresh_token:%s", refreshToken)}, cacheKeys...)
+	}
+
+	for _, key := range cacheKeys {
+		if err := s.tokenRepo.DeleteValueFromKey(ctx, key); err != nil {
+			applogger.LogError(fmt.Sprintf("failed to logout err : %v", err), serviceLog)
+			return nil
+		}
+	}
+
+	return nil
 }

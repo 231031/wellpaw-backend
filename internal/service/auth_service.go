@@ -25,6 +25,7 @@ type AuthService interface {
 	LoginUser(ctx context.Context, payload *model.LoginPayload) *model.HTTPResponse
 	LoginUserWithGoogle(ctx context.Context, payload *model.LoginGooglePayload) *model.HTTPResponse
 	RefreshToken(ctx context.Context, refreshToken string) *model.HTTPResponse
+	LogoutUser(ctx context.Context, userID uint, refreshToken string) *model.HTTPResponse
 	RequestOTP(ctx context.Context, payload model.RequestOTPPayload) *model.HTTPResponse
 	ResetPassword(ctx context.Context, payload model.ResetPasswordPayload) *model.HTTPResponse
 }
@@ -270,9 +271,11 @@ func (s *authService) RevokeRefreshTokenWithGoogle(ctx context.Context, refreshT
 	}
 }
 
-func (s *authService) LogoutUser(ctx context.Context, refreshToken string) *model.HTTPResponse {
+func (s *authService) LogoutUser(ctx context.Context, userID uint, refreshToken string) *model.HTTPResponse {
+	s.tokenService.LogoutUserSessions(ctx, userID, refreshToken)
 	return &model.HTTPResponse{
-		Status: http.StatusOK,
+		Status:  http.StatusOK,
+		Message: "logout success",
 	}
 }
 
