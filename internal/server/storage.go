@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"firebase.google.com/go/v4/messaging"
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/redis/go-redis/v9"
-	"google.golang.org/api/option"
 	gcpstorage "google.golang.org/api/storage/v1"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -41,7 +41,10 @@ func connectRedis(host, port, password string) (*redis.Client, error) {
 		Addr:     addr,
 		Password: password,
 		DB:       0,
-		PoolSize: 3,
+		PoolSize: 40,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	})
 
 	ctx := context.Background()
@@ -80,13 +83,12 @@ func connectFirebaseStorage(cfg *Cfg) (*model.FirebaseStorage, error) {
 	}, nil
 }
 
-func connectFirebaseMessaging(cfg *Cfg) (*messaging.Client, error) {
+func connectFirebaseMessaging() (*messaging.Client, error) {
 	ctx := context.Background()
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	opt := option.WithCredentialsFile(cfg.GOOGLE_APPLICATION_CREDENTIALS)
-	app, err := firebase.NewApp(ctxTimeout, nil, opt)
+	app, err := firebase.NewApp(ctxTimeout, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize create new firebase app: %w", err)
 	}
