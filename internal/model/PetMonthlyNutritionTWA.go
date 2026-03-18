@@ -12,4 +12,5 @@ type PetMonthlyNutritionTWA struct {
 	Weight              float64 `json:"weight"`
 	PercentWeightChange float64 `json:"percent_weight_change"`
 	ActivityLevel       int     `json:"activity_level"`
+	Bcs                 int     `json:"bcs"`
 }

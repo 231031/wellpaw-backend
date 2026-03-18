@@ -259,7 +259,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				d.protein,
 				d.fat,
 				d.weight,
-				d.activity_level
+				d.activity_level,
+				d.bcs
 			FROM relevant_history h
 			JOIN pet_food_plan_totals t ON t.id = h.pet_food_plan_total_id
 			JOIN pet_details d ON d.id = t.pet_detail_id
@@ -277,7 +278,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				protein,
 				fat,
 				weight,
-				activity_level
+				activity_level,
+				bcs
 			FROM history_intervals
 		),
 		split_by_month AS (
@@ -294,7 +296,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				b.protein,
 				b.fat,
 				b.weight,
-				b.activity_level
+				b.activity_level,
+				b.bcs
 			FROM bounded_intervals b
 			JOIN LATERAL generate_series(
 				date_trunc('month', b.effective_start),
@@ -317,6 +320,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				fat,
 				weight,
 				activity_level,
+				bcs,
 				EXTRACT(EPOCH FROM (segment_end - segment_start)) AS weight_seconds
 			FROM split_by_month
 			WHERE segment_end > segment_start
@@ -331,7 +335,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SUM(protein * weight_seconds) / SUM(weight_seconds) AS protein,
 			SUM(fat * weight_seconds) / SUM(weight_seconds) AS fat,
 			(ARRAY_AGG(weight ORDER BY source_created_at DESC, history_id DESC))[1] AS weight,
-			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level
+			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level,
+			(ARRAY_AGG(bcs ORDER BY source_created_at DESC, history_id DESC))[1]::int AS bcs
 		FROM weighted_data
 		GROUP BY year, month
 		ORDER BY year, month;
