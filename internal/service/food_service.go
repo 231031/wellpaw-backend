@@ -14,6 +14,7 @@ type FoodService interface {
 	CreateFood(ctx context.Context, userID uint, food *model.Food) *model.HTTPResponse
 	GetFoodsByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetFoodsByFoodType(ctx context.Context, userID uint, foodType model.FoodType) *model.HTTPResponse
+	GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) *model.HTTPResponse
 	UpdateFoodDetail(ctx context.Context, userID uint, foodID uint, payload *model.UpdateFoodDetailPayload) *model.HTTPResponse
 	CreateNewFoodQuantity(ctx context.Context, userID uint, payload *model.FoodQuantity) *model.HTTPResponse
 	SoftDeleteFood(ctx context.Context, userID uint, foodID uint) *model.HTTPResponse
@@ -69,9 +70,14 @@ func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.F
 
 func (s *foodService) mapCurrentFoodQuantity(foods []model.Food) []model.Food {
 	for idx := range foods {
+		totalAmount := 0.0
 		if len(foods[idx].FoodQuantities) > 0 {
 			foods[idx].Weight = foods[idx].FoodQuantities[0].Weight
 			foods[idx].Quantity = foods[idx].FoodQuantities[0].Quantity
+			for _, q := range foods[idx].FoodQuantities {
+				totalAmount += q.Amount
+			}
+			foods[idx].TotalAmount = totalAmount
 		}
 	}
 	return foods
@@ -109,6 +115,24 @@ func (s *foodService) GetFoodsByFoodType(ctx context.Context, userID uint, foodT
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"foods": foods,
+		},
+	}
+}
+
+func (s *foodService) GetFoodByIDAndUserID(ctx context.Context, userID uint, foodID uint) *model.HTTPResponse {
+	food, err := s.foodRepo.GetFoodByIDAndUserID(ctx, userID, foodID)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "food",
+		}
+	}
+
+	foods := s.mapCurrentFoodQuantity([]model.Food{*food})
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: map[string]interface{}{
+			"food": foods[0],
 		},
 	}
 }

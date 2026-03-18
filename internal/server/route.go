@@ -65,6 +65,7 @@ func RouteFood(router fiber.Router, foodController controller.FoodController, au
 
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
+	foodRoute.Get("/:food_id", foodController.GetFoodByIDAndUserID)
 	foodRoute.Post("/quantity", foodController.CreateNewFoodQuantity)
 	foodRoute.Patch("/", foodController.UpdateFoodDetail)
 	foodRoute.Delete("/:food_id", foodController.SoftDeleteFood)

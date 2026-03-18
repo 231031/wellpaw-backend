@@ -917,6 +917,65 @@ const docTemplate = `{
             }
         },
         "/food/{food_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get one food of current user by food id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Get Food By ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Food ID",
+                        "name": "food_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -2550,6 +2609,9 @@ const docTemplate = `{
                 "quantity": {
                     "type": "integer"
                 },
+                "total_amount": {
+                    "type": "number"
+                },
                 "type": {
                     "enum": [
                         0,
@@ -3325,6 +3387,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "activity_level": {
+                    "type": "integer"
+                },
+                "bcs": {
                     "type": "integer"
                 },
                 "energy": {

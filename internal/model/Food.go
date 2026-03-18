@@ -16,8 +16,9 @@ type Food struct {
 	GramsPerCup float64        `gorm:"not null;default:120" json:"grams_per_cup"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
-	Quantity int     `gorm:"-" json:"quantity,omitempty" validate:"required,gt=0"`
-	Weight   float64 `gorm:"-" json:"weight,omitempty" validate:"required,gt=0"`
+	Quantity    int     `gorm:"-" json:"quantity,omitempty" validate:"required,gt=0"`
+	Weight      float64 `gorm:"-" json:"weight,omitempty" validate:"required,gt=0"`
+	TotalAmount float64 `gorm:"-" json:"total_amount"`
 
 	// Relationships
 	User            *User             `gorm:"foreignKey:UserID" json:"user,omitempty"`
