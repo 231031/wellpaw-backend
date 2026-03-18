@@ -1325,9 +1325,9 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Process image file with OCR",
+                "description": "Process base64 image with OCR",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -1338,11 +1338,13 @@ const docTemplate = `{
                 "summary": "Request OCR",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "Image file to process",
-                        "name": "image",
-                        "in": "formData",
-                        "required": true
+                        "description": "OCR request payload",
+                        "name": "OcrRequestPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload"
+                        }
                     }
                 ],
                 "responses": {
@@ -2876,6 +2878,17 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload": {
+            "type": "object",
+            "required": [
+                "image"
+            ],
+            "properties": {
+                "image": {
+                    "type": "string"
                 }
             }
         },

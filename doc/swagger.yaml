@@ -426,6 +426,13 @@ definitions:
       status:
         type: integer
     type: object
+  github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload:
+    properties:
+      image:
+        type: string
+    required:
+    - image
+    type: object
   github_com_231031_wellpaw-backend_internal_model.PaymentIntentResponse:
     properties:
       data:
@@ -2002,14 +2009,15 @@ paths:
   /ocr/request:
     post:
       consumes:
-      - multipart/form-data
-      description: Process image file with OCR
+      - application/json
+      description: Process base64 image with OCR
       parameters:
-      - description: Image file to process
-        in: formData
-        name: image
+      - description: OCR request payload
+        in: body
+        name: OcrRequestPayload
         required: true
-        type: file
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload'
       produces:
       - application/json
       responses:
