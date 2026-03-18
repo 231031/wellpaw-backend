@@ -13,7 +13,7 @@ type CalculationService interface {
 	CalEnergyIntakeFromGramIntake(gramsIntake, energyFood float64, typeFood model.FoodType) float64
 	CalNutritientIntakeFromGramIntake(gramsIntake, proteinFood, fatFood float64, typeFood model.FoodType) (float64, float64)
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
-	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail
+	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount float64) []*model.PetFoodPlanDetail
 	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
 	ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan)
 	CalculateGramsToCup(foodPetFoodPlan model.PetFoodPlanDetail) float64
@@ -124,7 +124,7 @@ func (s *calculationService) calFeedingAmountEachFoodPerDay(energyIntake float64
 	return foodPlanDetail
 }
 
-func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food) []*model.PetFoodPlanDetail {
+func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount float64) []*model.PetFoodPlanDetail {
 	reqEnergy := petDetail.Energy
 
 	checkType := map[model.FoodType]float64{}
@@ -132,10 +132,9 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 		checkType[*f.Type] = f.Energy
 	}
 
-	threadHold := 0.1 * petDetail.Energy
-	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok && supEnergy > threadHold {
+	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok {
 		// energy per serving
-		reqEnergy = reqEnergy - supEnergy
+		reqEnergy = reqEnergy - supEnergy*supAmount
 	}
 
 	if _, ok := checkType[model.TREATS]; ok {
@@ -156,11 +155,11 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 	for _, f := range foods {
 		if *f.Type == model.SUPPLEMENTS {
 			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
-				// feeding base on recommended of specific supplement
-				Amount:        1,
-				EnergyIntake:  f.Energy,
-				ProteinIntake: f.Protein,
-				FatIntake:     f.Fat,
+				// feeding base on recommended of specific supplement (same unit intake with nutritient)
+				Amount:        supAmount,
+				EnergyIntake:  f.Energy * supAmount,
+				ProteinIntake: f.Protein * supAmount,
+				FatIntake:     f.Fat * supAmount,
 			})
 			continue
 		}

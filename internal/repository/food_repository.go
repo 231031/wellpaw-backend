@@ -97,6 +97,19 @@ func (r *foodRepository) GetFoodsByIDsAndUserID(ctx context.Context, userID uint
 		return nil, fmt.Errorf("failed to get foods by ids and user id : %w", err)
 	}
 
+	foodsByID := make(map[uint]model.Food, len(foods))
+	for _, f := range foods {
+		foodsByID[f.ID] = f
+	}
+
+	ordered := make([]model.Food, 0, len(foodIDs))
+	for _, id := range foodIDs {
+		if f, ok := foodsByID[id]; ok {
+			ordered = append(ordered, f)
+		}
+	}
+	foods = ordered
+
 	return foods, nil
 }
 

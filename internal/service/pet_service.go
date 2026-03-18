@@ -316,10 +316,14 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 			return resp
 		}
 	} else {
+		var supAmount float64
 		for _, fp := range foodsInActivePlan {
 			foods = append(foods, *fp.Food)
+			if *fp.Food.Type == model.SUPPLEMENTS {
+				supAmount = fp.PetFoodPlanDetails[0].Amount
+			}
 		}
-		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)
 		for idx := range foodsInActivePlan {
 			foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
 		}
@@ -346,6 +350,8 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	if activePlanDetail.Unit == model.CUP {
 		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
 	}
+
+	pet.PetDetails[0] = *petDetail
 	responseData := map[string]interface{}{
 		"pet_info":      pet,
 		"pet_detail":    petDetail,
