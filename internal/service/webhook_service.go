@@ -13,8 +13,9 @@ import (
 )
 
 type WebhookService interface {
-	HandleSubscriptionUpdated(ctx context.Context, eventObject *stripe.Event) error
-	HandleSubscriptionFreeTierUpdated(ctx context.Context, eventObject *stripe.Event) error
+	MapWebhookHandler(ctx context.Context, eventObject *stripe.Event) error
+	handleSubscriptionUpdated(ctx context.Context, eventObject *stripe.Event) error
+	handleSubscriptionFreeTierUpdated(ctx context.Context, eventObject *stripe.Event) error
 }
 
 type webhookService struct {
@@ -29,7 +30,22 @@ func NewWebhookService(userRepository repository.UserRepository, fcmService FcmS
 	}
 }
 
-func (s *webhookService) HandleSubscriptionUpdated(ctx context.Context, eventObject *stripe.Event) error {
+func (s *webhookService) MapWebhookHandler(ctx context.Context, eventObject *stripe.Event) error {
+	switch eventObject.Type {
+	case "customer.subscription.updated":
+		return s.handleSubscriptionUpdated(ctx, eventObject)
+	case "customer.subscription.deleted":
+		return s.handleSubscriptionUpdated(ctx, eventObject)
+	case "invoice.payment_succeeded":
+		return s.handleSubscriptionFreeTierUpdated(ctx, eventObject)
+	default:
+		applogger.LogInfo(fmt.Sprintf("webhook doesn't handle this event type %s", *stripe.String(eventObject.Type)), serviceLog)
+	}
+
+	return nil
+}
+
+func (s *webhookService) handleSubscriptionUpdated(ctx context.Context, eventObject *stripe.Event) error {
 	subscription, err := s.mapSubscriptionDetail(eventObject.Data.Object)
 	if err != nil {
 		return err
@@ -55,7 +71,7 @@ func (s *webhookService) HandleSubscriptionUpdated(ctx context.Context, eventObj
 	return nil
 }
 
-func (s *webhookService) HandleSubscriptionFreeTierUpdated(ctx context.Context, eventObject *stripe.Event) error {
+func (s *webhookService) handleSubscriptionFreeTierUpdated(ctx context.Context, eventObject *stripe.Event) error {
 	invoice, err := s.mapFreeTrialInvoice(eventObject.Data.Object)
 	if err != nil {
 		return err
