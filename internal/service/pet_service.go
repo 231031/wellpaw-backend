@@ -65,10 +65,10 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 }
 
 func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
@@ -76,8 +76,6 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
-
-	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	err := s.petRepo.CreateNewPet(ctx, petInfo, petDetail)
 	if err != nil {
@@ -87,10 +85,10 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 		}
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.ProfileFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.ProfileFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
+	// }
 
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,

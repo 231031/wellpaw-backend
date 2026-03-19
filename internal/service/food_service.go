@@ -37,10 +37,10 @@ func NewFoodService(calculationService CalculationService, foodRepo repository.F
 }
 
 func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.Food) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	foodQuantity := &model.FoodQuantity{
 		Weight:   food.Weight,
@@ -56,10 +56,10 @@ func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.F
 		}
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.FoodFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.FoodFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
+	// }
 
 	food.FoodQuantities = append(food.FoodQuantities, *foodQuantity)
 	return &model.HTTPResponse{

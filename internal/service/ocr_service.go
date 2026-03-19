@@ -30,10 +30,10 @@ func NewOcrService(geminiClient *genai.Client, freeTierUsageValidationService Fr
 }
 
 func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, imageBase64 string) *model.HTTPResponse {
-	_, _, usageResp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
-	if usageResp != nil {
-		return usageResp
-	}
+	// _, _, usageResp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
+	// if usageResp != nil {
+	// 	return usageResp
+	// }
 
 	imageBase64 = normalizeBase64ImageInput(imageBase64)
 	if imageBase64 == "" {

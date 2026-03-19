@@ -98,10 +98,10 @@ func (s *diseaseService) validateAndPredictDisease(ctx context.Context, imageBas
 }
 
 func (s *diseaseService) PredictPetSkinDiseaseUnknown(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseaseUnknownPayload) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	predicted, confident, resp := s.validateAndPredictDisease(ctx, payload.Image, *payload.PetType)
 	if resp != nil {
@@ -114,10 +114,10 @@ func (s *diseaseService) PredictPetSkinDiseaseUnknown(ctx context.Context, userI
 		Confident: confident,
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.DiseaseFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.DiseaseFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
+	// }
 
 	petSkinImage.Disease = petSkinImage.Predicted.String()
 	petSkinImage.Confident = s.convertConfidentToRangeConfident(petSkinImage.Confident)
@@ -128,10 +128,10 @@ func (s *diseaseService) PredictPetSkinDiseaseUnknown(ctx context.Context, userI
 }
 
 func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint, payload *model.PredictPetSkinDiseasePayload) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.DISEASE)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	pet, err := s.petRepo.GetPetInfoByID(ctx, payload.PetID)
 	if err != nil {
@@ -176,10 +176,10 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 		}
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.DiseaseFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.DiseaseFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
+	// }
 
 	petSkinImage.Disease = petSkinImage.Predicted.String()
 	petSkinImage.Confident = s.convertConfidentToRangeConfident(petSkinImage.Confident)
