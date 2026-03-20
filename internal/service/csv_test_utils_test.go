@@ -16,15 +16,17 @@ import (
 )
 
 type requirementCSVRow struct {
-	petType  model.PetType
-	sexType  model.SexType
-	neutered bool
-	weight   float64
-	bcsScore int
-	bcs      model.BcsType
-	energy   float64
-	protein  float64
-	fat      float64
+	activityLevel model.ActivityLevel
+	ageRange      model.AgeType
+	petType       model.PetType
+	sexType       model.SexType
+	neutered      bool
+	weight        float64
+	bcsScore      int
+	bcs           model.BcsType
+	energy        float64
+	protein       float64
+	fat           float64
 }
 
 func loadRequirementCSV(filename string) ([]requirementCSVRow, error) {
@@ -48,6 +50,8 @@ func loadRequirementCSV(filename string) ([]requirementCSVRow, error) {
 	}
 
 	idx, err := columnIndex(header, []string{
+		"al",
+		"age",
 		"type",
 		"sex",
 		"reproduction",
@@ -73,6 +77,18 @@ func loadRequirementCSV(filename string) ([]requirementCSVRow, error) {
 		if isEmptyRow(record) {
 			continue
 		}
+
+		activityLevelRaw, err := parseInt(valueAt(record, idx["al"]))
+		if err != nil {
+			return nil, fmt.Errorf("row %d al: %w", rowNum, err)
+		}
+		activityLevel := model.ActivityLevel(activityLevelRaw)
+
+		ageRaw, err := parseInt(valueAt(record, idx["age"]))
+		if err != nil {
+			return nil, fmt.Errorf("row %d age: %w", rowNum, err)
+		}
+		ageRange := model.AgeType(ageRaw)
 
 		petTypeRaw, err := parseInt(valueAt(record, idx["type"]))
 		if err != nil {
@@ -117,15 +133,17 @@ func loadRequirementCSV(filename string) ([]requirementCSVRow, error) {
 		}
 
 		rows = append(rows, requirementCSVRow{
-			petType:  petType,
-			sexType:  sexType,
-			neutered: neutered,
-			weight:   weight,
-			bcsScore: bcsScore,
-			bcs:      bcs,
-			energy:   energy,
-			protein:  protein,
-			fat:      fat,
+			activityLevel: activityLevel,
+			ageRange:      ageRange,
+			petType:       petType,
+			sexType:       sexType,
+			neutered:      neutered,
+			weight:        weight,
+			bcsScore:      bcsScore,
+			bcs:           bcs,
+			energy:        energy,
+			protein:       protein,
+			fat:           fat,
 		})
 	}
 
@@ -143,7 +161,9 @@ func requirementCSVPath(filename string) (string, error) {
 }
 
 func requirementRowName(row requirementCSVRow) string {
-	return fmt.Sprintf("type%d_sex%d_neutered%d_w%.2f_bcs%d",
+	return fmt.Sprintf("al%d_age%d_type%d_sex%d_neutered%d_w%.2f_bcs%d",
+		int(row.activityLevel),
+		int(row.ageRange),
 		int(row.petType),
 		int(row.sexType),
 		boolToInt(row.neutered),

@@ -3,8 +3,6 @@ package service
 import (
 	"testing"
 	"time"
-
-	"github.com/231031/wellpaw-backend/internal/model"
 )
 
 func TestGetMerEnergy_FromCSV(t *testing.T) {
@@ -17,11 +15,11 @@ func TestGetMerEnergy_FromCSV(t *testing.T) {
 		t.Fatal("no test cases found in CSV")
 	}
 
-	// not have case - junior, senior, gestation, lactation, different activity level
 	for _, row := range rows {
 		row := row
 		t.Run(requirementRowName(row), func(t *testing.T) {
-			t.Logf("case: type=%d sex=%d neutered=%t weight=%.2f bcs=%d expected_energy=%.6f",
+			t.Logf("case: al=%d type=%d sex=%d neutered=%t weight=%.2f bcs=%d expected_energy=%.6f",
+				int(row.activityLevel),
 				int(row.petType),
 				int(row.sexType),
 				row.neutered,
@@ -31,8 +29,8 @@ func TestGetMerEnergy_FromCSV(t *testing.T) {
 			)
 			got := service.GetMerEnergy(
 				row.weight,
-				model.ADULT,
-				model.INACTIVE,
+				row.ageRange,
+				row.activityLevel,
 				row.bcs,
 				false,
 				time.Time{},
