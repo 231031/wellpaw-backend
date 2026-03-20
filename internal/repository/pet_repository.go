@@ -15,6 +15,7 @@ type PetRepository interface {
 	UpdatePetInfo(ctx context.Context, pet *model.Pet) error
 	UpdatePetDetails(ctx context.Context, petDetails *model.PetDetail) error
 	UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
+	GetPetsLatestOneMonthPetDetail(ctx context.Context, latestID uint) ([]model.Pet, error)
 	GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error)
 	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
@@ -125,21 +126,134 @@ func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet
 	return pet, nil
 }
 
-// func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
-// 	// oneMonthRange :=
+func (r *petRepository) GetPetsLatestOneMonthPetDetail(ctx context.Context, latestID uint) ([]model.Pet, error) {
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
 
-// 	var petDetail []model.PetDetail
-// 	if err := r.db.WithContext(ctx).
-// 		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
-// 			return db.Where("created_at >= ").Order("created_at DESC")
-// 		}).
-// 		Where("pet_id = ?", petID).
-// 		Find(&petDetail).Error; err != nil {
-// 		return nil, fmt.Errorf("failed to get latest pet detail by pet id : %w", err)
-// 	}
+	pets := []model.Pet{}
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("id > ?", latestID).
+		Order("id ASC").
+		Limit(100).
+		Find(&pets).Error
 
-// 	return petDetail, nil
-// }
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pet info: %w", err)
+	}
+
+	if len(pets) == 0 {
+		return pets, nil
+	}
+
+	petIDs := make([]uint, 0, len(pets))
+	petIndexByID := make(map[uint]int, len(pets))
+	for i, p := range pets {
+		petIDs = append(petIDs, p.ID)
+		petIndexByID[p.ID] = i
+	}
+
+	detailsQuery := `
+		WITH recent_details AS (
+			SELECT
+				id,
+				pet_id,
+				weight,
+				activity_level,
+				age_range,
+				bcs,
+				lactation,
+				gestation,
+				gestation_start_date,
+				neutered,
+				energy,
+				protein,
+				fat,
+				created_at
+			FROM pet_details
+			WHERE pet_id IN ?
+				AND created_at >= ?
+		),
+		previous_details AS (
+			SELECT
+				id,
+				pet_id,
+				weight,
+				activity_level,
+				age_range,
+				bcs,
+				lactation,
+				gestation,
+				gestation_start_date,
+				neutered,
+				energy,
+				protein,
+				fat,
+				created_at
+			FROM (
+				SELECT
+					id,
+					pet_id,
+					weight,
+					activity_level,
+					age_range,
+					bcs,
+					lactation,
+					gestation,
+					gestation_start_date,
+					neutered,
+					energy,
+					protein,
+					fat,
+					created_at,
+					ROW_NUMBER() OVER (
+						PARTITION BY pet_id
+						ORDER BY created_at DESC, id DESC
+					) AS rn
+				FROM pet_details
+				WHERE pet_id IN ?
+					AND created_at < ?
+			) ranked
+			WHERE rn = 1
+		),
+		relevant_details AS (
+			SELECT * FROM recent_details
+			UNION ALL
+			SELECT * FROM previous_details
+		)
+		SELECT
+			id,
+			pet_id,
+			weight,
+			activity_level,
+			age_range,
+			bcs,
+			lactation,
+			gestation,
+			gestation_start_date,
+			neutered,
+			energy,
+			protein,
+			fat,
+			created_at
+		FROM relevant_details
+		ORDER BY pet_id ASC, created_at DESC, id DESC;
+	`
+
+	details := []model.PetDetail{}
+	if err := r.db.WithContext(ctx).Raw(detailsQuery, petIDs, oneMonthAgo, petIDs, oneMonthAgo).Scan(&details).Error; err != nil {
+		return nil, fmt.Errorf("failed to get pet details for monthly reminder: %w", err)
+	}
+
+	for _, detail := range details {
+		idx, ok := petIndexByID[detail.PetID]
+		if !ok {
+			continue
+		}
+		pets[idx].PetDetails = append(pets[idx].PetDetails, detail)
+	}
+
+	return pets, nil
+}
 
 func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error) {
 	var petDetail model.PetDetail
@@ -198,7 +312,6 @@ func (r *petRepository) GetPetDetialsFromPetID(ctx context.Context, petID uint) 
 	return petDetails, nil
 }
 
-// not test
 func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error) {
 	currentDate := time.Now()
 	oneYearAgo := currentDate.AddDate(-1, 0, 0)

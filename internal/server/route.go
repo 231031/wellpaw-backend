@@ -178,5 +178,5 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 	// RouteWebhook(router, webhookController)
 
 	// cronjob
-	cronjob.CreateCronjob(calculationService, fcmService, foodRepo, petFoodPlanRepo, petCalendarRepo)
+	cronjob.CreateCronjob(calculationService, fcmService, petRepo, foodRepo, petFoodPlanRepo, petCalendarRepo)
 }
