@@ -12,6 +12,7 @@ import (
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/utils"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
@@ -81,6 +82,13 @@ func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.H
 	user.Password = hashed
 	err = s.userRepo.CreateUser(ctx, user)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return &model.HTTPResponse{
+				Status:  http.StatusConflict,
+				Message: "This email is already registered.",
+			}
+		}
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "user",

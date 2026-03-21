@@ -173,7 +173,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 func (s *calculationService) CalculateGramsToCup(foodInPlan model.PetFoodPlanDetail) float64 {
 	grams := foodInPlan.FoodPetFoodPlan.Food.GramsPerCup
 	if grams == 0.0 {
-		grams = 200.0
+		grams = 120.0
 	}
 	cupFeed := foodInPlan.Amount / grams
 	return utils.RoundFloat(cupFeed, 2)

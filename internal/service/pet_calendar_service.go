@@ -44,7 +44,16 @@ func (s *petCalendarService) CreatePetCalendar(ctx context.Context, userID uint,
 		Notation:      payload.PetCalendar.Notation,
 	}
 
-	if petCalendar.Type != nil && *petCalendar.Frequently == model.NOT {
+	if petCalendar.Frequently != nil && *petCalendar.Frequently != model.NOT {
+		if petCalendar.EndDate.IsZero() {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "end date must provided for this calendar",
+			}
+		}
+	}
+
+	if petCalendar.Frequently != nil && *petCalendar.Frequently == model.NOT {
 		start := utils.ConvertTimeToThaiTimezone(petCalendar.StartDatetime)
 		endDate := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
 		petCalendar.EndDate = endDate.AddDate(0, 0, 1)

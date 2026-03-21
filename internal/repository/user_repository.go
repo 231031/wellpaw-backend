@@ -73,7 +73,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User,
 	err := r.db.WithContext(ctx).
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -89,7 +89,7 @@ func (r *userRepository) GetUserIdDetailByID(ctx context.Context, id uint) (*mod
 		Select("id", "email", "first_name", "last_name", "device_token",
 			"payment_method_id", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -107,7 +107,7 @@ func (r *userRepository) GetUserAllInfo(ctx context.Context, id uint) (*model.Us
 		Preload("Pets").
 		Select("id", "email", "first_name", "last_name", "customer_id",
 			"noti_food", "noti_calendars",
-			"profile_free", "food_free", "food_plan_free", "disease_free", "free_tier_usage",
+			"profile_free", "food_free", "food_plan_free", "disease_free",
 			"tier", "subscription_status").
 		First(&user, id).Error
 	if err != nil {
@@ -159,7 +159,7 @@ func (r *userRepository) UpdateCalendarNotification(ctx context.Context, id uint
 func (r *userRepository) GetSubscriptionDetailFromDB(ctx context.Context, userID uint) (*model.User, error) {
 	var user *model.User
 	err := r.db.WithContext(ctx).
-		Select("tier", "subscription_status", "free_tier_usage", "profile_free", "food_free", "food_plan_free", "disease_free").Where("id = ?", userID).First(&user).Error
+		Select("tier", "subscription_status", "profile_free", "food_free", "food_plan_free", "disease_free").Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subscription detail from db : %w", err)
 	}
@@ -268,9 +268,6 @@ func (r *userRepository) UpdateSubscriptionDetail(ctx context.Context, customerI
 	updateData := map[string]interface{}{
 		"subscription_status": status,
 		"tier":                tier,
-	}
-	if tier == model.FREE {
-		updateData["free_tier_usage"] = true
 	}
 
 	var user *model.User
