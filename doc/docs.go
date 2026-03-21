@@ -3907,7 +3907,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "disease_free": {
-                    "description": "BcsFree            int                    ` + "`" + `gorm:\"default:0;not null\" json:\"bcs_free\"` + "`" + `",
                     "type": "integer"
                 },
                 "email": {
@@ -3927,9 +3926,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.Food"
                     }
-                },
-                "free_tier_usage": {
-                    "type": "boolean"
                 },
                 "id": {
                     "type": "integer"
