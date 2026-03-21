@@ -2,18 +2,19 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
 	"github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/generative-ai-go/genai"
 )
 
 type OcrService interface {
-	ProcessOcrRequest(ctx context.Context, userID uint, file io.Reader) *model.HTTPResponse
+	ProcessOcrRequest(ctx context.Context, userID uint, imageBase64 string) *model.HTTPResponse
 }
 
 type ocrService struct {
@@ -28,10 +29,35 @@ func NewOcrService(geminiClient *genai.Client, freeTierUsageValidationService Fr
 	}
 }
 
-func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, file io.Reader) *model.HTTPResponse {
-	_, _, usageResp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
-	if usageResp != nil {
-		return usageResp
+func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, imageBase64 string) *model.HTTPResponse {
+	// _, _, usageResp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOOD)
+	// if usageResp != nil {
+	// 	return usageResp
+	// }
+
+	imageBase64 = normalizeBase64ImageInput(imageBase64)
+	if imageBase64 == "" {
+		return &model.HTTPResponse{
+			Status:  fiber.StatusBadRequest,
+			Message: "invalid image file",
+		}
+	}
+	if err := utils.ValidateBase64Image(imageBase64); err != nil {
+		return &model.HTTPResponse{
+			Status:  fiber.StatusBadRequest,
+			Message: "invalid image file",
+		}
+	}
+
+	imgData, err := base64.StdEncoding.DecodeString(imageBase64)
+	if err != nil {
+		imgData, err = base64.RawStdEncoding.DecodeString(imageBase64)
+	}
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  fiber.StatusBadRequest,
+			Message: "invalid image file",
+		}
 	}
 
 	if s.geminiClient == nil {
@@ -56,14 +82,6 @@ func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, file io
 
 	geminiModel.ResponseMIMEType = "application/json"
 	geminiModel.ResponseSchema = schema
-
-	imgData, err := io.ReadAll(file)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  fiber.StatusInternalServerError,
-			Message: "failed to read image file",
-		}
-	}
 
 	mimeType := http.DetectContentType(imgData)
 	all := strings.Split(mimeType, "/")
@@ -141,4 +159,14 @@ func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, file io
 		Message: "Text extracted successfully",
 		Data:    result,
 	}
+}
+
+func normalizeBase64ImageInput(image string) string {
+	image = strings.TrimSpace(image)
+	if strings.HasPrefix(image, "data:") {
+		if idx := strings.Index(image, ","); idx != -1 {
+			return strings.TrimSpace(image[idx+1:])
+		}
+	}
+	return image
 }

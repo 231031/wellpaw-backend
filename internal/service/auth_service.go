@@ -49,26 +49,26 @@ func NewAuthService(userRepo repository.UserRepository, tokenService TokenServic
 }
 
 func (s *authService) CreateUser(ctx context.Context, user *model.User) *model.HTTPResponse {
-	customer, err := s.paymentService.GetCustomerByEmail(ctx, user.Email)
-	if err != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "failed to create customer by email",
-		}
-	}
+	// customer, err := s.paymentService.GetCustomerByEmail(ctx, user.Email)
+	// if err != nil {
+	// 	return &model.HTTPResponse{
+	// 		Status:  http.StatusInternalServerError,
+	// 		Message: "failed to create customer by email",
+	// 	}
+	// }
 
-	if customer != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusConflict,
-			Message: "email already exists",
-		}
-	}
+	// if customer != nil {
+	// 	return &model.HTTPResponse{
+	// 		Status:  http.StatusConflict,
+	// 		Message: "email already exists",
+	// 	}
+	// }
 
-	customerID, err := s.paymentService.CreateCustomer(ctx, user)
-	if err != nil {
-		applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
-	}
-	user.CustomerID = customerID
+	// customerID, err := s.paymentService.CreateCustomer(ctx, user)
+	// if err != nil {
+	// 	applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+	// }
+	// user.CustomerID = customerID
 
 	hashed, err := s.tokenService.HashPassword(user.Password)
 	if err != nil {
@@ -216,12 +216,12 @@ func (s *authService) LoginUserWithGoogle(ctx context.Context, payload *model.Lo
 				DeviceToken: payload.DeviceToken,
 			}
 
-			customerID, err := s.paymentService.CreateCustomer(ctx, user)
-			if err != nil {
-				applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
-			}
+			// customerID, err := s.paymentService.CreateCustomer(ctx, user)
+			// if err != nil {
+			// 	applogger.LogError(fmt.Sprintf("failed to create customer in stripe: %v", err), serviceLog)
+			// }
+			// user.CustomerID = customerID
 
-			user.CustomerID = customerID
 			err = s.userRepo.CreateUser(ctx, user)
 			if err != nil {
 				return &model.HTTPResponse{

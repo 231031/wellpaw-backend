@@ -1,45 +1,35 @@
 package cronjob
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/repository"
 	"github.com/231031/wellpaw-backend/internal/service"
 	"github.com/robfig/cron/v3"
 )
 
-type MainCronjob interface {
-	UpdateQuatityFoodDaily()
-	checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.FoodQuantity, bool)
-	checkNextQuatityFoodDaily(ctx context.Context, lastID uint) (*model.PetFoodPlan, bool)
-	sendFoodQuantitiesNotification(ctx context.Context, planInfficient []model.NotificationPlan)
-
-	NotificateActivity()
-	getCalendarMessageBody(c model.PetCalendar) string
-	sendCalendarNotification(ctx context.Context, notificationsMsg []model.SendNotificationParams)
-}
-
 var (
 	foodLog     = "food cronjob"
 	activityLog = "activity cronjob"
+	petLog      = "pet cronjob"
 )
 
 type mainCronjob struct {
 	calculationSerivce service.CalculationService
 	fcmService         service.FcmService
+	petRepo            repository.PetRepository
 	foodRepo           repository.FoodRepository
 	petFoodPlanRepo    repository.PetFoodPlanRepository
 	petCalendarRepo    repository.PetCalendarRepository
 	defaultTimeout     time.Duration
 }
 
-func CreateCronjob(calSerivce service.CalculationService, fcmService service.FcmService, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository, petCalendarRepo repository.PetCalendarRepository) {
+func CreateCronjob(calSerivce service.CalculationService, fcmService service.FcmService, petRepo repository.PetRepository, foodRepo repository.FoodRepository, petFoodPlanRepo repository.PetFoodPlanRepository, petCalendarRepo repository.PetCalendarRepository) {
 	main := &mainCronjob{
 		calculationSerivce: calSerivce,
 		fcmService:         fcmService,
+		petRepo:            petRepo,
 		foodRepo:           foodRepo,
 		petFoodPlanRepo:    petFoodPlanRepo,
 		petCalendarRepo:    petCalendarRepo,
@@ -54,6 +44,7 @@ func CreateCronjob(calSerivce service.CalculationService, fcmService service.Fcm
 
 	c := cron.New(cron.WithLocation(location))
 	c.AddFunc("59 23 * * *", main.UpdateQuatityFoodDaily)
+	c.AddFunc("00 09 * * *", main.NotificateUpdatePetDetail)
 	c.AddFunc("*/5 * * * *", main.NotificateActivity)
 	c.Start()
 }

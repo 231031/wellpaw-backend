@@ -65,10 +65,10 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 }
 
 func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
@@ -76,8 +76,6 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
-
-	// petDetail.ExpectedWeight = s.calculationService.CalExpectedWeight(petDetail.Weight, petDetail.BCS)
 
 	err := s.petRepo.CreateNewPet(ctx, petInfo, petDetail)
 	if err != nil {
@@ -87,10 +85,10 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 		}
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.ProfileFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.ProfileFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
+	// }
 
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
@@ -316,10 +314,14 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 			return resp
 		}
 	} else {
+		var supAmount float64
 		for _, fp := range foodsInActivePlan {
 			foods = append(foods, *fp.Food)
+			if *fp.Food.Type == model.SUPPLEMENTS {
+				supAmount = fp.PetFoodPlanDetails[0].Amount
+			}
 		}
-		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)
 		for idx := range foodsInActivePlan {
 			foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
 		}
@@ -346,6 +348,8 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	if activePlanDetail.Unit == model.CUP {
 		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
 	}
+
+	pet.PetDetails[0] = *petDetail
 	responseData := map[string]interface{}{
 		"pet_info":      pet,
 		"pet_detail":    petDetail,

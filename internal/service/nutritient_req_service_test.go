@@ -2,8 +2,6 @@ package service
 
 import (
 	"testing"
-
-	"github.com/231031/wellpaw-backend/internal/model"
 )
 
 func TestGetNutritientPerDay_FromCSV(t *testing.T) {
@@ -28,7 +26,7 @@ func TestGetNutritientPerDay_FromCSV(t *testing.T) {
 				row.protein,
 				row.fat,
 			)
-			gotProtein, gotFat := nutritientService.GetNutritientPerDay(model.ADULT, row.petType, row.energy)
+			gotProtein, gotFat := nutritientService.GetNutritientPerDay(row.ageRange, row.petType, row.energy)
 			assertInDelta(t, row.protein, gotProtein, 1.0)
 			assertInDelta(t, row.fat, gotFat, 1.0)
 		})

@@ -75,6 +75,7 @@ func (s *petFoodPlanService) getInfoForPetFoodPlan(ctx context.Context, userID u
 func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID uint, payload *model.CalculatePetFoodPlanPayload) *model.HTTPResponse {
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
+	allHaveAmount := true
 
 	for _, f := range payload.Foods {
 		if _, exists := seenFoodIDs[f.FoodID]; exists {
@@ -85,6 +86,10 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		}
 		seenFoodIDs[f.FoodID] = true
 		foodIDs = append(foodIDs, f.FoodID)
+
+		if f.Amount <= 0 {
+			allHaveAmount = false
+		}
 	}
 
 	petDetail, foods, resp := s.getInfoForPetFoodPlan(ctx, userID, payload.PetID, foodIDs)
@@ -98,14 +103,8 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		foodsDetail[food.ID] = food
 	}
 
-	if payload.Foods[0].Amount > 0 {
+	if allHaveAmount {
 		for _, food := range payload.Foods {
-			if food.Amount <= 0 {
-				return &model.HTTPResponse{
-					Status:  http.StatusBadRequest,
-					Message: "invalid amount of food",
-				}
-			}
 			foodDetail := foodsDetail[food.FoodID]
 			energy := s.calculationService.CalEnergyIntakeFromGramIntake(food.Amount, foodDetail.Energy, *foodDetail.Type)
 			protein, fat := s.calculationService.CalNutritientIntakeFromGramIntake(food.Amount, foodDetail.Protein, foodDetail.Fat, *foodDetail.Type)
@@ -117,7 +116,19 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 			})
 		}
 	} else {
-		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods)
+		var supAmount float64
+		for _, food := range payload.Foods {
+			if *foodsDetail[food.FoodID].Type == model.SUPPLEMENTS {
+				if food.Amount <= 0 {
+					return &model.HTTPResponse{
+						Status:  http.StatusBadRequest,
+						Message: "invalid amount intake of supplement",
+					}
+				}
+				supAmount = food.Amount
+			}
+		}
+		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)
 	}
 
 	if len(foodPlanDetails) != len(foods) {
@@ -184,10 +195,10 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 }
 
 func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint, payload *model.CreatePetFoodPlanPayload) *model.HTTPResponse {
-	tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOODPLAN)
-	if resp != nil {
-		return resp
-	}
+	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, userID, model.FOODPLAN)
+	// if resp != nil {
+	// 	return resp
+	// }
 
 	foodIDs := make([]uint, 0, len(payload.Foods))
 	seenFoodIDs := make(map[uint]bool, len(payload.Foods))
@@ -224,6 +235,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 			ProteinIntake: protein,
 			FatIntake:     fat,
 		})
+
 	}
 
 	plan := &model.PetFoodPlan{
@@ -252,10 +264,10 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		}
 	}
 
-	if tier != nil && *tier == model.FREE {
-		freeUsage.FoodPlanFree += 1
-		s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
-	}
+	// if tier != nil && *tier == model.FREE {
+	// 	freeUsage.FoodPlanFree += 1
+	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
+	// }
 
 	activePlanDetail, err := s.petFoodPlanRepo.GetLastestActivePlanDetailByPet(ctx, payload.PetID, petDetail.ID)
 	if err != nil {

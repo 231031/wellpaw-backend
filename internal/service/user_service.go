@@ -217,21 +217,6 @@ func (s *userService) StartSubscription(ctx context.Context, id uint, payload mo
 		}
 	}
 
-	freePriceID, isFreeTierPlan, err := s.paymentService.GetFreeTierPriceID(ctx, payload.SubscriptionPlanID)
-	if err != nil {
-		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
-	}
-
-	if isFreeTierPlan {
-		if user.FreeTierUsage {
-			return &model.HTTPResponse{
-				Status:  http.StatusBadRequest,
-				Message: "user already subscribe free tier and cannot do it again",
-			}
-		}
-		return s.paymentService.CreateSubscriptionFreeTier(ctx, user.CustomerID, freePriceID)
-	}
-
 	if user.PaymentMethodID == "" {
 		return &model.HTTPResponse{
 			Status:  http.StatusBadRequest,

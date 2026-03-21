@@ -13,15 +13,17 @@ import (
 )
 
 const (
-	calFeedingCaseEnv = "CAL_FEEDING_CASES"
-	feedingCasesFile  = "feeding_testcase.json"
-	feedingFoodsFile  = "food_test.json"
+	calFeedingCaseEnv     = "CAL_FEEDING_CASES"
+	calFeedingCaseFileEnv = "CAL_FEEDING_CASES_FILE"
+	feedingCasesFile      = "feeding-testcase2.json"
+	feedingFoodsFile      = "food_test.json"
 )
 
 type calFeedingCase struct {
 	Name              string                    `json:"name"`
 	PetEnergy         float64                   `json:"pet_energy"`
 	FoodIndexes       []int                     `json:"selected_food"`
+	Amounts           []float64                 `json:"amount,omitempty"`
 	TypeOverrideByPos map[int]model.FoodType    `json:"type_override_by_pos,omitempty"`
 	ExpectedDetails   []model.PetFoodPlanDetail `json:"expected"`
 }
@@ -35,12 +37,17 @@ func TestCalFeedingAmountPerDay_FromFoodJSON(t *testing.T) {
 		t.Fatalf("%s must contain at least 4 foods, got %d", feedingFoodsFile, len(allFoods))
 	}
 
-	testCases, err := loadFeedingCaseJSON(feedingCasesFile)
+	casesFile := feedingCasesFile
+	if overrideFile := strings.TrimSpace(os.Getenv(calFeedingCaseFileEnv)); overrideFile != "" {
+		casesFile = overrideFile
+	}
+
+	testCases, err := loadFeedingCaseJSON(casesFile)
 	if err != nil {
-		t.Fatalf("failed to load %s: %v", feedingCasesFile, err)
+		t.Fatalf("failed to load %s: %v", casesFile, err)
 	}
 	if len(testCases) == 0 {
-		t.Fatalf("no feeding test cases found in %s", feedingCasesFile)
+		t.Fatalf("no feeding test cases found in %s", casesFile)
 	}
 
 	selected := parseCaseSelector(os.Getenv(calFeedingCaseEnv))
@@ -61,8 +68,9 @@ func TestCalFeedingAmountPerDay_FromFoodJSON(t *testing.T) {
 				t.Fatalf("invalid testcase %q: expectedDetails=%d foods=%d", tc.Name, len(tc.ExpectedDetails), len(foods))
 			}
 
+			supAmount := getSupplementAmountForCase(t, tc, foods)
 			petDetail := &model.PetDetail{Energy: tc.PetEnergy}
-			got := service.CalFeedingAmountPerDay(petDetail, foods)
+			got := service.CalFeedingAmountPerDay(petDetail, foods, supAmount)
 			if len(got) != len(foods) {
 				t.Fatalf("expected %d feeding details, got %d", len(foods), len(got))
 			}
@@ -147,6 +155,42 @@ func pickFoodsForCase(t *testing.T, allFoods []model.Food, indexes []int, overri
 	return foods
 }
 
+func getSupplementAmountForCase(t *testing.T, tc calFeedingCase, foods []model.Food) float64 {
+	t.Helper()
+
+	if len(tc.Amounts) > 0 && len(tc.Amounts) != len(foods) {
+		t.Fatalf("invalid testcase %q: amount=%d foods=%d", tc.Name, len(tc.Amounts), len(foods))
+	}
+
+	var supAmount float64
+	foundSupplement := false
+
+	for pos, food := range foods {
+		if food.Type == nil {
+			t.Fatalf("invalid testcase %q: nil food type at position=%d", tc.Name, pos)
+		}
+		if *food.Type != model.SUPPLEMENTS {
+			continue
+		}
+		if len(tc.Amounts) == 0 {
+			t.Fatalf("invalid testcase %q: amount is required when supplement is selected", tc.Name)
+		}
+
+		amount := tc.Amounts[pos]
+		if amount <= 0 {
+			t.Fatalf("invalid testcase %q: supplement amount must be > 0 at position=%d, got %.10f", tc.Name, pos, amount)
+		}
+		if foundSupplement && !isAlmostEqualFloat(supAmount, amount, 0.0000001) {
+			t.Fatalf("invalid testcase %q: only one supplement amount is supported, got %.10f and %.10f", tc.Name, supAmount, amount)
+		}
+
+		supAmount = amount
+		foundSupplement = true
+	}
+
+	return supAmount
+}
+
 func assertPetFoodPlanDetailEqual(t *testing.T, expected model.PetFoodPlanDetail, actual *model.PetFoodPlanDetail, tolerance float64) {
 	t.Helper()
 
@@ -170,6 +214,10 @@ func normalizeFloat(value float64, tolerance float64) float64 {
 		return value
 	}
 	return math.Round(value/tolerance) * tolerance
+}
+
+func isAlmostEqualFloat(a, b, tolerance float64) bool {
+	return math.Abs(a-b) <= tolerance
 }
 
 func parseCaseSelector(raw string) map[string]struct{} {

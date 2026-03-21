@@ -3,8 +3,9 @@ package controller
 import (
 	"time"
 
-	_ "github.com/231031/wellpaw-backend/internal/model"
+	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/service"
+	"github.com/231031/wellpaw-backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,12 +24,12 @@ func NewOcrController(ocrService service.OcrService) OcrController {
 }
 
 // @Summary Request OCR
-// @Description Process image file with OCR
+// @Description Process base64 image with OCR
 // @tags OCR
 // @Security BearerAuth
-// @Accept multipart/form-data
+// @Accept application/json
 // @Produce application/json
-// @Param image formData file true "Image file to process"
+// @Param OcrRequestPayload body model.OcrRequestPayload true "OCR request payload"
 // @Success 200 {object} model.OcrPetFoodResponse
 // @Failure 400 {object} model.HTTPResponse
 // @Failure 500 {object} model.HTTPResponse
@@ -36,26 +37,21 @@ func NewOcrController(ocrService service.OcrService) OcrController {
 func (c *ocrController) ProcessOcrRequest(ctx *fiber.Ctx) error {
 	userID := ctx.Locals("id").(uint)
 
-	fileHeader, err := ctx.FormFile("image")
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "failed to get image file",
-			"error":   err.Error(),
+	var payload model.OcrRequestPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  fiber.StatusBadRequest,
+			Message: "invalid request body",
 		})
 	}
 
-	file, err := fileHeader.Open()
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "failed to open image file",
-			"error":   err.Error(),
-		})
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
 	}
-	defer file.Close()
 
 	ctxWithTimeout, cancel := withTimeout(ctx.Context(), 60*time.Second)
 	defer cancel()
 
-	response := c.ocrService.ProcessOcrRequest(ctxWithTimeout, userID, file)
+	response := c.ocrService.ProcessOcrRequest(ctxWithTimeout, userID, payload.Image)
 	return ctx.Status(response.Status).JSON(response)
 }

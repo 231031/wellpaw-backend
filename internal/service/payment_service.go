@@ -270,6 +270,37 @@ func (s *paymentService) GetFreeTierPriceID(ctx context.Context, subscriptionPla
 	return "", false, nil
 }
 
+func (s *paymentService) CreateSubscriptionViaLink(ctx context.Context, customerID, subscriptionPlanID string) *model.HTTPResponse {
+	params := &stripe.SubscriptionCreateParams{
+		Customer: stripe.String(customerID),
+		Items: []*stripe.SubscriptionCreateItemParams{
+			{
+				Price: stripe.String(subscriptionPlanID),
+			},
+		},
+		Currency:        stripe.String("thb"),
+		PaymentBehavior: stripe.String("default_incomplete"),
+		Expand: []*string{
+			stripe.String("latest_invoice.payments.data.payment"),
+			stripe.String("latest_invoice.payments.data.invoice"),
+		},
+	}
+
+	sub, err := s.stripeClient.V1Subscriptions.Create(ctx, params)
+	if err != nil {
+		return utils.HandleStripeError(utils.FailedToCreateMsg+"subscription: ", err)
+	}
+
+	fmt.Println("url from host", sub.LatestInvoice.HostedInvoiceURL)
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data: &model.PaymentInvoice{
+			SubscriptionStatus: string(sub.Status),
+			Amount:             sub.LatestInvoice.AmountDue / 100,
+		},
+	}
+}
+
 func (s *paymentService) CreateSubscription(ctx context.Context, customerID, paymentMethodID, subscriptionPlanID string) *model.HTTPResponse {
 
 	params := &stripe.SubscriptionCreateParams{

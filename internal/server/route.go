@@ -65,6 +65,7 @@ func RouteFood(router fiber.Router, foodController controller.FoodController, au
 
 	foodRoute := router.Group("/food", authMiddleware.AuthorizeUser())
 	foodRoute.Post("/", foodController.CreateFood)
+	foodRoute.Get("/:food_id", foodController.GetFoodByIDAndUserID)
 	foodRoute.Post("/quantity", foodController.CreateNewFoodQuantity)
 	foodRoute.Patch("/", foodController.UpdateFoodDetail)
 	foodRoute.Delete("/:food_id", foodController.SoftDeleteFood)
@@ -89,8 +90,7 @@ func RoutePetCalendar(router fiber.Router, petCalendarController controller.PetC
 
 func RouteWebhook(router fiber.Router, webhookController controller.WebhookController) {
 	webhookRoute := router.Group("/webhook")
-	webhookRoute.Post("/subscription", webhookController.HandleSubscriptionUpdated)
-	webhookRoute.Post("/subscription/freetiral", webhookController.HandleSubscriptionFreeTiralUpdated)
+	webhookRoute.Post("/subscription", webhookController.HandleAllWebhook)
 }
 
 func RouteOcr(router fiber.Router, ocrController controller.OcrController, authMiddleware middleware.AuthMiddleware) {
@@ -173,10 +173,10 @@ func CreateRoute(router fiber.Router, db *gorm.DB, redisClient *redis.Client, ge
 
 	fcmService := service.NewFCMService(fcmClient)
 
-	webhookService := service.NewWebhookService(userRepo, fcmService)
-	webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
-	RouteWebhook(router, webhookController)
+	// webhookService := service.NewWebhookService(userRepo, fcmService)
+	// webhookController := controller.NewWebhookController(cfg.STRIPE_WEBHOOK_SECRET, webhookService)
+	// RouteWebhook(router, webhookController)
 
 	// cronjob
-	cronjob.CreateCronjob(calculationService, fcmService, foodRepo, petFoodPlanRepo, petCalendarRepo)
+	cronjob.CreateCronjob(calculationService, fcmService, petRepo, foodRepo, petFoodPlanRepo, petCalendarRepo)
 }

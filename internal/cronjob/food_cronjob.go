@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// 14, 20,23
 func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planInfficient []model.NotificationPlan) {
 	notificationsMsg := make([]model.SendNotificationParams, 0)
 	for _, pi := range planInfficient {
@@ -70,7 +71,7 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 			return
 		}
 
-		fqInPlans, insufficinetAmount := cj.checkQuatityFoodDaily(p)
+		fqInPlans, insufficinetAmount := cj.checkQuatityFoodDaily(p, 1)
 		if insufficinetAmount {
 			notiPlan := model.NotificationPlan{
 				Plan:    *p,
@@ -85,6 +86,16 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 				msg := fmt.Sprintf("failed to daily update amount in plan %d : %v", p.ID, err)
 				applogger.LogError(msg, foodLog)
 			}
+
+			// check 3 days
+			_, insufficinetAmount := cj.checkQuatityFoodDaily(p, 3)
+			if insufficinetAmount {
+				notiPlan := model.NotificationPlan{
+					Plan:    *p,
+					OutTime: model.NEXT,
+				}
+				planInfficient = append(planInfficient, notiPlan)
+			}
 		}
 
 		lastID = p.ID
@@ -96,7 +107,7 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 
 }
 
-func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.FoodQuantity, bool) {
+func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan, rangeDay int) ([]model.FoodQuantity, bool) {
 	fqInPlans := []model.FoodQuantity{}
 	insufficinetAmount := false
 	for _, fp := range p.FoodPetFoodPlans {
@@ -106,7 +117,7 @@ func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan) ([]model.Food
 			break
 		}
 
-		amountIntake := fp.PetFoodPlanDetails[0].Amount
+		amountIntake := fp.PetFoodPlanDetails[0].Amount * float64(rangeDay)
 		var checkFq []model.FoodQuantity
 		for idx, fq := range fp.Food.FoodQuantities {
 			foodAmount := fq.Amount

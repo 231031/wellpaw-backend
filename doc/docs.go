@@ -917,6 +917,65 @@ const docTemplate = `{
             }
         },
         "/food/{food_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "get one food of current user by food id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Food"
+                ],
+                "summary": "Get Food By ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Food ID",
+                        "name": "food_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.FoodResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -1266,9 +1325,9 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Process image file with OCR",
+                "description": "Process base64 image with OCR",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -1279,11 +1338,13 @@ const docTemplate = `{
                 "summary": "Request OCR",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "Image file to process",
-                        "name": "image",
-                        "in": "formData",
-                        "required": true
+                        "description": "OCR request payload",
+                        "name": "OcrRequestPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload"
+                        }
                     }
                 ],
                 "responses": {
@@ -2550,6 +2611,9 @@ const docTemplate = `{
                 "quantity": {
                     "type": "integer"
                 },
+                "total_amount": {
+                    "type": "number"
+                },
                 "type": {
                     "enum": [
                         0,
@@ -2814,6 +2878,17 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_231031_wellpaw-backend_internal_model.OcrRequestPayload": {
+            "type": "object",
+            "required": [
+                "image"
+            ],
+            "properties": {
+                "image": {
+                    "type": "string"
                 }
             }
         },
@@ -3325,6 +3400,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "activity_level": {
+                    "type": "integer"
+                },
+                "bcs": {
                     "type": "integer"
                 },
                 "energy": {

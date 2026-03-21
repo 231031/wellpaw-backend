@@ -96,6 +96,9 @@ func (r *petFoodPlanRepository) GetFoodsInLastestActivePlanByPetID(ctx context.C
 	if err := r.db.WithContext(ctx).
 		Model(&model.FoodPetFoodPlan{}).
 		Preload("PetFoodPlan").
+		Preload("PetFoodPlanDetails", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC, id DESC").Limit(1)
+		}).
 		Preload("PetFoodPlan.PetFoodPlanTotals", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC, id DESC").Limit(1)
 		}).
@@ -217,8 +220,10 @@ func (r *petFoodPlanRepository) GetNextActiveFoodPlanByID(ctx context.Context, l
 	var foodPlan model.PetFoodPlan
 
 	err := r.db.WithContext(ctx).Model(&model.PetFoodPlan{}).
-		Where("active = true AND id > ?", lastID).
-		Order("id ASC").
+		Joins("JOIN pets ON pets.id = pet_food_plans.pet_id").
+		Joins("JOIN users ON users.id = pets.user_id").
+		Where("pet_food_plans.active = ? AND pet_food_plans.id > ? AND users.noti_food = ?", true, lastID, true).
+		Order("pet_food_plans.id ASC").
 		Limit(1).
 		Preload("Pet").
 		Preload("Pet.User").

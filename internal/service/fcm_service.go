@@ -19,6 +19,8 @@ type fcmService struct {
 	fcmClient *messaging.Client
 }
 
+const maxFCMSendEachBatch = 300
+
 func NewFCMService(fcmClient *messaging.Client) FcmService {
 	return &fcmService{fcmClient: fcmClient}
 }
@@ -27,6 +29,13 @@ func (s *fcmService) SendNotifications(
 	ctx context.Context,
 	params []model.SendNotificationParams,
 ) (*messaging.BatchResponse, error) {
+	if len(params) == 0 {
+		return &messaging.BatchResponse{
+			SuccessCount: 0,
+			FailureCount: 0,
+			Responses:    []*messaging.SendResponse{},
+		}, nil
+	}
 
 	messages := make([]*messaging.Message, 0, len(params))
 
@@ -65,12 +74,37 @@ func (s *fcmService) SendNotifications(
 		messages = append(messages, msg)
 	}
 
-	resp, err := s.fcmClient.SendEach(ctx, messages)
-	if err != nil {
-		return nil, err
+	if len(messages) <= maxFCMSendEachBatch {
+		resp, err := s.fcmClient.SendEach(ctx, messages)
+		if err != nil {
+			return nil, err
+		}
+		return resp, nil
 	}
 
-	return resp, nil
+	combined := &messaging.BatchResponse{
+		SuccessCount: 0,
+		FailureCount: 0,
+		Responses:    make([]*messaging.SendResponse, 0, len(messages)),
+	}
+
+	for start := 0; start < len(messages); start += maxFCMSendEachBatch {
+		end := start + maxFCMSendEachBatch
+		if end > len(messages) {
+			end = len(messages)
+		}
+
+		resp, err := s.fcmClient.SendEach(ctx, messages[start:end])
+		if err != nil {
+			return nil, err
+		}
+
+		combined.SuccessCount += resp.SuccessCount
+		combined.FailureCount += resp.FailureCount
+		combined.Responses = append(combined.Responses, resp.Responses...)
+	}
+
+	return combined, nil
 }
 
 func (s *fcmService) SendSilentSubscriptionNotification(

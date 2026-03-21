@@ -15,6 +15,7 @@ type PetRepository interface {
 	UpdatePetInfo(ctx context.Context, pet *model.Pet) error
 	UpdatePetDetails(ctx context.Context, petDetails *model.PetDetail) error
 	UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
+	GetPetsLatestOneMonthPetDetail(ctx context.Context, latestID uint) ([]model.Pet, error)
 	GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error)
 	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
 	GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error)
@@ -125,21 +126,134 @@ func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet
 	return pet, nil
 }
 
-// func (r *petRepository) GetLatestOneMonthPetDetailByPetID(ctx context.Context, petID uint) ([]model.PetDetail, error) {
-// 	// oneMonthRange :=
+func (r *petRepository) GetPetsLatestOneMonthPetDetail(ctx context.Context, latestID uint) ([]model.Pet, error) {
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
 
-// 	var petDetail []model.PetDetail
-// 	if err := r.db.WithContext(ctx).
-// 		Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
-// 			return db.Where("created_at >= ").Order("created_at DESC")
-// 		}).
-// 		Where("pet_id = ?", petID).
-// 		Find(&petDetail).Error; err != nil {
-// 		return nil, fmt.Errorf("failed to get latest pet detail by pet id : %w", err)
-// 	}
+	pets := []model.Pet{}
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("id > ?", latestID).
+		Order("id ASC").
+		Limit(100).
+		Find(&pets).Error
 
-// 	return petDetail, nil
-// }
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pet info: %w", err)
+	}
+
+	if len(pets) == 0 {
+		return pets, nil
+	}
+
+	petIDs := make([]uint, 0, len(pets))
+	petIndexByID := make(map[uint]int, len(pets))
+	for i, p := range pets {
+		petIDs = append(petIDs, p.ID)
+		petIndexByID[p.ID] = i
+	}
+
+	detailsQuery := `
+		WITH recent_details AS (
+			SELECT
+				id,
+				pet_id,
+				weight,
+				activity_level,
+				age_range,
+				bcs,
+				lactation,
+				gestation,
+				gestation_start_date,
+				neutered,
+				energy,
+				protein,
+				fat,
+				created_at
+			FROM pet_details
+			WHERE pet_id IN ?
+				AND created_at >= ?
+		),
+		previous_details AS (
+			SELECT
+				id,
+				pet_id,
+				weight,
+				activity_level,
+				age_range,
+				bcs,
+				lactation,
+				gestation,
+				gestation_start_date,
+				neutered,
+				energy,
+				protein,
+				fat,
+				created_at
+			FROM (
+				SELECT
+					id,
+					pet_id,
+					weight,
+					activity_level,
+					age_range,
+					bcs,
+					lactation,
+					gestation,
+					gestation_start_date,
+					neutered,
+					energy,
+					protein,
+					fat,
+					created_at,
+					ROW_NUMBER() OVER (
+						PARTITION BY pet_id
+						ORDER BY created_at DESC, id DESC
+					) AS rn
+				FROM pet_details
+				WHERE pet_id IN ?
+					AND created_at < ?
+			) ranked
+			WHERE rn = 1
+		),
+		relevant_details AS (
+			SELECT * FROM recent_details
+			UNION ALL
+			SELECT * FROM previous_details
+		)
+		SELECT
+			id,
+			pet_id,
+			weight,
+			activity_level,
+			age_range,
+			bcs,
+			lactation,
+			gestation,
+			gestation_start_date,
+			neutered,
+			energy,
+			protein,
+			fat,
+			created_at
+		FROM relevant_details
+		ORDER BY pet_id ASC, created_at DESC, id DESC;
+	`
+
+	details := []model.PetDetail{}
+	if err := r.db.WithContext(ctx).Raw(detailsQuery, petIDs, oneMonthAgo, petIDs, oneMonthAgo).Scan(&details).Error; err != nil {
+		return nil, fmt.Errorf("failed to get pet details for monthly reminder: %w", err)
+	}
+
+	for _, detail := range details {
+		idx, ok := petIndexByID[detail.PetID]
+		if !ok {
+			continue
+		}
+		pets[idx].PetDetails = append(pets[idx].PetDetails, detail)
+	}
+
+	return pets, nil
+}
 
 func (r *petRepository) GetLatestPetDetailByPetID(ctx context.Context, petID uint) (*model.PetDetail, error) {
 	var petDetail model.PetDetail
@@ -198,7 +312,6 @@ func (r *petRepository) GetPetDetialsFromPetID(ctx context.Context, petID uint) 
 	return petDetails, nil
 }
 
-// not test
 func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error) {
 	currentDate := time.Now()
 	oneYearAgo := currentDate.AddDate(-1, 0, 0)
@@ -259,7 +372,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				d.protein,
 				d.fat,
 				d.weight,
-				d.activity_level
+				d.activity_level,
+				d.bcs
 			FROM relevant_history h
 			JOIN pet_food_plan_totals t ON t.id = h.pet_food_plan_total_id
 			JOIN pet_details d ON d.id = t.pet_detail_id
@@ -277,7 +391,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				protein,
 				fat,
 				weight,
-				activity_level
+				activity_level,
+				bcs
 			FROM history_intervals
 		),
 		split_by_month AS (
@@ -294,7 +409,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				b.protein,
 				b.fat,
 				b.weight,
-				b.activity_level
+				b.activity_level,
+				b.bcs
 			FROM bounded_intervals b
 			JOIN LATERAL generate_series(
 				date_trunc('month', b.effective_start),
@@ -317,6 +433,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				fat,
 				weight,
 				activity_level,
+				bcs,
 				EXTRACT(EPOCH FROM (segment_end - segment_start)) AS weight_seconds
 			FROM split_by_month
 			WHERE segment_end > segment_start
@@ -331,7 +448,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SUM(protein * weight_seconds) / SUM(weight_seconds) AS protein,
 			SUM(fat * weight_seconds) / SUM(weight_seconds) AS fat,
 			(ARRAY_AGG(weight ORDER BY source_created_at DESC, history_id DESC))[1] AS weight,
-			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level
+			(ARRAY_AGG(activity_level ORDER BY source_created_at DESC, history_id DESC))[1]::int AS activity_level,
+			(ARRAY_AGG(bcs ORDER BY source_created_at DESC, history_id DESC))[1]::int AS bcs
 		FROM weighted_data
 		GROUP BY year, month
 		ORDER BY year, month;
