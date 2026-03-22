@@ -72,10 +72,10 @@ func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, imageBa
 	schema := &genai.Schema{
 		Type: genai.TypeObject,
 		Properties: map[string]*genai.Schema{
-			"protein":  {Type: genai.TypeNumber, Description: "Regular food: crude protein percent. Supplement/serving-based product: protein grams per recommended daily amount. -1 if not found."},
-			"fat":      {Type: genai.TypeNumber, Description: "Regular food: crude fat percent. Supplement/serving-based product: fat grams per recommended daily amount. -1 if not found."},
+			"protein":  {Type: genai.TypeNumber, Description: "Regular food: crude protein percent. Supplement/serving-based product: protein grams per one serving unit. -1 if not found."},
+			"fat":      {Type: genai.TypeNumber, Description: "Regular food: crude fat percent. Supplement/serving-based product: fat grams per one serving unit. -1 if not found."},
 			"moisture": {Type: genai.TypeNumber, Description: "Moisture percent when available. -1 if not found."},
-			"energy":   {Type: genai.TypeNumber, Description: "Regular food: energy in kcal/100g (or per recommended amount if explicitly provided). Supplement/serving-based product: kcal per recommended daily amount. -1 if not found."},
+			"energy":   {Type: genai.TypeNumber, Description: "Regular food: energy in kcal/100g (or per recommended amount if explicitly provided). Supplement/serving-based product: kcal per one serving unit. -1 if not found."},
 		},
 		Required: []string{"protein", "fat", "moisture", "energy"},
 	}
@@ -102,12 +102,13 @@ func (s *ocrService) ProcessOcrRequest(ctx context.Context, userID uint, imageBa
 	instruction := `Extract nutrition from one pet product label (one product, one type).
 					Detect type: complete food, treat, topper, or supplement.
 					If supplement:
-					- Use feeding directions and calculate values for one recommended unit (for example 1 tsp, scoop, tablet, capsule, mL).
-					- protein and fat: grams per one recommended unit.
-					- energy: kcal per one recommended unit.
+					- Use feeding directions and calculate values for one serving unit (for example 1 tsp, scoop, tablet, capsule, mL).
+					- protein and fat: grams per one serving unit.
+					- energy: kcal per one serving unit.
 					- If protein/fat are given as percent, convert with:
-					nutrient_grams = (percent / 100) * grams_of_recommended_unit.
-					- Use grams_of_recommended_unit only from explicit label data. You may infer it only from explicit paired values (for example kcal/kg + kcal/tsp). If still unknown, return -1 for dependent fields.
+					nutrient_grams = (percent_nutritient / 100) * grams_of_serving_unit (find grams of each 1 serving unit such as  tsp, scoop, tablet, capsule, mL - consider about wet or dry).
+					- Use grams_of_serving_unit only from explicit label data. You may infer it only from explicit paired values (for example kcal/kg + kcal/tsp). If still unknown, return -1 for dependent fields.
+					end for If supplement:
 					If complete food/treat/topper:
 					- protein, fat, moisture = crude percentages.
 					- energy = kcal/100g (convert from kcal/kg if needed).

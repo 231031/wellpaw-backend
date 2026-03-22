@@ -9,10 +9,10 @@ type Food struct {
 	Name        string         `gorm:"not null;type:varchar(255)" json:"name" validate:"required"`
 	Brand       string         `gorm:"not null;type:varchar(255)" json:"brand" validate:"required"`
 	Type        *FoodType      `gorm:"not null" json:"type" validate:"required,oneof=0 1 2 3"`
-	Energy      float64        `gorm:"not null" json:"energy" validate:"required,gt=-1"`
-	Protein     float64        `gorm:"not null" json:"protein" validate:"required,gt=-1"`
-	Fat         float64        `gorm:"not null" json:"fat" validate:"required,gt=-1"`
-	Moist       float64        `gorm:"not null" json:"moist" validate:"required,gt=-1"`
+	Energy      float64        `gorm:"not null" json:"energy" validate:"gt=-1"`
+	Protein     float64        `gorm:"not null" json:"protein" validate:"gt=-1"`
+	Fat         float64        `gorm:"not null" json:"fat" validate:"gt=-1"`
+	Moist       float64        `gorm:"not null" json:"moist" validate:"gt=-1"`
 	GramsPerCup float64        `gorm:"not null;default:120" json:"grams_per_cup"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
