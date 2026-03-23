@@ -27,7 +27,7 @@ type DiseaseService interface {
 	GetPetSkinImagesByUserID(ctx context.Context, userID uint) *model.HTTPResponse
 	GetPetSkinImagesByPetID(ctx context.Context, userID uint, petID uint) *model.HTTPResponse
 	LabeledPetSkinDisease(ctx context.Context, userID uint, payload *model.LabeledPetSkinDiseasePayload) *model.HTTPResponse
-	UploadSkinImage(petType model.PetType, predicted model.DiseaseType, imageBase64 string) (string, error)
+	UploadSkinImage(userID uint, petID uint, predicted model.DiseaseType, imageBase64 string) (string, error)
 	mapPetSkinClassToDiseaseType(petType model.PetType, classIndex int) (model.DiseaseType, bool)
 }
 
@@ -153,7 +153,7 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 		return resp
 	}
 
-	imagePath, err := s.UploadSkinImage(*pet.Type, predicted, payload.Image)
+	imagePath, err := s.UploadSkinImage(userID, pet.ID, predicted, payload.Image)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
@@ -345,7 +345,7 @@ func (s *diseaseService) mapPetSkinClassToDiseaseType(petType model.PetType, cla
 	}
 }
 
-func (s *diseaseService) UploadSkinImage(petType model.PetType, predicted model.DiseaseType, imageBase64 string) (string, error) {
+func (s *diseaseService) UploadSkinImage(userID uint, petID uint, predicted model.DiseaseType, imageBase64 string) (string, error) {
 	decodedImage, err := base64.StdEncoding.DecodeString(imageBase64)
 	if err != nil {
 		decodedImage, err = base64.RawStdEncoding.DecodeString(imageBase64)
@@ -358,8 +358,7 @@ func (s *diseaseService) UploadSkinImage(petType model.PetType, predicted model.
 	ext := utils.DetectContentType(contentType)
 
 	predictedPath := strings.ToLower(strings.ReplaceAll(predicted.String(), " ", "_"))
-	petTypePath := strings.ToLower(strings.ReplaceAll(petType.String(), " ", "_"))
-	objectName := fmt.Sprintf("disease/%s/%s/%s%s", predictedPath, petTypePath, uuid.NewString(), ext)
+	objectName := fmt.Sprintf("disease/%s/%d/%d/%s%s", predictedPath, userID, petID, uuid.NewString(), ext)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
