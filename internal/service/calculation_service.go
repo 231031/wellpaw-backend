@@ -133,22 +133,33 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 	}
 
 	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok {
-		// energy per serving
+		// energy per recommended serving
 		reqEnergy = reqEnergy - supEnergy*supAmount
 	}
 
-	if _, ok := checkType[model.TREATS]; ok {
-		checkType[model.TREATS] = 0.1
+	ratioByType := map[model.FoodType]float64{}
+	_, hasDry := checkType[model.DRY]
+	_, hasWet := checkType[model.WET]
+	_, hasTreat := checkType[model.TREATS]
 
-		foodPercent := 1.0 - checkType[model.TREATS]
-		checkType[model.DRY] = foodPercent * 0.70
-		checkType[model.WET] = foodPercent * 0.30
-	} else if _, ok := checkType[model.WET]; ok {
-		checkType[model.DRY] = 0.70
-		checkType[model.WET] = 0.30
-		checkType[model.TREATS] = 0
+	if hasDry && hasWet && hasTreat {
+		ratioByType[model.TREATS] = 0.1
+		foodPercent := 1.0 - ratioByType[model.TREATS]
+		ratioByType[model.DRY] = foodPercent * 0.70
+		ratioByType[model.WET] = foodPercent * 0.30
+	} else if hasDry && hasWet {
+		ratioByType[model.DRY] = 0.70
+		ratioByType[model.WET] = 0.30
+	} else if hasDry && hasTreat {
+		ratioByType[model.TREATS] = 0.10
+		ratioByType[model.DRY] = 0.90
+	} else if hasWet && hasTreat {
+		ratioByType[model.TREATS] = 0.10
+		ratioByType[model.WET] = 0.90
+	} else if hasWet {
+		ratioByType[model.WET] = 1.0
 	} else {
-		checkType[model.DRY] = 1.0
+		ratioByType[model.DRY] = 1.0
 	}
 
 	var foodPlanDetails []*model.PetFoodPlanDetail
@@ -163,7 +174,7 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 			})
 			continue
 		}
-		enegyIntakePerF := reqEnergy * checkType[*f.Type]
+		enegyIntakePerF := reqEnergy * ratioByType[*f.Type]
 		feedingDetail := s.calFeedingAmountEachFoodPerDay(enegyIntakePerF, f)
 		foodPlanDetails = append(foodPlanDetails, feedingDetail)
 	}

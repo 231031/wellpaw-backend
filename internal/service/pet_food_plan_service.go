@@ -281,6 +281,8 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 	if plan.Unit == model.CUP {
 		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
 	}
+
+	activePlanDetail.CreatedAt = utils.ConvertTimeToThaiTimezone(activePlanDetail.CreatedAt)
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
@@ -323,6 +325,8 @@ func (s *petFoodPlanService) GetLastestActivePlanDetailByPet(ctx context.Context
 	if activePlanDetail.Unit == model.CUP {
 		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
 	}
+
+	activePlanDetail.CreatedAt = utils.ConvertTimeToThaiTimezone(activePlanDetail.CreatedAt)
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
