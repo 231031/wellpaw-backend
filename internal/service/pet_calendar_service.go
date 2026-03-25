@@ -195,7 +195,7 @@ func (s *petCalendarService) mapPetActivityEventsToThaiTimezone(activityEvents [
 		}
 
 		if activityEvents[idx].Pet != nil {
-			activityEvents[idx].Pet.BirthDate = utils.ConvertTimeToThaiTimezone(activityEvents[idx].Pet.BirthDate)
+			activityEvents[idx].Pet.BirthDate = utils.ConvertDateToThaiMidnight(activityEvents[idx].Pet.BirthDate)
 			activityEvents[idx].Pet.CreatedAt = utils.ConvertTimeToThaiTimezone(activityEvents[idx].Pet.CreatedAt)
 			activityEvents[idx].Pet.UpdatedAt = utils.ConvertTimeToThaiTimezone(activityEvents[idx].Pet.UpdatedAt)
 		}
@@ -222,7 +222,7 @@ func (s *petCalendarService) mapPetCalendarsToThaiTimezone(petCalendars []model.
 				continue
 			}
 
-			petCalendars[idx].ActivityEvents[eventIdx].Pet.BirthDate = utils.ConvertTimeToThaiTimezone(petCalendars[idx].ActivityEvents[eventIdx].Pet.BirthDate)
+			petCalendars[idx].ActivityEvents[eventIdx].Pet.BirthDate = utils.ConvertDateToThaiMidnight(petCalendars[idx].ActivityEvents[eventIdx].Pet.BirthDate)
 			petCalendars[idx].ActivityEvents[eventIdx].Pet.CreatedAt = utils.ConvertTimeToThaiTimezone(petCalendars[idx].ActivityEvents[eventIdx].Pet.CreatedAt)
 			petCalendars[idx].ActivityEvents[eventIdx].Pet.UpdatedAt = utils.ConvertTimeToThaiTimezone(petCalendars[idx].ActivityEvents[eventIdx].Pet.UpdatedAt)
 		}
@@ -242,6 +242,6 @@ func (s *petCalendarService) convertPetCalendarToThaiTimezone(petCalendar *model
 	}
 
 	petCalendar.StartDatetime = utils.ConvertTimeToThaiTimezone(petCalendar.StartDatetime)
-	petCalendar.EndDate = utils.ConvertTimeToThaiTimezone(petCalendar.EndDate)
+	petCalendar.EndDate = utils.ConvertDateToThaiMidnight(petCalendar.EndDate)
 	petCalendar.CreatedAt = utils.ConvertTimeToThaiTimezone(petCalendar.CreatedAt)
 }

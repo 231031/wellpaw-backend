@@ -478,11 +478,74 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 
 func (r *petRepository) GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error) {
 	var pets []model.Pet
-	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
-		return db.Order("created_at DESC").Limit(1)
-	}).Where("user_id = ?", id).Find(&pets).Error
-	if err != nil {
+	if err := r.db.WithContext(ctx).Where("user_id = ?", id).Find(&pets).Error; err != nil {
 		return nil, fmt.Errorf("failed to get pet by user id : %w", err)
+	}
+
+	if len(pets) == 0 {
+		return pets, nil
+	}
+
+	petIDs := make([]uint, 0, len(pets))
+	petIndexByID := make(map[uint]int, len(pets))
+	for idx, pet := range pets {
+		petIDs = append(petIDs, pet.ID)
+		petIndexByID[pet.ID] = idx
+	}
+
+	latestDetailQuery := `
+		SELECT
+			id,
+			pet_id,
+			weight,
+			activity_level,
+			age_range,
+			bcs,
+			lactation,
+			gestation,
+			gestation_start_date,
+			neutered,
+			energy,
+			protein,
+			fat,
+			created_at
+		FROM (
+			SELECT
+				id,
+				pet_id,
+				weight,
+				activity_level,
+				age_range,
+				bcs,
+				lactation,
+				gestation,
+				gestation_start_date,
+				neutered,
+				energy,
+				protein,
+				fat,
+				created_at,
+				ROW_NUMBER() OVER (
+					PARTITION BY pet_id
+					ORDER BY created_at DESC, id DESC
+				) AS rn
+			FROM pet_details
+			WHERE pet_id IN ?
+		) ranked
+		WHERE rn = 1;
+	`
+
+	latestDetails := []model.PetDetail{}
+	if err := r.db.WithContext(ctx).Raw(latestDetailQuery, petIDs).Scan(&latestDetails).Error; err != nil {
+		return nil, fmt.Errorf("failed to get latest pet details by user id : %w", err)
+	}
+
+	for _, detail := range latestDetails {
+		idx, ok := petIndexByID[detail.PetID]
+		if !ok {
+			continue
+		}
+		pets[idx].PetDetails = []model.PetDetail{detail}
 	}
 
 	return pets, nil

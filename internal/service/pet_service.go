@@ -90,6 +90,7 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, petInfo.UserID, freeUsage)
 	// }
 
+	petDetail.CreatedAt = utils.ConvertTimeToThaiTimezone(petDetail.CreatedAt)
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
@@ -105,6 +106,13 @@ func (s *petService) GetPetsByUserID(ctx context.Context, userID uint) *model.HT
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "pets",
+		}
+	}
+
+	for idx := range pets {
+		s.convertPetCreatedAtToThaiTimezone(&pets[idx])
+		if len(pets[idx].PetDetails) > 0 {
+			s.convertPetDetailCreatedAtToThaiTimezone(&pets[idx].PetDetails[0])
 		}
 	}
 
@@ -135,6 +143,13 @@ func (s *petService) GetPetByID(ctx context.Context, petID uint) *model.HTTPResp
 	if len(pet.PetDetails) > 0 {
 		petDetail = pet.PetDetails[0]
 	}
+
+	s.convertPetCreatedAtToThaiTimezone(pet)
+	s.convertPetDetailCreatedAtToThaiTimezone(&petDetail)
+	if len(pet.PetDetails) > 0 {
+		s.convertPetDetailCreatedAtToThaiTimezone(&pet.PetDetails[0])
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data: map[string]interface{}{
@@ -183,6 +198,13 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 		}
 	}
 
+	if len(pet.PetDetails) > 0 {
+		s.convertPetDetailCreatedAtToThaiTimezone(&pet.PetDetails[0])
+	}
+	for idx := range planUsageHistories {
+		s.convertPetFoodPlanHistoryCreatedAtToThaiTimezone(&planUsageHistories[idx])
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusCreated,
 		Data: map[string]interface{}{
@@ -215,6 +237,12 @@ func (s *petService) UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *mod
 			Message: "pet information is updated, but failed to get new data",
 		}
 	}
+
+	s.convertPetCreatedAtToThaiTimezone(petInfo)
+	if len(petInfo.PetDetails) > 0 {
+		s.convertPetDetailCreatedAtToThaiTimezone(&petInfo.PetDetails[0])
+	}
+
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   petInfo,
@@ -278,6 +306,12 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 					Status:  http.StatusInternalServerError,
 					Message: utils.FailedToUpdateMsg + "pet detail",
 				}
+			}
+
+			s.convertPetCreatedAtToThaiTimezone(pet)
+			s.convertPetDetailCreatedAtToThaiTimezone(petDetail)
+			if len(pet.PetDetails) > 0 {
+				s.convertPetDetailCreatedAtToThaiTimezone(&pet.PetDetails[0])
 			}
 
 			return &model.HTTPResponse{
@@ -350,6 +384,14 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 	}
 
 	pet.PetDetails[0] = *petDetail
+	s.convertPetCreatedAtToThaiTimezone(pet)
+	s.convertPetDetailCreatedAtToThaiTimezone(petDetail)
+	s.convertPetFoodPlanCreatedAtToThaiTimezone(activePlanDetail)
+
+	if len(pet.PetDetails) > 0 {
+		s.convertPetDetailCreatedAtToThaiTimezone(&pet.PetDetails[0])
+	}
+
 	responseData := map[string]interface{}{
 		"pet_info":      pet,
 		"pet_detail":    petDetail,
@@ -360,6 +402,49 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		Status: http.StatusOK,
 		Data:   responseData,
 	}
+}
+
+func (s *petService) convertPetCreatedAtToThaiTimezone(pet *model.Pet) {
+	if pet == nil {
+		return
+	}
+
+	pet.CreatedAt = utils.ConvertTimeToThaiTimezone(pet.CreatedAt)
+}
+
+func (s *petService) convertPetDetailCreatedAtToThaiTimezone(petDetail *model.PetDetail) {
+	if petDetail == nil {
+		return
+	}
+
+	petDetail.CreatedAt = utils.ConvertTimeToThaiTimezone(petDetail.CreatedAt)
+}
+
+func (s *petService) convertPetFoodPlanCreatedAtToThaiTimezone(petFoodPlan *model.PetFoodPlan) {
+	if petFoodPlan == nil {
+		return
+	}
+
+	petFoodPlan.CreatedAt = utils.ConvertTimeToThaiTimezone(petFoodPlan.CreatedAt)
+}
+
+func (s *petService) convertPetFoodPlanHistoryCreatedAtToThaiTimezone(history *model.PetFoodPlanHistory) {
+	if history == nil {
+		return
+	}
+
+	history.CreatedAt = utils.ConvertTimeToThaiTimezone(history.CreatedAt)
+	history.PlanUsageEndDate = utils.ConvertTimeToThaiTimezone(history.PlanUsageEndDate)
+	if history.PetFoodPlanTotal == nil {
+		return
+	}
+
+	history.PetFoodPlanTotal.CreatedAt = utils.ConvertTimeToThaiTimezone(history.PetFoodPlanTotal.CreatedAt)
+	if history.PetFoodPlanTotal.PetFoodPlan == nil {
+		return
+	}
+
+	history.PetFoodPlanTotal.PetFoodPlan.CreatedAt = utils.ConvertTimeToThaiTimezone(history.PetFoodPlanTotal.PetFoodPlan.CreatedAt)
 }
 
 func (s *petService) SoftDeletePet(ctx context.Context, userID uint, petID uint) *model.HTTPResponse {
