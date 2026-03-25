@@ -310,6 +310,7 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 
 			s.convertPetCreatedAtToThaiTimezone(pet)
 			s.convertPetDetailCreatedAtToThaiTimezone(petDetail)
+			pet.PetDetails[0] = *petDetail
 			if len(pet.PetDetails) > 0 {
 				s.convertPetDetailCreatedAtToThaiTimezone(&pet.PetDetails[0])
 			}
