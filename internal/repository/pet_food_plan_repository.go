@@ -97,7 +97,23 @@ func (r *petFoodPlanRepository) GetFoodsInLastestActivePlanByPetID(ctx context.C
 		Model(&model.FoodPetFoodPlan{}).
 		Preload("PetFoodPlan").
 		Preload("PetFoodPlanDetails", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at DESC, id DESC").Limit(1)
+			latestDetailByFoodPlan := `
+				id IN (
+					SELECT id
+					FROM (
+						SELECT
+							id,
+							food_pet_food_plan_id,
+							ROW_NUMBER() OVER (
+								PARTITION BY food_pet_food_plan_id
+								ORDER BY created_at DESC, id DESC
+							) AS rn
+						FROM pet_food_plan_details
+					) ranked
+					WHERE rn = 1
+				)
+			`
+			return db.Where(latestDetailByFoodPlan).Order("created_at DESC, id DESC")
 		}).
 		Preload("PetFoodPlan.PetFoodPlanTotals", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC, id DESC").Limit(1)

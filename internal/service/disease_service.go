@@ -181,6 +181,7 @@ func (s *diseaseService) PredictPetSkinDisease(ctx context.Context, userID uint,
 	// 	s.freeValidationService.UpdateFreeTierUsage(ctx, userID, freeUsage)
 	// }
 
+	petSkinImage.CreatedAt = utils.ConvertTimeToThaiTimezone(petSkinImage.CreatedAt)
 	petSkinImage.Disease = petSkinImage.Predicted.String()
 	petSkinImage.Confident = s.convertConfidentToRangeConfident(petSkinImage.Confident)
 	return &model.HTTPResponse{
@@ -285,6 +286,7 @@ func (s *diseaseService) mapPetSkinImagesDisease(petSkinImages []model.PetSkinIm
 	}
 
 	for idx := range petSkinImages {
+		petSkinImages[idx].CreatedAt = utils.ConvertTimeToThaiTimezone(petSkinImages[idx].CreatedAt)
 		petSkinImages[idx].Disease = petSkinImages[idx].Predicted.String()
 		petSkinImages[idx].Confident = s.convertConfidentToRangeConfident(petSkinImages[idx].Confident)
 	}
