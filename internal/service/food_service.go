@@ -41,6 +41,12 @@ func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.F
 	// if resp != nil {
 	// 	return resp
 	// }
+	if *food.Type != model.SUPPLEMENTS && food.Energy <= 0 {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "the energy should more than 0",
+		}
+	}
 
 	foodQuantity := &model.FoodQuantity{
 		Weight:   food.Weight,

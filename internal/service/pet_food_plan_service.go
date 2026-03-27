@@ -103,6 +103,8 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		foodsDetail[food.ID] = food
 	}
 
+	// check have just treats aren't allowed
+
 	if allHaveAmount {
 		for _, food := range payload.Foods {
 			foodDetail := foodsDetail[food.FoodID]
@@ -116,7 +118,7 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 			})
 		}
 	} else {
-		var supAmount float64
+		supAmount := map[uint]float64{}
 		for _, food := range payload.Foods {
 			if *foodsDetail[food.FoodID].Type == model.SUPPLEMENTS {
 				if food.Amount <= 0 {
@@ -125,7 +127,20 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 						Message: "invalid amount intake of supplement",
 					}
 				}
-				supAmount = food.Amount
+				supAmount[food.FoodID] = food.Amount
+			}
+		}
+
+		var totalEnergySup float64
+		for _, f := range foods {
+			if *f.Type == model.SUPPLEMENTS {
+				totalEnergySup += supAmount[f.ID] * f.Energy
+			}
+		}
+		if totalEnergySup >= petDetail.Energy*0.5 {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "invalid amount intake of supplement, too much",
 			}
 		}
 		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)

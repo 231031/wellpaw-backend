@@ -115,6 +115,11 @@ func loadFoodJSON(filename string) ([]model.Food, error) {
 	if err := json.Unmarshal(raw, &foods); err != nil {
 		return nil, fmt.Errorf("unmarshal %s: %w", filename, err)
 	}
+	for i := range foods {
+		if foods[i].ID == 0 {
+			foods[i].ID = uint(i + 1)
+		}
+	}
 
 	return foods, nil
 }
@@ -147,7 +152,17 @@ func pickFoodsForCase(t *testing.T, allFoods []model.Food, indexes []int, overri
 			t.Fatalf("food index out of range: position=%d index=%d max=%d", pos, idx, len(allFoods)-1)
 		}
 		food := allFoods[idx]
+		if food.ID == 0 {
+			food.ID = uint(pos + 1)
+		}
+		if food.Type != nil {
+			foodType := *food.Type
+			food.Type = &foodType
+		}
 		if overrideType, ok := overrideByPos[pos]; ok {
+			if food.Type == nil {
+				food.Type = new(model.FoodType)
+			}
 			*food.Type = overrideType
 		}
 		foods = append(foods, food)
@@ -155,15 +170,14 @@ func pickFoodsForCase(t *testing.T, allFoods []model.Food, indexes []int, overri
 	return foods
 }
 
-func getSupplementAmountForCase(t *testing.T, tc calFeedingCase, foods []model.Food) float64 {
+func getSupplementAmountForCase(t *testing.T, tc calFeedingCase, foods []model.Food) map[uint]float64 {
 	t.Helper()
 
 	if len(tc.Amounts) > 0 && len(tc.Amounts) != len(foods) {
-		t.Fatalf("invalid testcase %q: amount=%d foods=%d", tc.Name, len(tc.Amounts), len(foods))
+		t.Fatalf("invalid testcase %q: amounts=%d foods=%d", tc.Name, len(tc.Amounts), len(foods))
 	}
 
-	var supAmount float64
-	foundSupplement := false
+	supAmount := map[uint]float64{}
 
 	for pos, food := range foods {
 		if food.Type == nil {
@@ -180,12 +194,14 @@ func getSupplementAmountForCase(t *testing.T, tc calFeedingCase, foods []model.F
 		if amount <= 0 {
 			t.Fatalf("invalid testcase %q: supplement amount must be > 0 at position=%d, got %.10f", tc.Name, pos, amount)
 		}
-		if foundSupplement && !isAlmostEqualFloat(supAmount, amount, 0.0000001) {
-			t.Fatalf("invalid testcase %q: only one supplement amount is supported, got %.10f and %.10f", tc.Name, supAmount, amount)
+		if food.ID == 0 {
+			t.Fatalf("invalid testcase %q: supplement food id is required at position=%d", tc.Name, pos)
 		}
 
-		supAmount = amount
-		foundSupplement = true
+		if _, exists := supAmount[food.ID]; exists {
+			t.Fatalf("invalid testcase %q: duplicate supplement food id=%d at position=%d", tc.Name, food.ID, pos)
+		}
+		supAmount[food.ID] = amount
 	}
 
 	return supAmount
@@ -214,10 +230,6 @@ func normalizeFloat(value float64, tolerance float64) float64 {
 		return value
 	}
 	return math.Round(value/tolerance) * tolerance
-}
-
-func isAlmostEqualFloat(a, b, tolerance float64) bool {
-	return math.Abs(a-b) <= tolerance
 }
 
 func parseCaseSelector(raw string) map[string]struct{} {

@@ -13,7 +13,7 @@ type CalculationService interface {
 	CalEnergyIntakeFromGramIntake(gramsIntake, energyFood float64, typeFood model.FoodType) float64
 	CalNutritientIntakeFromGramIntake(gramsIntake, proteinFood, fatFood float64, typeFood model.FoodType) (float64, float64)
 	calFeedingAmountEachFoodPerDay(energyIntake float64, food model.Food) *model.PetFoodPlanDetail
-	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount float64) []*model.PetFoodPlanDetail
+	CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount map[uint]float64) []*model.PetFoodPlanDetail
 	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
 	ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan)
 	CalculateGramsToCup(foodPetFoodPlan model.PetFoodPlanDetail) float64
@@ -124,17 +124,29 @@ func (s *calculationService) calFeedingAmountEachFoodPerDay(energyIntake float64
 	return foodPlanDetail
 }
 
-func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount float64) []*model.PetFoodPlanDetail {
+func (s *calculationService) calEnergyIntakeFromReqEnergy(reqEnergy float64, ratioFoodType float64, typeCount int) float64 {
+	return (reqEnergy * ratioFoodType) / float64(typeCount)
+}
+
+func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, foods []model.Food, supAmount map[uint]float64) []*model.PetFoodPlanDetail {
 	reqEnergy := petDetail.Energy
 
+	treatCount := 0
+	dryCount := 0
+	wetCount := 0
 	checkType := map[model.FoodType]float64{}
 	for _, f := range foods {
 		checkType[*f.Type] = f.Energy
-	}
-
-	if supEnergy, ok := checkType[model.SUPPLEMENTS]; ok {
-		// energy per recommended serving
-		reqEnergy = reqEnergy - supEnergy*supAmount
+		switch *f.Type {
+		case model.SUPPLEMENTS:
+			reqEnergy = reqEnergy - f.Energy*supAmount[f.ID]
+		case model.DRY:
+			dryCount++
+		case model.WET:
+			wetCount++
+		case model.TREATS:
+			treatCount++
+		}
 	}
 
 	ratioByType := map[model.FoodType]float64{}
@@ -164,17 +176,25 @@ func (s *calculationService) CalFeedingAmountPerDay(petDetail *model.PetDetail, 
 
 	var foodPlanDetails []*model.PetFoodPlanDetail
 	for _, f := range foods {
-		if *f.Type == model.SUPPLEMENTS {
+		var enegyIntakePerF float64
+		foodType := *f.Type
+		switch foodType {
+		case model.SUPPLEMENTS:
 			foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
 				// feeding base on recommended of specific supplement (same unit intake with nutritient)
-				Amount:        supAmount,
-				EnergyIntake:  f.Energy * supAmount,
-				ProteinIntake: f.Protein * supAmount,
-				FatIntake:     f.Fat * supAmount,
+				Amount:        supAmount[f.ID],
+				EnergyIntake:  f.Energy * supAmount[f.ID],
+				ProteinIntake: f.Protein * supAmount[f.ID],
+				FatIntake:     f.Fat * supAmount[f.ID],
 			})
 			continue
+		case model.DRY:
+			enegyIntakePerF = s.calEnergyIntakeFromReqEnergy(reqEnergy, ratioByType[foodType], dryCount)
+		case model.WET:
+			enegyIntakePerF = s.calEnergyIntakeFromReqEnergy(reqEnergy, ratioByType[foodType], wetCount)
+		case model.TREATS:
+			enegyIntakePerF = s.calEnergyIntakeFromReqEnergy(reqEnergy, ratioByType[foodType], treatCount)
 		}
-		enegyIntakePerF := reqEnergy * ratioByType[*f.Type]
 		feedingDetail := s.calFeedingAmountEachFoodPerDay(enegyIntakePerF, f)
 		foodPlanDetails = append(foodPlanDetails, feedingDetail)
 	}
