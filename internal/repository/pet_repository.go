@@ -131,9 +131,10 @@ func (r *petRepository) GetPetsLatestOneMonthPetDetail(ctx context.Context, late
 
 	pets := []model.Pet{}
 	err := r.db.WithContext(ctx).
+		Joins("JOIN users ON pets.user_id = users.id").
+		Where("pets.id > ? AND users.noti_update_pet = ?", latestID, true).
 		Preload("User").
-		Where("id > ?", latestID).
-		Order("id ASC").
+		Order("pets.id ASC").
 		Limit(100).
 		Find(&pets).Error
 
