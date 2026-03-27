@@ -29,6 +29,10 @@ func (s *fcmService) SendNotifications(
 	ctx context.Context,
 	params []model.SendNotificationParams,
 ) (*messaging.BatchResponse, error) {
+	if s.fcmClient == nil {
+		return nil, fmt.Errorf("fcmClient is not initialized")
+	}
+
 	if len(params) == 0 {
 		return &messaging.BatchResponse{
 			SuccessCount: 0,

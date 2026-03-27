@@ -138,6 +138,12 @@ func (s *foodService) GetFoodByIDAndUserID(ctx context.Context, userID uint, foo
 }
 
 func (s *foodService) CreateNewFoodQuantity(ctx context.Context, userID uint, payload *model.FoodQuantity) *model.HTTPResponse {
+	if payload.FoodID == 0 {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "select the food before update quantities",
+		}
+	}
 	payload.Amount = payload.Weight * float64(payload.Quantity)
 	if err := s.foodRepo.CreateNewFoodQuantity(ctx, payload); err != nil {
 		if errors.Is(err, utils.ErrNoRowsUpdated) {

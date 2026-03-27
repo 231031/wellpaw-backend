@@ -313,8 +313,9 @@ func (r *petRepository) GetPetDetialsFromPetID(ctx context.Context, petID uint) 
 }
 
 func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error) {
-	currentDate := time.Now()
-	oneYearAgo := currentDate.AddDate(-1, 0, 0)
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	nowThai := time.Now().In(loc)
+	oneYearAgo := nowThai.AddDate(-1, 0, 0)
 
 	var pet model.Pet
 	err := r.db.WithContext(ctx).Preload("PetDetails", func(db *gorm.DB) *gorm.DB {
@@ -413,8 +414,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				b.bcs
 			FROM bounded_intervals b
 			JOIN LATERAL generate_series(
-				date_trunc('month', b.effective_start),
-				date_trunc('month', b.effective_end),
+				date_trunc('month', b.effective_start AT TIME ZONE 'Asia/Bangkok'),
+				date_trunc('month', b.effective_end AT TIME ZONE 'Asia/Bangkok'),
 				INTERVAL '1 month'
 			) AS gs(month_start) ON TRUE
 			WHERE b.effective_end > b.effective_start
@@ -458,16 +459,16 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 		twaQuery,
 		// cte1
 		id,
-		oneYearAgo,  // lower bound of analysis window
-		currentDate, // upper bound of analysis window
+		oneYearAgo, // lower bound of analysis window
+		nowThai,    // upper bound of analysis window
 		// cte2
 		id,
 		oneYearAgo, // pick latest row before analysis window
 		// cte4
-		currentDate, // fallback interval_end for latest history row
+		nowThai, // fallback interval_end for latest history row
 		// cte5
-		oneYearAgo,  // lower bound of analysis window
-		currentDate, // upper bound of analysis window
+		oneYearAgo, // lower bound of analysis window
+		nowThai,    // upper bound of analysis window
 	).Scan(&monthlyTWA).Error; err != nil {
 		return nil, fmt.Errorf("failed to get monthly TWA by pet id : %w", err)
 	}
