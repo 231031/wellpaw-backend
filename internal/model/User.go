@@ -17,6 +17,7 @@ type User struct {
 	LastName           string                 `gorm:"not null;type:varchar(255)" json:"last_name" validate:"required"`
 	NotiFood           bool                   `gorm:"type:boolean;default:true;not null" json:"noti_food"`
 	NotiCalendars      bool                   `gorm:"type:boolean;default:true;not null" json:"noti_calendars"`
+	NotiUpdatePet      bool                   `gorm:"type:boolean;default:true;not null" json:"noti_update_pet"`
 	ProfileFree        int                    `gorm:"default:0;not null" json:"profile_free"`
 	FoodFree           int                    `gorm:"default:0;not null" json:"food_free"`
 	FoodPlanFree       int                    `gorm:"default:0;not null" json:"food_plan_free"`

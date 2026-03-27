@@ -1929,6 +1929,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/notification/pet": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "manage update pet notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Manage Update Pet Notification",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/paymentintent/{payment_intent_id}": {
             "get": {
                 "security": [
@@ -2555,11 +2595,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "brand",
-                "energy",
-                "fat",
-                "moist",
                 "name",
-                "protein",
                 "quantity",
                 "type",
                 "user_id",
@@ -3937,6 +3973,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "noti_food": {
+                    "type": "boolean"
+                },
+                "noti_update_pet": {
                     "type": "boolean"
                 },
                 "password": {

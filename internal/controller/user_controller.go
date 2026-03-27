@@ -24,6 +24,7 @@ type UserController interface {
 
 	ManageFoodNotification(ctx *fiber.Ctx) error
 	ManageCalendarNotification(ctx *fiber.Ctx) error
+	ManageUpdatePetNotification(ctx *fiber.Ctx) error
 }
 
 type userController struct {
@@ -276,5 +277,25 @@ func (c *userController) ManageCalendarNotification(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.userService.ManageCalendarNotification(ctxWithTimeOut, userID)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Manage Update Pet Notification
+// @Description manage update pet notification
+// @tags User
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} model.UserResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /user/notification/pet [get]
+func (c *userController) ManageUpdatePetNotification(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.userService.ManageUpdatePetNotification(ctxWithTimeOut, userID)
 	return ctx.Status(response.Status).JSON(response)
 }
