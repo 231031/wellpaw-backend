@@ -20,14 +20,14 @@ func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planI
 		if pi.OutTime == model.NOW {
 			notificationMsg = model.SendNotificationParams{
 				Token: p.Pet.User.DeviceToken,
-				Title: fmt.Sprintf("%s Plan require update food quantities", p.Name),
-				Body:  fmt.Sprintf("foods in %s Plan already out of amount and WellPaw will cannot track your food amount even the plan is stil active", p.Name),
+				Title: fmt.Sprintf("แผนอาหาร %s ควรอัพเดตปริมาณอาหาร", p.Name),
+				Body:  fmt.Sprintf("อาหารในคลังของแผน %s หมดแล้วและ WellPaw จะไม่สามารถติดตามปริมาณอาหารของคุณได้แม้แผนจะยังคงใช้งานอยู่", p.Name),
 			}
 		} else {
 			notificationMsg = model.SendNotificationParams{
 				Token: p.Pet.User.DeviceToken,
-				Title: fmt.Sprintf("%s Plan require update food quantities", p.Name),
-				Body:  fmt.Sprintf("foods in %s Plan will out of amount soon and WellPaw will cannot track your food amount even the plan is stil active", p.Name),
+				Title: fmt.Sprintf("แผนอาหาร %s ควรอัพเดตปริมาณอาหาร", p.Name),
+				Body:  fmt.Sprintf("อาหารในคลังของแผน %s ใกล้หมดแล้วและ WellPaw จะไม่สามารถติดตามปริมาณอาหารของคุณได้แม้แผนจะยังคงใช้งานอยู่", p.Name),
 			}
 		}
 		notificationsMsg = append(notificationsMsg, notificationMsg)
@@ -88,7 +88,7 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 			}
 
 			// check 3 days
-			_, insufficinetAmount := cj.checkQuatityFoodDaily(p, 3)
+			_, insufficinetAmount := cj.checkQuatityFoodDaily(p, 4)
 			if insufficinetAmount {
 				notiPlan := model.NotificationPlan{
 					Plan:    *p,

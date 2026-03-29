@@ -25,11 +25,12 @@ func restrictedChangedInWindow(details []model.PetDetail) bool {
 		return false
 	}
 
+	lastRec := details[len(details)-1]
 	oneMonthAgo := time.Now().AddDate(0, -1, 0)
-	if len(details) == 1 {
-		if oneMonthAgo.Before(details[0].CreatedAt) {
-			return true
-		}
+	if oneMonthAgo.Before(lastRec.CreatedAt) {
+		return true
+	} else if len(details) == 1 {
+		// one month ago after or equal to last record
 		return false
 	}
 
@@ -62,8 +63,8 @@ func buildUpdatePetDetailNotification(p model.Pet) (model.SendNotificationParams
 
 	return model.SendNotificationParams{
 		Token: token,
-		Title: fmt.Sprintf("%s should update weight and bcs", petName),
-		Body:  fmt.Sprintf("%s should update detail every one month", petName),
+		Title: fmt.Sprintf("%s ควรอัพเดตน้ำหนัก", petName),
+		Body:  fmt.Sprintf("%s ควรอัพเดตน้ำหนักทุกเดือน", petName),
 		Data: map[string]string{
 			"type":   "pet_detail_update",
 			"pet_id": strconv.Itoa(int(p.ID)),
