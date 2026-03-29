@@ -32,6 +32,7 @@ func RouteUser(router fiber.Router, userController controller.UserController, au
 
 	userRoute.Get("/notification/food", userController.ManageFoodNotification)
 	userRoute.Get("/notification/calendar", userController.ManageCalendarNotification)
+	userRoute.Get("/notification/pet", userController.ManageUpdatePetNotification)
 
 	paymentUserRoute := userRoute.Group("/payment")
 	paymentUserRoute.Patch("/paymentmethod", userController.UpdatePaymentMethod)

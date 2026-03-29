@@ -58,7 +58,7 @@ func (cj *mainCronjob) NotificateActivity() {
 			msg := cj.getCalendarMessageBody(c)
 			notificationMsg := model.SendNotificationParams{
 				Token: token,
-				Title: calendarName,
+				Title: "เตือนกิจกรรม " + calendarName,
 				Body:  msg,
 				Data: map[string]string{
 					"start_datetime": utils.ConvertTimeToThaiTimezone(c.StartDatetime).String(),
@@ -80,14 +80,9 @@ func (cj *mainCronjob) NotificateActivity() {
 }
 
 func (cj *mainCronjob) getCalendarMessageBody(c model.PetCalendar) string {
-	var bodyStart string
-	if *c.Frequently == model.NOT {
-		bodyStart = c.Type.String()
-	} else {
-		bodyStart = fmt.Sprintf("%s %s", c.Frequently.String(), c.Type.String())
-	}
+	bodyStart := fmt.Sprintf("%s%s", c.Type.StringThai(), c.Frequently.StringThai())
 
-	bodyStr := "Reminder for "
+	bodyStr := "ของ "
 	for idx, event := range c.ActivityEvents {
 		petName := strings.TrimSpace(event.Pet.Name)
 		if petName == "" {
@@ -101,7 +96,7 @@ func (cj *mainCronjob) getCalendarMessageBody(c model.PetCalendar) string {
 		}
 	}
 
-	return bodyStart + " " + bodyStr
+	return bodyStart + " : " + bodyStr
 }
 
 func (cj *mainCronjob) sendCalendarNotification(ctx context.Context, notificationsMsg []model.SendNotificationParams) {

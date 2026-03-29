@@ -256,11 +256,7 @@ definitions:
         type: number
     required:
     - brand
-    - energy
-    - fat
-    - moist
     - name
-    - protein
     - quantity
     - type
     - user_id
@@ -1120,6 +1116,8 @@ definitions:
       noti_calendars:
         type: boolean
       noti_food:
+        type: boolean
+      noti_update_pet:
         type: boolean
       password:
         type: string
@@ -2386,6 +2384,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Manage Food Notification
+      tags:
+      - User
+  /user/notification/pet:
+    get:
+      consumes:
+      - application/json
+      description: manage update pet notification
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Manage Update Pet Notification
       tags:
       - User
   /user/paymentintent/{payment_intent_id}:

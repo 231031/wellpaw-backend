@@ -26,6 +26,7 @@ type UserService interface {
 
 	ManageFoodNotification(ctx context.Context, id uint) *model.HTTPResponse
 	ManageCalendarNotification(ctx context.Context, id uint) *model.HTTPResponse
+	ManageUpdatePetNotification(ctx context.Context, id uint) *model.HTTPResponse
 }
 
 type userService struct {
@@ -289,6 +290,36 @@ func (s *userService) ManageCalendarNotification(ctx context.Context, id uint) *
 
 	user.NotiCalendars = !user.NotiCalendars
 	err = s.userRepo.UpdateCalendarNotification(ctx, id, user.NotiCalendars)
+	if err != nil {
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status: http.StatusOK,
+		Data:   user,
+	}
+}
+
+func (s *userService) ManageUpdatePetNotification(ctx context.Context, id uint) *model.HTTPResponse {
+	user, err := s.userRepo.GetUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "notification",
+		}
+	}
+
+	user.NotiUpdatePet = !user.NotiUpdatePet
+	err = s.userRepo.UpdatePetUpdateNotification(ctx, id, user.NotiUpdatePet)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
