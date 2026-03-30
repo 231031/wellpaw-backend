@@ -13,6 +13,12 @@ import (
 )
 
 func (cj *mainCronjob) NotificateActivity() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in NotificateActivity", r)
+		}
+	}()
+
 	ctx, cancel := context.WithTimeout(context.Background(), cj.defaultTimeout)
 	defer cancel()
 
