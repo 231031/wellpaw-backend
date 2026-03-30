@@ -247,6 +247,7 @@ func (r *petFoodPlanRepository) GetNextActiveFoodPlanByID(ctx context.Context, l
 			return db.Order("id ASC")
 		}).
 		Preload("FoodPetFoodPlans.Food").
+		Preload("FoodPetFoodPlans.Food.User").
 		Preload("FoodPetFoodPlans.Food.FoodQuantities", func(db *gorm.DB) *gorm.DB {
 			return db.Where("amount >= 0").Order("created_at ASC")
 		}).

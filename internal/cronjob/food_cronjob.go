@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
@@ -11,27 +12,19 @@ import (
 )
 
 // 14, 20,23
-func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planInfficient []model.NotificationPlan) {
+func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, foodInfficient map[uint]model.Food) {
 	notificationsMsg := make([]model.SendNotificationParams, 0)
-	for _, pi := range planInfficient {
-		p := pi.Plan
-
-		notificationMsg := model.SendNotificationParams{}
-		if pi.OutTime == model.NOW {
-			notificationMsg = model.SendNotificationParams{
-				Token: p.Pet.User.DeviceToken,
-				Title: fmt.Sprintf("แผนอาหาร %s ควรอัพเดตปริมาณอาหาร", p.Name),
-				Body:  fmt.Sprintf("อาหารในคลังของแผน %s หมดแล้วและ WellPaw จะไม่สามารถติดตามปริมาณอาหารของคุณได้แม้แผนจะยังคงใช้งานอยู่", p.Name),
-			}
-		} else {
-			notificationMsg = model.SendNotificationParams{
-				Token: p.Pet.User.DeviceToken,
-				Title: fmt.Sprintf("แผนอาหาร %s ควรอัพเดตปริมาณอาหาร", p.Name),
-				Body:  fmt.Sprintf("อาหารในคลังของแผน %s ใกล้หมดแล้วและ WellPaw จะไม่สามารถติดตามปริมาณอาหารของคุณได้แม้แผนจะยังคงใช้งานอยู่", p.Name),
-			}
+	for key, food := range foodInfficient {
+		notificationMsg := model.SendNotificationParams{
+			Token: food.User.DeviceToken,
+			Title: "ควรอัพเดตปริมาณอาหาร",
+			Body:  fmt.Sprintf("อาหาร %s ในคลังของแผนอาหารใกล้หมดแล้วและ WellPaw จะไม่สามารถติดตามปริมาณอาหารของคุณได้แม้แผนจะยังคงใช้งานอยู่", food.Name),
+			Data: map[string]string{
+				"type":    "food_quantity_update",
+				"food_id": fmt.Sprintf("%d", key),
+			},
 		}
 		notificationsMsg = append(notificationsMsg, notificationMsg)
-
 	}
 
 	resp, err := cj.fcmService.SendNotifications(ctx, notificationsMsg)
@@ -40,6 +33,7 @@ func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planI
 	}
 	if resp == nil {
 		applogger.LogInfo("fcm response is nil", foodLog)
+		return
 	}
 
 	for i, r := range resp.Responses {
@@ -54,12 +48,26 @@ func (cj *mainCronjob) sendFoodQuantitiesNotification(ctx context.Context, planI
 	}
 }
 
+func (cj *mainCronjob) mapInsufficientFoods(foodInfficient, newFoods map[uint]model.Food) map[uint]model.Food {
+	insufficientFoods := foodInfficient
+	maps.Copy(insufficientFoods, newFoods)
+	return insufficientFoods
+}
+
 func (cj *mainCronjob) UpdateQuatityFoodDaily() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in UpdateQuatityFoodDaily", r)
+		}
+	}()
+
 	ctx, cancel := context.WithTimeout(context.Background(), cj.defaultTimeout)
 	defer cancel()
 
 	var lastID uint
-	var planInfficient []model.NotificationPlan
+	// var planInfficient []model.NotificationPlan
+	foodInfficient := map[uint]model.Food{}
+
 	for {
 		p, err := cj.petFoodPlanRepo.GetNextActiveFoodPlanByID(ctx, lastID)
 		if err != nil {
@@ -71,13 +79,10 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 			return
 		}
 
-		fqInPlans, insufficinetAmount := cj.checkQuatityFoodDaily(p, 1)
+		fqInPlans, insufficinetFoods, insufficinetAmount := cj.checkQuatityFoodDaily(p, 1)
 		if insufficinetAmount {
-			notiPlan := model.NotificationPlan{
-				Plan:    *p,
-				OutTime: model.NOW,
-			}
-			planInfficient = append(planInfficient, notiPlan)
+			foodInfficient = cj.mapInsufficientFoods(foodInfficient, insufficinetFoods)
+
 			lastID = p.ID
 			continue
 		} else {
@@ -88,32 +93,28 @@ func (cj *mainCronjob) UpdateQuatityFoodDaily() {
 			}
 
 			// check 3 days
-			_, insufficinetAmount := cj.checkQuatityFoodDaily(p, 4)
+			_, insufficinetFoods, insufficinetAmount := cj.checkQuatityFoodDaily(p, 4)
 			if insufficinetAmount {
-				notiPlan := model.NotificationPlan{
-					Plan:    *p,
-					OutTime: model.NEXT,
-				}
-				planInfficient = append(planInfficient, notiPlan)
+				foodInfficient = cj.mapInsufficientFoods(foodInfficient, insufficinetFoods)
 			}
 		}
 
 		lastID = p.ID
 	}
 
-	if len(planInfficient) > 0 {
-		cj.sendFoodQuantitiesNotification(ctx, planInfficient)
+	if len(foodInfficient) > 0 {
+		cj.sendFoodQuantitiesNotification(ctx, foodInfficient)
 	}
 
 }
 
-func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan, rangeDay int) ([]model.FoodQuantity, bool) {
+func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan, rangeDay int) ([]model.FoodQuantity, map[uint]model.Food, bool) {
 	fqInPlans := []model.FoodQuantity{}
+	insufficinetFoods := map[uint]model.Food{}
 	insufficinetAmount := false
 	for _, fp := range p.FoodPetFoodPlans {
 		if len(fp.PetFoodPlanDetails) == 0 {
 			applogger.LogInfo(fmt.Sprintf("food pet food plan : id (%d) not have pet food plan detials\n", fp.ID), foodLog)
-			insufficinetAmount = true
 			break
 		}
 
@@ -124,6 +125,7 @@ func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan, rangeDay int)
 			if amountIntake > foodAmount {
 				if idx == len(fp.Food.FoodQuantities)-1 {
 					insufficinetAmount = true
+					insufficinetFoods[fp.FoodID] = *fp.Food
 				} else {
 					amountIntake = amountIntake - fq.Amount
 					checkFq = append(checkFq, model.FoodQuantity{
@@ -142,10 +144,10 @@ func (cj *mainCronjob) checkQuatityFoodDaily(p *model.PetFoodPlan, rangeDay int)
 				break
 			}
 		}
-		if insufficinetAmount {
-			break
-		}
+		// if insufficinetAmount {
+		// 	break
+		// }
 	}
 
-	return fqInPlans, insufficinetAmount
+	return fqInPlans, insufficinetFoods, insufficinetAmount
 }
