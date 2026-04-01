@@ -75,17 +75,21 @@ func buildUpdatePetDetailNotification(p model.Pet, updateType model.PetUpdateTyp
 
 	var title string
 	var body string
+	var updateFlag string
 
 	switch updateType {
 	case model.WEIGHT_UPDATE:
 		title = fmt.Sprintf("%s ควรอัพเดตน้ำหนัก", petName)
 		body = fmt.Sprintf("%s ควรอัพเดตน้ำหนักทุกเดือน", petName)
+		updateFlag = "weight_update"
 	case model.BCS_UPDATE:
 		title = fmt.Sprintf("%s ควรอัพเดต bcs", petName)
 		body = fmt.Sprintf("%s ควรอัพเดต bcs ทุกเดือน", petName)
+		updateFlag = "bcs_update"
 	case model.AL_UPDATE:
 		title = fmt.Sprintf("%s ควรอัพเดตระดับกิจกรรม", petName)
 		body = fmt.Sprintf("%s ควรอัพเดตระดับกิจกรรมทุกเดือน", petName)
+		updateFlag = "activity_update"
 	}
 
 	return model.SendNotificationParams{
@@ -93,7 +97,7 @@ func buildUpdatePetDetailNotification(p model.Pet, updateType model.PetUpdateTyp
 		Title: title,
 		Body:  body,
 		Data: map[string]string{
-			"type":   "pet_detail_update",
+			"type":   updateFlag,
 			"pet_id": strconv.Itoa(int(p.ID)),
 		},
 	}, true
