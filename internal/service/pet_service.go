@@ -206,7 +206,7 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 	}
 
 	return &model.HTTPResponse{
-		Status: http.StatusCreated,
+		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"pet":                                 pet,
 			"pet_food_plan_histories":             planUsageHistories,
