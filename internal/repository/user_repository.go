@@ -29,6 +29,7 @@ type UserRepository interface {
 	UpdateFoodNotification(ctx context.Context, id uint, notiFood bool) error
 	UpdateCalendarNotification(ctx context.Context, id uint, notiCalendar bool) error
 	UpdatePetUpdateNotification(ctx context.Context, id uint, notiUpdatePet bool) error
+	UpdateDeviceToken(ctx context.Context, id uint, deviceToken string) error
 	GetSubscriptionDetailFromDB(ctx context.Context, userID uint) (*model.User, error)
 	GetSubscriptionDetail(ctx context.Context, userID uint) (*model.TierType, *model.SubscriptionStatusType, error)
 	SetCurrentSubscriptionDetail(ctx context.Context, userID uint, tier model.TierType, subscriptionStatus model.SubscriptionStatusType) error
@@ -72,7 +73,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 func (r *userRepository) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
 	var user *model.User
 	err := r.db.WithContext(ctx).
-		Select("id", "email", "first_name", "last_name", "customer_id",
+		Select("id", "email", "first_name", "last_name", "customer_id", "device_token",
 			"noti_food", "noti_calendars", "noti_update_pet",
 			"profile_free", "food_free", "food_plan_free", "disease_free",
 			"tier", "subscription_status").
@@ -106,7 +107,7 @@ func (r *userRepository) GetUserAllInfo(ctx context.Context, id uint) (*model.Us
 	// all info in dashboard page
 	err := r.db.WithContext(ctx).
 		Preload("Pets").
-		Select("id", "email", "first_name", "last_name", "customer_id",
+		Select("id", "email", "first_name", "last_name", "customer_id", "device_token",
 			"noti_food", "noti_calendars", "noti_update_pet",
 			"profile_free", "food_free", "food_plan_free", "disease_free",
 			"tier", "subscription_status").
@@ -161,6 +162,19 @@ func (r *userRepository) UpdatePetUpdateNotification(ctx context.Context, id uin
 	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("noti_update_pet", notiUpdatePet)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update notification : %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return utils.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateDeviceToken(ctx context.Context, id uint, deviceToken string) error {
+	result := r.db.WithContext(ctx).Table("users").Where("id = ?", id).Update("device_token", deviceToken)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update device token : %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {

@@ -28,6 +28,7 @@ func RouteAuth(router fiber.Router, authController controller.AuthController, au
 
 func RouteUser(router fiber.Router, userController controller.UserController, authMiddleware middleware.AuthMiddleware) {
 	userRoute := router.Group("/user", authMiddleware.AuthorizeUser())
+	userRoute.Patch("/devicetoken", userController.UpdateDeviceToken)
 	userRoute.Get("/", userController.GetUserAllInfo)
 
 	userRoute.Get("/notification/food", userController.ManageFoodNotification)

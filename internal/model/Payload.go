@@ -12,6 +12,10 @@ type LoginGooglePayload struct {
 	DeviceToken string `json:"device_token" validate:"required"`
 }
 
+type UpdateDeviceTokenPayload struct {
+	DeviceToken string `json:"device_token" validate:"required"`
+}
+
 type LogoutPayload struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
