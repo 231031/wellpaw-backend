@@ -184,15 +184,24 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 	pet, err := s.petRepo.GetPetAnalysisByID(ctx, petID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{}
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet not found",
+			}
 		}
-		return &model.HTTPResponse{}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet analysis",
+		}
 	}
 
 	planUsageHistories, err := s.petFoodPlanRepo.GetPlanUsageHistoryByPetID(ctx, petID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{}
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToGetMsg + "pet food plan history",
+			}
 		}
 		planUsageHistories = []model.PetFoodPlanHistory{}
 	}

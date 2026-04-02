@@ -19,29 +19,31 @@ func NewExpectedWeightService() ExpectedWeightService {
 			model.DOG: {
 				model.JUNIOR: {20, 40},
 				model.ADULT:  {4, 8},
+				model.SENIOR: {4, 8},
 			},
 			model.CAT: {
 				model.JUNIOR: {20, 40},
 				model.ADULT:  {2, 4},
+				model.SENIOR: {2, 4},
 			},
 		},
 		lossWeightFactor: map[model.PetType]map[model.AgeType][2]float64{
 			model.DOG: {
-				model.ADULT: {4, 8},
+				model.ADULT:  {4, 8},
+				model.SENIOR: {4, 8},
 			},
 			model.CAT: {
-				model.ADULT: {2, 4},
+				model.ADULT:  {2, 4},
+				model.SENIOR: {2, 4},
 			},
 		},
 	}
 }
 
 func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcs model.BcsType, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth {
-	infoMsg := "the information isn't provided for this condition"
-
-	if ageRange == model.SENIOR {
+	if bcs == model.IDEAL {
 		return &model.AvgPercentWeightChangePerMonth{
-			Message: "monitor the weight closely",
+			Message: "คะแนนสภาพร่างกายอยู่ในเกณฑ์ปกติ รักษาน้ำหนักต่อไป",
 		}
 	}
 
@@ -50,7 +52,7 @@ func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails
 
 	if ageRange == model.JUNIOR && isLossCase {
 		return &model.AvgPercentWeightChangePerMonth{
-			Message: infoMsg,
+			Message: "คะแนนสภาพร่างกายอยู่ในเกณฑ์ผอมเกินไปสำหรับสัตว์เลี้ยงวัยเด็ก ควรปรึกษาสัตวแพทย์เพื่อประเมินสุขภาพโดยรวมและแผนการให้อาหารที่เหมาะสม",
 		}
 	}
 
@@ -61,9 +63,15 @@ func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails
 	}
 
 	if isGainCase {
+		infoMsg := "คะแนนสภาพร่างกายอยู่ในเกณฑ์ผอมเกินไป ควรเพิ่มน้ำหนักอย่างค่อยเป็นค่อยไปเพื่อสุขภาพที่ดีขึ้น"
+		if ageRange == model.SENIOR {
+			infoMsg = "ติดตามการเปลี่ยนแปลงน้ำหนักอย่างใกล้ชิด"
+		}
+
 		if startEnd, ok := s.gainWeightFactor[petType][ageRange]; ok {
 			result.StartPercent = startEnd[0]
 			result.EndPercent = startEnd[1]
+			result.Message = infoMsg
 			return result
 		}
 
@@ -75,10 +83,16 @@ func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails
 	}
 
 	if isLossCase {
+		infoMsg := "คะแนนสภาพร่างกายอยู่ในเกณฑ์อ้วนเกินไป ควรลดน้ำหนักอย่างค่อยเป็นค่อยไปเพื่อสุขภาพที่ดีขึ้น"
+		if ageRange == model.SENIOR {
+			infoMsg = "ติดตามการเปลี่ยนแปลงน้ำหนักอย่างใกล้ชิด"
+		}
+
 		if startEnd, ok := s.lossWeightFactor[petType][ageRange]; ok {
 			// Keep start <= end while representing weight loss as negative percent.
 			result.StartPercent = -startEnd[1]
 			result.EndPercent = -startEnd[0]
+			result.Message = infoMsg
 			return result
 		}
 
@@ -89,7 +103,6 @@ func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails
 		}
 	}
 
-	// IDEAL BCS keeps range at 0 with no message.
 	return result
 }
 
