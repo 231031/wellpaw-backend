@@ -52,7 +52,7 @@ func (s *expectedWeightService) GetAvgPercentWeightChangePerMonth(monthlyDetails
 
 	if ageRange == model.JUNIOR && isLossCase {
 		return &model.AvgPercentWeightChangePerMonth{
-			Message: "คะแนนสภาพร่างกายอยู่ในเกณฑ์ผอมเกินไปสำหรับสัตว์เลี้ยงวัยเด็ก ควรปรึกษาสัตวแพทย์เพื่อประเมินสุขภาพโดยรวมและแผนการให้อาหารที่เหมาะสม",
+			Message: "คะแนนสภาพร่างกายอยู่ในเกณฑ์อ้วนเกินไปสำหรับสัตว์เลี้ยงวัยเด็ก ควรปรึกษาสัตวแพทย์เพื่อประเมินสุขภาพโดยรวมและแผนการให้อาหารที่เหมาะสม",
 		}
 	}
 
