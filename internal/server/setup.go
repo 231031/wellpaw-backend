@@ -90,6 +90,8 @@ func Setup(app *fiber.App, cfg *Cfg) {
 
 	// policy page
 	app.Get("/policy", policyHandler)
+	app.Get("/privacy", privacyHandler)
+	app.Get("/deletepolicy", deletePolicyHandler)
 
 	router := app.Group("/api", middleware.AcceptMiddleware("application/json", "text/plain", "image/*"))
 	CreateRoute(router, db, redisClient, geminiClient, stripeClient, firebaseStorage, fcmClient, cfg)
@@ -181,4 +183,151 @@ func policyHandler(c *fiber.Ctx) error {
 
 	c.Type("html")
 	return c.SendString(htmlContent)
+}
+
+func privacyHandler(c *fiber.Ctx) error {
+	html := `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>WellPaw - Privacy Policy</title>
+		<style>
+		body { font-family: Arial; max-width: 800px; margin: 40px auto; line-height: 1.6; color: #333; }
+		h1, h2 { color: #444; }
+		</style>
+		</head>
+		<body>
+
+		<h1>Privacy Policy</h1>
+
+		<p>Effective Date: 06/03/2026</p>
+
+		<h2>1. Information We Collect</h2>
+		<p>We collect only necessary information to provide our services:</p>
+		<ul>
+		<li>Email address</li>
+		<li>Full name</li>
+		<li>Pet-related data entered by users</li>
+		<li>Authentication data (Email/Password or Google OAuth)</li>
+		</ul>
+
+		<h2>2. How We Use Information</h2>
+		<p>Your data is used to:</p>
+		<ul>
+		<li>Provide and maintain the app</li>
+		<li>Authenticate users</li>
+		<li>Improve service functionality</li>
+		</ul>
+
+		<h2>3. Third-Party Services</h2>
+		<p>
+		We use third-party services such as Google OAuth for authentication.
+		</p>
+
+		<h2>4. Data Storage & Security</h2>
+		<p>
+		We take reasonable measures to protect your data. Passwords are securely encrypted.
+		We do not store sensitive payment information.
+		</p>
+
+		<h2>5. Data Sharing</h2>
+		<p>
+		We do NOT sell or share your personal data with third parties.
+		</p>
+
+		<h2>6. User Rights</h2>
+		<p>
+		Users can request account deletion at any time. See our Account Deletion Policy.
+		</p>
+
+		<h2>7. Children's Privacy</h2>
+		<p>
+		This app is not intended for children under 13.
+		</p>
+
+		<h2>8. Contact</h2>
+		<p>Email: mybile.e70e@gmail.com</p>
+
+		</body>
+		</html>
+	`
+	c.Type("html")
+	return c.SendString(html)
+}
+
+func deletePolicyHandler(c *fiber.Ctx) error {
+	html := `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>WellPaw - Account Deletion Policy</title>
+		<style>
+		body { font-family: Arial; max-width: 800px; margin: 40px auto; line-height: 1.6; color: #333; }
+		h1, h2 { color: #444; }
+		.highlight { background: #f8f8f8; padding: 10px; border-left: 4px solid #d33; }
+		</style>
+		</head>
+		<body>
+
+		<h1>Account Deletion Policy</h1>
+
+		<p>Effective Date: 06/03/2026</p>
+
+		<h2>How to Request Account Deletion</h2>
+
+		<p>
+		Users can request deletion of their account and associated data by sending an email with the following details:
+		</p>
+
+		<div class="highlight">
+		<p><strong>Email:</strong> mybile.e70e@gmail.com</p>
+		<p><strong>Required Information:</strong></p>
+		<ul>
+		<li>Registered email address</li>
+		<li>Full name</li>
+		</ul>
+		</div>
+
+		<h2>Authentication Methods Covered</h2>
+		<ul>
+		<li>Email and Password accounts</li>
+		<li>Google OAuth accounts</li>
+		</ul>
+
+		<h2>What Data Will Be Deleted</h2>
+		<ul>
+		<li>User account information (email, name)</li>
+		<li>Authentication records</li>
+		<li>Pet-related data</li>
+		</ul>
+
+		<h2>Data Retention</h2>
+		<p>
+		We may retain minimal data for legal or security purposes for up to 30 days after deletion request.
+		After that, all data is permanently deleted.
+		</p>
+
+		<h2>Processing Time</h2>
+		<p>
+		Account deletion requests will be processed within 3-7 business days.
+		</p>
+
+		<h2>Important Notes</h2>
+		<ul>
+		<li>Deletion is permanent and cannot be undone</li>
+		<li>All associated data will be removed</li>
+		</ul>
+
+		<h2>Contact</h2>
+		<p>Email: mybile.e70e@gmail.com</p>
+
+		</body>
+		</html>
+	`
+	c.Type("html")
+	return c.SendString(html)
 }
