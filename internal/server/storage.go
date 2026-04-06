@@ -48,7 +48,7 @@ func connectRedis(host, port, password string) (*redis.Client, error) {
 	})
 
 	ctx := context.Background()
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctxTimeout, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	return client, client.Ping(ctxTimeout).Err()

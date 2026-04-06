@@ -317,13 +317,6 @@ func (s *authService) RequestOTP(ctx context.Context, payload model.RequestOTPPa
 }
 
 func (s *authService) ResetPassword(ctx context.Context, payload model.ResetPasswordPayload) *model.HTTPResponse {
-	if payload.Password != payload.ConfirmedPassword {
-		return &model.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Message: "password and confirmed password do not match",
-		}
-	}
-
 	if err := s.otpService.ValidateOTP(ctx, payload.Email, payload.OTP); err != nil {
 		if errors.Is(err, ErrOTPExpired) {
 			return &model.HTTPResponse{
@@ -345,7 +338,7 @@ func (s *authService) ResetPassword(ctx context.Context, payload model.ResetPass
 		}
 	}
 
-	hashedPassword, err := s.tokenService.HashPassword(payload.Password)
+	hashedPassword, err := s.tokenService.HashPassword(payload.NewPassword)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
