@@ -1849,6 +1849,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/device-token": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "update device token for push notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update Device Token",
+                "parameters": [
+                    {
+                        "description": "Update device token payload",
+                        "name": "UpdateDeviceTokenPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UpdateDeviceTokenPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/notification/calendar": {
             "get": {
                 "security": [
@@ -3887,6 +3938,17 @@ const docTemplate = `{
                 "GRAM",
                 "CUP"
             ]
+        },
+        "github_com_231031_wellpaw-backend_internal_model.UpdateDeviceTokenPayload": {
+            "type": "object",
+            "required": [
+                "device_token"
+            ],
+            "properties": {
+                "device_token": {
+                    "type": "string"
+                }
+            }
         },
         "github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload": {
             "type": "object",

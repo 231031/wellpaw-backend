@@ -64,6 +64,22 @@ func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate t
 	return model.ADULT
 }
 
+func (s *petService) checkValidPetInfoDetails(petInfo *model.Pet, petDetail *model.PetDetail) *model.HTTPResponse {
+	if *petInfo.SexType == model.MALE && petDetail.Gestation != nil && *petDetail.Gestation {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "pet detail update failed because pet is male",
+		}
+	}
+	if *petInfo.SexType == model.MALE && petDetail.Lactation != nil && *petDetail.Lactation {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "pet detail update failed because pet is male",
+		}
+	}
+	return nil
+}
+
 func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *model.HTTPResponse {
 	// tier, freeUsage, resp := s.freeValidationService.CheckValidUsageByUserID(ctx, pet.PetInfo.UserID, model.PROFILE)
 	// if resp != nil {
@@ -72,6 +88,11 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 
 	petInfo := pet.PetInfo
 	petDetail := pet.PetDetail
+
+	resp := s.checkValidPetInfoDetails(petInfo, petDetail)
+	if resp != nil {
+		return resp
+	}
 
 	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
@@ -163,15 +184,24 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 	pet, err := s.petRepo.GetPetAnalysisByID(ctx, petID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{}
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "pet not found",
+			}
 		}
-		return &model.HTTPResponse{}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToGetMsg + "pet analysis",
+		}
 	}
 
 	planUsageHistories, err := s.petFoodPlanRepo.GetPlanUsageHistoryByPetID(ctx, petID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return &model.HTTPResponse{}
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToGetMsg + "pet food plan history",
+			}
 		}
 		planUsageHistories = []model.PetFoodPlanHistory{}
 	}
@@ -206,7 +236,7 @@ func (s *petService) GetPetAnalysisByPetID(ctx context.Context, petID uint) *mod
 	}
 
 	return &model.HTTPResponse{
-		Status: http.StatusCreated,
+		Status: http.StatusOK,
 		Data: map[string]interface{}{
 			"pet":                                 pet,
 			"pet_food_plan_histories":             planUsageHistories,
@@ -291,6 +321,19 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToGetMsg + "pet",
+		}
+	}
+
+	if len(pet.PetDetails) > 0 {
+		if *pet.PetDetails[0].Neutered && petDetail.Neutered != nil && !*petDetail.Neutered {
+			return &model.HTTPResponse{
+				Status:  http.StatusBadRequest,
+				Message: "pet detail update failed because pet is already neutered",
+			}
+		}
+		resp := s.checkValidPetInfoDetails(pet, petDetail)
+		if resp != nil {
+			return resp
 		}
 	}
 

@@ -97,13 +97,22 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		return resp
 	}
 
+	foundDryWet := false
 	foodPlanDetails := make([]*model.PetFoodPlanDetail, 0, len(payload.Foods))
 	foodsDetail := map[uint]model.Food{}
 	for _, food := range foods {
 		foodsDetail[food.ID] = food
+		if *food.Type == model.DRY || *food.Type == model.WET {
+			foundDryWet = true
+		}
 	}
 
-	// check have just treats aren't allowed
+	if !foundDryWet {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "invalid food type, all treats or all supplements aren't allowed",
+		}
+	}
 
 	if allHaveAmount {
 		for _, food := range payload.Foods {

@@ -16,6 +16,7 @@ type UserService interface {
 	GetUserAllInfoByID(ctx context.Context, id uint) *model.HTTPResponse
 	UpdateUser(ctx context.Context, u *model.User) *model.HTTPResponse
 	UpdatePaymentMethod(ctx context.Context, id uint, paymentMethodID string) *model.HTTPResponse
+	UpdateDeviceToken(ctx context.Context, id uint, deviceToken string) *model.HTTPResponse
 
 	GetAllSubscriptionsPlan(ctx context.Context) *model.HTTPResponse
 	GetAllSubscriptionsByCustomerID(ctx context.Context, customerID, lastID string) *model.HTTPResponse
@@ -330,5 +331,26 @@ func (s *userService) ManageUpdatePetNotification(ctx context.Context, id uint) 
 	return &model.HTTPResponse{
 		Status: http.StatusOK,
 		Data:   user,
+	}
+}
+
+func (s *userService) UpdateDeviceToken(ctx context.Context, id uint, deviceToken string) *model.HTTPResponse {
+	err := s.userRepo.UpdateDeviceToken(ctx, id, deviceToken)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &model.HTTPResponse{
+				Status:  http.StatusNotFound,
+				Message: "user" + utils.NotFoundMsg,
+			}
+		}
+		return &model.HTTPResponse{
+			Status:  http.StatusInternalServerError,
+			Message: utils.FailedToUpdateMsg + "device token",
+		}
+	}
+
+	return &model.HTTPResponse{
+		Status:  http.StatusOK,
+		Message: "device token updated successfully",
 	}
 }

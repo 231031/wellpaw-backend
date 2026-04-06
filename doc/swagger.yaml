@@ -1064,6 +1064,13 @@ definitions:
     x-enum-varnames:
     - GRAM
     - CUP
+  github_com_231031_wellpaw-backend_internal_model.UpdateDeviceTokenPayload:
+    properties:
+      device_token:
+        type: string
+    required:
+    - device_token
+    type: object
   github_com_231031_wellpaw-backend_internal_model.UpdateFoodDetailPayload:
     properties:
       food_id:
@@ -2334,6 +2341,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Get User All Info
+      tags:
+      - User
+  /user/device-token:
+    patch:
+      consumes:
+      - application/json
+      description: update device token for push notification
+      parameters:
+      - description: Update device token payload
+        in: body
+        name: UpdateDeviceTokenPayload
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UpdateDeviceTokenPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_231031_wellpaw-backend_internal_model.HTTPResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Device Token
       tags:
       - User
   /user/notification/calendar:

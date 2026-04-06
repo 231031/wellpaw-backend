@@ -13,6 +13,7 @@ import (
 type UserController interface {
 	GetUserAllInfo(ctx *fiber.Ctx) error
 	UpdatePaymentMethod(ctx *fiber.Ctx) error
+	UpdateDeviceToken(ctx *fiber.Ctx) error
 
 	GetAllSubscriptionsPlan(ctx *fiber.Ctx) error
 
@@ -297,5 +298,37 @@ func (c *userController) ManageUpdatePetNotification(ctx *fiber.Ctx) error {
 	defer cancel()
 
 	response := c.userService.ManageUpdatePetNotification(ctxWithTimeOut, userID)
+	return ctx.Status(response.Status).JSON(response)
+}
+
+// @Summary Update Device Token
+// @Description update device token for push notification
+// @tags User
+// @Security BearerAuth
+// @Accept application/json
+// @Produce application/json
+// @Param   UpdateDeviceTokenPayload body model.UpdateDeviceTokenPayload true "Update device token payload"
+// @Success 200 {object} model.UserResponse
+// @Failure 400 {object} model.HTTPResponse
+// @Failure 500 {object} model.HTTPResponse
+// @Router /user/devicetoken [patch]
+func (c *userController) UpdateDeviceToken(ctx *fiber.Ctx) error {
+	userID := ctx.Locals("id").(uint)
+
+	var payload model.UpdateDeviceTokenPayload
+	if err := ctx.BodyParser(&payload); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: utils.FailedToUpdateMsg + "device token",
+		})
+	}
+	if validationResponse, err := utils.ValidateStruct(&payload); err != nil {
+		return ctx.Status(validationResponse.Status).JSON(validationResponse)
+	}
+
+	ctxWithTimeOut, cancel := withTimeout(ctx.Context(), defaultTimeout)
+	defer cancel()
+
+	response := c.userService.UpdateDeviceToken(ctxWithTimeOut, userID, payload.DeviceToken)
 	return ctx.Status(response.Status).JSON(response)
 }

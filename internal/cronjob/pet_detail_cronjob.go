@@ -16,22 +16,32 @@ import (
 
 const weightComparisonTolerance = 0.000001
 
-func shouldNotifyUpdatePetDetail(p model.Pet) bool {
-	return !restrictedChangedInWindow(p.PetDetails)
+func shouldNotifyUpdatePetDetail(p model.Pet) (bool, bool, bool) {
+	weightChanged, bcsChanged, alChanged := restrictedChangedInWindow(p.PetDetails)
+	return !weightChanged, !bcsChanged, !alChanged
 }
 
-func restrictedChangedInWindow(details []model.PetDetail) bool {
+func restrictedChangedInWindow(details []model.PetDetail) (bool, bool, bool) {
+	bcsChnanged := false
+	alChanged := false
+
 	if len(details) == 0 {
-		return false
+		return false, false, false
+	}
+
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+	latestRec := details[0]
+	if oneMonthAgo.Before(latestRec.CreatedAt) {
+		bcsChnanged = true
+		alChanged = true
 	}
 
 	lastRec := details[len(details)-1]
-	oneMonthAgo := time.Now().AddDate(0, -1, 0)
 	if oneMonthAgo.Before(lastRec.CreatedAt) {
-		return true
+		return true, bcsChnanged, alChanged
 	} else if len(details) == 1 {
 		// one month ago after or equal to last record
-		return false
+		return false, bcsChnanged, alChanged
 	}
 
 	for i := 0; i < len(details)-1; i++ {
@@ -39,20 +49,22 @@ func restrictedChangedInWindow(details []model.PetDetail) bool {
 		prev := details[i+1]
 
 		if math.Abs(curr.Weight-prev.Weight) > weightComparisonTolerance {
-			return true
+			return true, bcsChnanged, alChanged
 		}
 	}
 
-	return false
+	return false, bcsChnanged, alChanged
 }
 
-func buildUpdatePetDetailNotification(p model.Pet) (model.SendNotificationParams, bool) {
+func buildUpdatePetDetailNotification(p model.Pet, updateType model.PetUpdateType) (model.SendNotificationParams, bool) {
 	if p.User == nil {
+		applogger.LogError(fmt.Sprintf("pet %d has no associated user", p.ID), petLog)
 		return model.SendNotificationParams{}, false
 	}
 
 	token := strings.TrimSpace(p.User.DeviceToken)
 	if token == "" {
+		applogger.LogError(fmt.Sprintf("user %d with pet %d has no associated device token", p.User.ID, p.ID), petLog)
 		return model.SendNotificationParams{}, false
 	}
 
@@ -61,35 +73,37 @@ func buildUpdatePetDetailNotification(p model.Pet) (model.SendNotificationParams
 		petName = fmt.Sprintf("Pet %d", p.ID)
 	}
 
+	var title string
+	var body string
+	var updateFlag string
+
+	switch updateType {
+	case model.WEIGHT_UPDATE:
+		title = fmt.Sprintf("%s ควรอัพเดตน้ำหนัก", petName)
+		body = fmt.Sprintf("%s ควรอัพเดตน้ำหนักทุกเดือน", petName)
+		updateFlag = "weight_update"
+	case model.BCS_UPDATE:
+		title = fmt.Sprintf("%s ควรอัพเดต bcs", petName)
+		body = fmt.Sprintf("%s ควรอัพเดต bcs ทุกเดือน", petName)
+		updateFlag = "bcs_update"
+	case model.AL_UPDATE:
+		title = fmt.Sprintf("%s ควรอัพเดตระดับกิจกรรม", petName)
+		body = fmt.Sprintf("%s ควรอัพเดตระดับกิจกรรมทุกเดือน", petName)
+		updateFlag = "activity_update"
+	}
+
 	return model.SendNotificationParams{
 		Token: token,
-		Title: fmt.Sprintf("%s ควรอัพเดตน้ำหนัก", petName),
-		Body:  fmt.Sprintf("%s ควรอัพเดตน้ำหนักทุกเดือน", petName),
+		Title: title,
+		Body:  body,
 		Data: map[string]string{
-			"type":   "pet_detail_update",
+			"type":   updateFlag,
 			"pet_id": strconv.Itoa(int(p.ID)),
 		},
 	}, true
 }
 
-func (cj *mainCronjob) sendUpdatePetDetailNotification(ctx context.Context, pets []model.Pet) {
-	notificationsMsg := make([]model.SendNotificationParams, 0, len(pets))
-	for _, p := range pets {
-		notificationMsg, ok := buildUpdatePetDetailNotification(p)
-		if !ok {
-			if p.User == nil {
-				applogger.LogError(fmt.Sprintf("skip pet detail notification for pet_id=%d: user not loaded", p.ID), petLog)
-				continue
-			}
-
-			applogger.LogError(fmt.Sprintf("skip pet detail notification for pet_id=%d user_id=%d: empty device token", p.ID, p.User.ID), petLog)
-			continue
-		}
-
-		fmt.Printf("updated %d : %+v\n", p.ID, notificationMsg)
-		notificationsMsg = append(notificationsMsg, notificationMsg)
-	}
-
+func (cj *mainCronjob) sendUpdatePetDetailNotification(ctx context.Context, notificationsMsg []model.SendNotificationParams) {
 	if len(notificationsMsg) == 0 {
 		applogger.LogInfo("no valid pet detail notifications to send", petLog)
 		return
@@ -122,7 +136,7 @@ func (cj *mainCronjob) NotificateUpdatePetDetail() {
 	defer cancel()
 
 	var lastID uint
-	var petsNeedUpdate []model.Pet
+	notificationsMsg := make([]model.SendNotificationParams, 0)
 	for {
 		pets, err := cj.petRepo.GetPetsLatestOneMonthPetDetail(ctx, lastID)
 		if err != nil {
@@ -139,18 +153,39 @@ func (cj *mainCronjob) NotificateUpdatePetDetail() {
 		}
 
 		for _, p := range pets {
-			if shouldNotifyUpdatePetDetail(p) {
-				petsNeedUpdate = append(petsNeedUpdate, p)
+			notiWeight, notiBcs, notiAl := shouldNotifyUpdatePetDetail(p)
+			if notiWeight {
+				noti, valid := buildUpdatePetDetailNotification(p, model.WEIGHT_UPDATE)
+				fmt.Printf("weight : %+v\n", noti)
+				if valid {
+					notificationsMsg = append(notificationsMsg, noti)
+				}
+			}
+			if notiBcs {
+				noti, valid := buildUpdatePetDetailNotification(p, model.BCS_UPDATE)
+				fmt.Printf("bcs : %+v\n", noti)
+
+				if valid {
+					notificationsMsg = append(notificationsMsg, noti)
+				}
+			}
+			if notiAl {
+				noti, valid := buildUpdatePetDetailNotification(p, model.AL_UPDATE)
+				fmt.Printf("al : %+v\n", noti)
+
+				if valid {
+					notificationsMsg = append(notificationsMsg, noti)
+				}
 			}
 		}
 
 		lastID = pets[len(pets)-1].ID
 	}
 
-	if len(petsNeedUpdate) == 0 {
+	if len(notificationsMsg) == 0 {
 		applogger.LogInfo("no pets require monthly pet detail reminder", petLog)
 		return
 	}
 
-	cj.sendUpdatePetDetailNotification(ctx, petsNeedUpdate)
+	cj.sendUpdatePetDetailNotification(ctx, notificationsMsg)
 }

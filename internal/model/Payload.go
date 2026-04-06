@@ -12,6 +12,10 @@ type LoginGooglePayload struct {
 	DeviceToken string `json:"device_token" validate:"required"`
 }
 
+type UpdateDeviceTokenPayload struct {
+	DeviceToken string `json:"device_token" validate:"required"`
+}
+
 type LogoutPayload struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
@@ -21,10 +25,9 @@ type RequestOTPPayload struct {
 }
 
 type ResetPasswordPayload struct {
-	Email             string `json:"email" validate:"required,email"`
-	OTP               string `json:"otp" validate:"required"`
-	Password          string `json:"password" validate:"required"`
-	ConfirmedPassword string `json:"confirmed_password" validate:"required"`
+	Email       string `json:"email" validate:"required,email"`
+	OTP         string `json:"otp" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
 }
 
 type PaymentMethodUpdatePayload struct {

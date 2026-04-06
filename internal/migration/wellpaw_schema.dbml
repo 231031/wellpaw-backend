@@ -3,7 +3,7 @@ Project wellpaw_backend {
   Note: '''
   Generated from persisted structs in internal/model.
   Rules applied:
-  - float64 -> decimal(7,4)
+  - float64 -> decimal(12,4)
   - time.Time datetime fields -> timestamptz
   - birth_date, gestation_start_date, end_date -> date
   - use Asia/Bangkok as the database/session timezone
@@ -21,11 +21,12 @@ Table users {
   last_name varchar(255) [not null]
   noti_food boolean [not null, default: true]
   noti_calendars boolean [not null, default: true]
+  noti_update_pet boolean [not null, default: true]
   profile_free integer [not null, default: 0]
   food_free integer [not null, default: 0]
   food_plan_free integer [not null, default: 0]
   disease_free integer [not null, default: 0]
-  subscription_status integer [not null, default: 0, note: '0=inactive, 1=incomplete, 2=active, 3=past_due, 4=canceled']
+  subscription_status integer [not null, default: 2, note: '0=inactive, 1=incomplete, 2=active, 3=past_due, 4=canceled']
   tier integer [not null, default: 0, note: '0=free, 1=week, 2=month, 3=year']
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
@@ -49,7 +50,7 @@ Table pets {
 Table pet_details {
   id int [pk, increment]
   pet_id int [not null, ref: > pets.id]
-  weight decimal(7,4) [not null]
+  weight decimal(12,4) [not null, note: '> 0']
   activity_level integer [not null, note: '0=inactive, 1=some_active, 2=active, 3=very_active']
   age_range integer [not null, note: '0=junior, 1=adult, 2=senior']
   bcs integer [not null]
@@ -57,9 +58,9 @@ Table pet_details {
   gestation boolean [not null, default: false]
   gestation_start_date date
   neutered boolean [not null, default: false]
-  energy decimal(7,4) [not null]
-  protein decimal(7,4) [not null]
-  fat decimal(7,4) [not null]
+  energy decimal(12,4) [not null]
+  protein decimal(12,4) [not null]
+  fat decimal(12,4) [not null]
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
 }
 
@@ -70,11 +71,11 @@ Table foods {
   name varchar(255) [not null]
   brand varchar(255) [not null]
   type integer [not null, note: '0=dry, 1=wet, 2=treats, 3=supplements']
-  energy decimal(7,4) [not null]
-  protein decimal(7,4) [not null]
-  fat decimal(7,4) [not null]
-  moist decimal(7,4) [not null]
-  grams_per_cup decimal(7,4) [not null, default: 120.0000]
+  energy decimal(12,4) [not null]
+  protein decimal(12,4) [not null]
+  fat decimal(12,4) [not null]
+  moist decimal(12,4) [not null]
+  grams_per_cup decimal(12,4) [not null, default: 120.0000]
   deleted_at timestamptz
 }
 
@@ -82,8 +83,8 @@ Table food_quantities {
   id int [pk, increment]
   food_id int [not null, ref: > foods.id]
   quantity integer [not null]
-  weight decimal(7,4) [not null]
-  amount decimal(7,4) [not null]
+  weight decimal(12,4) [not null]
+  amount decimal(12,4) [not null]
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
 }
@@ -109,9 +110,9 @@ Table pet_food_plan_totals {
   id int [pk, increment]
   pet_food_plan_id int [not null, ref: > pet_food_plans.id]
   pet_detail_id int [not null, ref: > pet_details.id]
-  total_energy_intake decimal(7,4) [not null]
-  total_protein_intake decimal(7,4) [not null]
-  total_fat_intake decimal(7,4) [not null]
+  total_energy_intake decimal(12,4) [not null]
+  total_protein_intake decimal(12,4) [not null]
+  total_fat_intake decimal(12,4) [not null]
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
 }
 
@@ -119,10 +120,10 @@ Table pet_food_plan_details {
   id int [pk, increment]
   food_pet_food_plan_id int [not null, ref: > food_pet_food_plans.id]
   pet_food_plan_totals_id int [not null, ref: > pet_food_plan_totals.id]
-  amount decimal(7,4) [not null]
-  energy_intake decimal(7,4) [not null]
-  protein_intake decimal(7,4) [not null]
-  fat_intake decimal(7,4) [not null]
+  amount decimal(12,4) [not null]
+  energy_intake decimal(12,4) [not null]
+  protein_intake decimal(12,4) [not null]
+  fat_intake decimal(12,4) [not null]
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
 }
 
@@ -157,7 +158,7 @@ Table pet_skin_images {
   image_path varchar(255) [not null]
   predicted integer [not null, note: '0=ringworm, 1=scabies, 2=healthy, 3=demodicosis, 4=pyoderma, 5=other, 6=bacterial_dermatosis']
   confident integer [not null]
-  labeled integer [note: '0=ringworm, 1=scabies, 2=healthy, 3=demodicosis, 4=pyoderma, 5=other, 6=bacterial_dermatosis']
+  labeled integer [note: '-1=not, 0=ringworm, 1=scabies, 2=healthy, 3=demodicosis, 4=pyoderma, 5=other, 6=bacterial_dermatosis']
   image_evidence varchar(512)
   created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
