@@ -202,53 +202,78 @@ func privacyHandler(c *fiber.Ctx) error {
 
 		<h1>Privacy Policy</h1>
 
-		<p>Effective Date: 06/03/2026</p>
+		<p><strong>Effective Date:</strong> April 7, 2026</p>
+
+		<p>
+		WellPaw we operates the WellPaw mobile application.
+		This Privacy Policy explains how we collect, use, and protect your information.
+		</p>
 
 		<h2>1. Information We Collect</h2>
-		<p>We collect only necessary information to provide our services:</p>
 		<ul>
 		<li>Email address</li>
 		<li>Full name</li>
-		<li>Pet-related data entered by users</li>
+		<li>Pet-related data (e.g., weight, nutrition, health tracking)</li>
 		<li>Authentication data (Email/Password or Google OAuth)</li>
+		<li>Basic device/log information (for app performance and security)</li>
 		</ul>
 
-		<h2>2. How We Use Information</h2>
-		<p>Your data is used to:</p>
+		<h2>2. How We Use Your Information</h2>
 		<ul>
-		<li>Provide and maintain the app</li>
-		<li>Authenticate users</li>
-		<li>Improve service functionality</li>
+		<li>Provide and maintain app functionality</li>
+		<li>Authenticate users securely</li>
+		<li>Improve features and user experience</li>
+		<li>Ensure security and prevent misuse</li>
 		</ul>
 
-		<h2>3. Third-Party Services</h2>
+		<h2>3. Legal Basis</h2>
 		<p>
-		We use third-party services such as Google OAuth for authentication.
+		We process your data based on user consent and for providing the requested service.
 		</p>
 
-		<h2>4. Data Storage & Security</h2>
+		<h2>4. Data Retention</h2>
 		<p>
-		We take reasonable measures to protect your data. Passwords are securely encrypted.
-		We do not store sensitive payment information.
+		We retain user data only as long as necessary to provide services.
+		Deleted accounts are permanently removed within 30 days unless required by law.
 		</p>
 
 		<h2>5. Data Sharing</h2>
 		<p>
-		We do NOT sell or share your personal data with third parties.
+		We do not sell your personal data. We may share data with trusted services such as:
 		</p>
+		<ul>
+		<li>Google (for authentication)</li>
+		</ul>
 
-		<h2>6. User Rights</h2>
+		<h2>6. Data Security</h2>
 		<p>
-		Users can request account deletion at any time. See our Account Deletion Policy.
+		We implement reasonable technical and organizational measures to protect your data.
+		Passwords are encrypted and access is restricted.
 		</p>
 
-		<h2>7. Children's Privacy</h2>
+		<h2>7. Your Rights</h2>
+		<ul>
+		<li>Request access to your data</li>
+		<li>Request correction or deletion</li>
+		<li>Withdraw consent at any time</li>
+		</ul>
+
+		<h2>8. Children's Privacy</h2>
 		<p>
-		This app is not intended for children under 13.
+		This app is not intended for children under 13 years of age.
 		</p>
 
-		<h2>8. Contact</h2>
-		<p>Email: mybile.e70e@gmail.com</p>
+		<h2>9. Changes to This Policy</h2>
+		<p>
+		We may update this Privacy Policy. Changes will be posted on this page.
+		</p>
+
+		<h2>10. Contact</h2>
+		<p>
+		Developer: WellPaw Team<br>
+		Country: Thailand<br>
+		Email: mybile.e70e@gmail.com
+		</p>
 
 		</body>
 		</html>
@@ -275,51 +300,41 @@ func deletePolicyHandler(c *fiber.Ctx) error {
 
 		<h1>Account Deletion Policy</h1>
 
-		<p>Effective Date: 06/03/2026</p>
+		<p><strong>Effective Date:</strong> April 7, 2026</p>
 
-		<h2>How to Request Account Deletion</h2>
-
+		<h2>How to Request Deletion</h2>
 		<p>
-		Users can request deletion of their account and associated data by sending an email with the following details:
+		Users can request account deletion directly within the app (if available) or by contacting us via email.
 		</p>
 
-		<div class="highlight">
 		<p><strong>Email:</strong> mybile.e70e@gmail.com</p>
-		<p><strong>Required Information:</strong></p>
+
+		<h2>Required Information</h2>
 		<ul>
 		<li>Registered email address</li>
-		<li>Full name</li>
-		</ul>
-		</div>
-
-		<h2>Authentication Methods Covered</h2>
-		<ul>
-		<li>Email and Password accounts</li>
-		<li>Google OAuth accounts</li>
 		</ul>
 
-		<h2>What Data Will Be Deleted</h2>
+		<h2>What Will Be Deleted</h2>
 		<ul>
-		<li>User account information (email, name)</li>
-		<li>Authentication records</li>
-		<li>Pet-related data</li>
+		<li>User account information</li>
+		<li>Authentication data</li>
+		<li>All pet-related records</li>
 		</ul>
 
 		<h2>Data Retention</h2>
 		<p>
-		We may retain minimal data for legal or security purposes for up to 30 days after deletion request.
-		After that, all data is permanently deleted.
+		Some minimal data may be retained for up to 30 days for legal and security purposes.
 		</p>
 
 		<h2>Processing Time</h2>
 		<p>
-		Account deletion requests will be processed within 3-7 business days.
+		Requests are processed within 3–7 business days.
 		</p>
 
-		<h2>Important Notes</h2>
+		<h2>Important</h2>
 		<ul>
-		<li>Deletion is permanent and cannot be undone</li>
-		<li>All associated data will be removed</li>
+		<li>Deletion is permanent</li>
+		<li>Data cannot be recovered</li>
 		</ul>
 
 		<h2>Contact</h2>
