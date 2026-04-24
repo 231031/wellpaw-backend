@@ -105,6 +105,15 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		if *food.Type == model.DRY || *food.Type == model.WET {
 			foundDryWet = true
 		}
+
+		if payload.Unit != nil && *payload.Unit == model.CUP {
+			if food.GramsPerCup <= 0 {
+				return &model.HTTPResponse{
+					Status:  http.StatusBadRequest,
+					Message: "invalid unit, grams per cup is required for calculation in cup unit",
+				}
+			}
+		}
 	}
 
 	if !foundDryWet {
@@ -245,6 +254,15 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 
 	foodsDetail := map[uint]model.Food{}
 	for _, food := range foods {
+		if payload.Unit != nil && *payload.Unit == model.CUP {
+			if food.GramsPerCup <= 0 {
+				return &model.HTTPResponse{
+					Status:  http.StatusBadRequest,
+					Message: "invalid unit, grams per cup is required for calculation in cup unit",
+				}
+			}
+		}
+
 		foodsDetail[food.ID] = food
 	}
 

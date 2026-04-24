@@ -13,7 +13,7 @@ type Food struct {
 	Protein     float64        `gorm:"not null" json:"protein" validate:"gt=-1"`
 	Fat         float64        `gorm:"not null" json:"fat" validate:"gt=-1"`
 	Moist       float64        `gorm:"not null" json:"moist" validate:"gt=-1"`
-	GramsPerCup float64        `gorm:"not null;default:120" json:"grams_per_cup"`
+	GramsPerCup float64        `json:"grams_per_cup"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	Quantity    int     `gorm:"-" json:"quantity,omitempty" validate:"required,gt=0"`

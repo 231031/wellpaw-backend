@@ -48,6 +48,13 @@ func (s *foodService) CreateFood(ctx context.Context, userID uint, food *model.F
 		}
 	}
 
+	if food.GramsPerCup < 0 {
+		return &model.HTTPResponse{
+			Status:  http.StatusBadRequest,
+			Message: "grams per cup should be more than or equal to 0",
+		}
+	}
+
 	foodQuantity := &model.FoodQuantity{
 		Weight:   food.Weight,
 		Quantity: food.Quantity,
@@ -196,7 +203,7 @@ func (s *foodService) UpdateFoodDetail(ctx context.Context, userID uint, foodID 
 		updates["image_path"] = *payload.ImagePath
 	}
 
-	if payload.GramsPerCup != nil && *payload.GramsPerCup > 0 {
+	if payload.GramsPerCup != nil && *payload.GramsPerCup >= 0 {
 		updates["grams_per_cup"] = *payload.GramsPerCup
 	}
 
