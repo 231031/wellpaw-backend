@@ -179,6 +179,9 @@ CREATE TABLE IF NOT EXISTS pet_skin_images (
     CONSTRAINT fk_pets_pet_skin_images FOREIGN KEY (pet_id) REFERENCES pets (id)
 );
 
+alter table foods alter column grams_per_cup drop default;
+alter table foods alter column grams_per_cup drop not null;
+
 -- CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users (deleted_at);
 -- CREATE INDEX IF NOT EXISTS idx_pets_user_id ON pets (user_id);
 -- CREATE INDEX IF NOT EXISTS idx_pets_deleted_at ON pets (deleted_at);
