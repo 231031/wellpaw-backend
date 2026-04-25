@@ -107,7 +107,7 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 		}
 
 		if payload.Unit != nil && *payload.Unit == model.CUP {
-			if food.GramsPerCup <= 0 {
+			if *food.Type != model.SUPPLEMENTS && food.GramsPerCup <= 0 {
 				return &model.HTTPResponse{
 					Status:  http.StatusBadRequest,
 					Message: "invalid unit, grams per cup is required for calculation in cup unit",
@@ -255,7 +255,7 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 	foodsDetail := map[uint]model.Food{}
 	for _, food := range foods {
 		if payload.Unit != nil && *payload.Unit == model.CUP {
-			if food.GramsPerCup <= 0 {
+			if *food.Type != model.SUPPLEMENTS && food.GramsPerCup <= 0 {
 				return &model.HTTPResponse{
 					Status:  http.StatusBadRequest,
 					Message: "invalid unit, grams per cup is required for calculation in cup unit",
