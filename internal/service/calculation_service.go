@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/231031/wellpaw-backend/internal/model"
 	"github.com/231031/wellpaw-backend/internal/utils"
 )
@@ -17,6 +19,7 @@ type CalculationService interface {
 	CalAvgPercentWeightChangePerMonth(monthlyDetails []model.PetMonthlyNutritionTWA, bcsScore int, petType model.PetType, ageRange model.AgeType) *model.AvgPercentWeightChangePerMonth
 	ConvertGramsToCupInPlan(foodPlan *model.PetFoodPlan)
 	CalculateGramsToCup(foodPetFoodPlan model.PetFoodPlanDetail) float64
+	GetAgeRangeFromBirthDate(petType model.PetType, birthDate time.Time) model.AgeType
 }
 
 type calculationService struct {
@@ -31,6 +34,29 @@ func NewCalculationService(energyRequirementService EnergyRequirementService, nu
 		nutritientRequirementService: nutritientRequirementService,
 		expectedWeightService:        exexpectedWeightService,
 	}
+}
+
+func (s *calculationService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate time.Time) model.AgeType {
+	ageMonth := time.Since(birthDate).Hours() / 24 / 30
+	switch petType {
+	case model.CAT:
+		if ageMonth <= 12 {
+			return model.JUNIOR
+		} else if ageMonth >= 84 {
+			return model.SENIOR
+		} else {
+			return model.ADULT
+		}
+	case model.DOG:
+		if ageMonth <= 12 {
+			return model.JUNIOR
+		} else if ageMonth >= 84 {
+			return model.SENIOR
+		} else {
+			return model.ADULT
+		}
+	}
+	return model.ADULT
 }
 
 func (s *calculationService) MapBcsScoreToBcsRange(bcsScore int) model.BcsType {
