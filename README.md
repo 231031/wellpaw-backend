@@ -56,6 +56,9 @@ Before starting this project, ensure you have the following installed:
   go install github.com/swaggo/swag/cmd/swag@latest
   ```
 
+Prepared Model Service
+- **Model Service** [Follow README](https://github.com/231031/wellpaw-model)
+
 ## 🏃 Getting Started
 
 ### 1. Clone the Repository
