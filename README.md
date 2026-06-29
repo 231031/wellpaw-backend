@@ -88,11 +88,15 @@ REDIS_PORT=6379
 REDIS_PASSWORD=your_redis_password
 
 # JWT Configuration
-JWT_SECRET=your_jwt_secret
+SECRET_KEY
+FILE_PUB_PATH
+FILE_PRI_PATH
 
 # Google OAuth
 GOOGLE_WEB_CLIENT_ID=your_google_client_id
 GOOGLE_WEB_CLIENT_SECRET=your_google_client_secret
+GOOGLE_APPLICATION_CREDENTIALS=your_path_to_credentials_file
+FIREBASE_STORAGE_BUCKET=your_bucket_name
 
 # Gemini API from goole ai studio
 GEMINI_API_KEY=your_gemini_api_key
@@ -100,6 +104,16 @@ GEMINI_API_KEY=your_gemini_api_key
 # Stirpe API Key
 STRIPE_API_KEY=your_stripe_api_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+
+# Email API
+MAILJET_API_KEY
+MAILJET_API_SECRET
+MAILJET_SENDER_EMAIL
+MAILJET_SENDER_NAME
+
+# Model Service
+MODEL_BASE_API
+
 ```
 
 ### 3. Generate RSA Key Pair

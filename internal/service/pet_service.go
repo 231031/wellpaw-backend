@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/231031/wellpaw-backend/internal/applogger"
 	"github.com/231031/wellpaw-backend/internal/model"
@@ -40,30 +39,6 @@ func NewPetService(calculationService CalculationService, petRepo repository.Pet
 	}
 }
 
-// not test
-func (s *petService) GetAgeRangeFromBirthDate(petType model.PetType, birthDate time.Time) model.AgeType {
-	ageMonth := time.Since(birthDate).Hours() / 24 / 30
-	switch petType {
-	case model.CAT:
-		if ageMonth <= 12 {
-			return model.JUNIOR
-		} else if ageMonth >= 84 {
-			return model.SENIOR
-		} else {
-			return model.ADULT
-		}
-	case model.DOG:
-		if ageMonth <= 12 {
-			return model.JUNIOR
-		} else if ageMonth >= 84 {
-			return model.SENIOR
-		} else {
-			return model.ADULT
-		}
-	}
-	return model.ADULT
-}
-
 func (s *petService) checkValidPetInfoDetails(petInfo *model.Pet, petDetail *model.PetDetail) *model.HTTPResponse {
 	if *petInfo.SexType == model.MALE && petDetail.Gestation != nil && *petDetail.Gestation {
 		return &model.HTTPResponse{
@@ -94,7 +69,7 @@ func (s *petService) CreateNewPet(ctx context.Context, pet *model.PetPayload) *m
 		return resp
 	}
 
-	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
+	petDetail.AgeRange = s.calculationService.GetAgeRangeFromBirthDate(*petInfo.Type, petInfo.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *petInfo.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *petInfo.Type)
 
@@ -337,7 +312,7 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	petDetail.AgeRange = s.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
+	petDetail.AgeRange = s.calculationService.GetAgeRangeFromBirthDate(*pet.Type, pet.BirthDate)
 	petDetail.Energy = s.calculationService.CalMerEnergyRequirement(petDetail, *pet.Type)
 	petDetail.Protein, petDetail.Fat = s.calculationService.CalNutritientRequirement(petDetail.Energy, petDetail, *pet.Type)
 
