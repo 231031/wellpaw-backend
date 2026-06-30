@@ -200,8 +200,6 @@ func (s *petFoodPlanService) CalculatePetFoodPlan(ctx context.Context, userID ui
 	}
 
 	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
-	foodPlanTotal.PetDetailID = petDetail.ID
-	foodPlanTotal.PetDetail = petDetail
 
 	plan.PetFoodPlanTotals = append(plan.PetFoodPlanTotals, *foodPlanTotal)
 	for _, detail := range foodPlanDetails {
@@ -297,9 +295,8 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 	}
 
 	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
-	foodPlanTotal.PetDetailID = petDetail.ID
 
-	if err := s.petFoodPlanRepo.CreatePetFoodPlan(ctx, payload.PetID, plan, foodsInPlan, foodPlanTotal, foodPlanDetails); err != nil {
+	if err := s.petFoodPlanRepo.CreatePetFoodPlan(ctx, payload.PetID, petDetail.ID, plan, foodsInPlan, foodPlanTotal, foodPlanDetails); err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,
 			Message: utils.FailedToCreateMsg + "pet food plan",
@@ -319,7 +316,6 @@ func (s *petFoodPlanService) CreatePetFoodPlan(ctx context.Context, userID uint,
 		}
 	}
 
-	activePlanDetail.PetFoodPlanTotals[0].PetDetail = petDetail
 	if plan.Unit == model.CUP {
 		s.calculationService.ConvertGramsToCupInPlan(activePlanDetail)
 	}
@@ -452,9 +448,8 @@ func (s *petFoodPlanService) UpdateFeedingAmountFromUser(ctx context.Context, pa
 
 	foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
 	foodPlanTotal.PetFoodPlanID = petFoodPlan.ID
-	foodPlanTotal.PetDetailID = petDetail.ID
 
-	err = s.petFoodPlanRepo.UpdateFeedingAmountFromUser(ctx, petFoodPlan.PetID, foodPlanTotal, foodPlanDetails)
+	err = s.petFoodPlanRepo.UpdateFeedingAmountFromUser(ctx, petFoodPlan.PetID, petDetail.ID, foodPlanTotal, foodPlanDetails)
 	if err != nil {
 		return &model.HTTPResponse{
 			Status:  http.StatusInternalServerError,

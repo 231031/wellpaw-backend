@@ -21,5 +21,5 @@ type PetDetail struct {
 
 	// Relationships
 	// Pet                *Pet                 `gorm:"foreignKey:PetID" json:"pet,omitempty"`
-	PetFoodPlanTotals []PetFoodPlanTotal `gorm:"foreignKey:PetDetailID" json:"pet_food_plan_totals,omitempty"`
+	PetFoodPlanHistories []PetFoodPlanHistory `gorm:"foreignKey:PetDetailID" json:"pet_food_plan_histories,omitempty"`
 }

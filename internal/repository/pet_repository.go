@@ -15,6 +15,7 @@ type PetRepository interface {
 	UpdatePetInfo(ctx context.Context, pet *model.Pet) error
 	UpdatePetDetails(ctx context.Context, petDetails *model.PetDetail) error
 	UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error
+	UpdatePetDetailReuseExistingPlanTotal(ctx context.Context, petID uint, petDetails *model.PetDetail, existingPlanTotalID uint) error
 	GetPetsLatestOneMonthPetDetail(ctx context.Context, latestID uint) ([]model.Pet, error)
 	GetPetsByUserID(ctx context.Context, id uint) ([]model.Pet, error)
 	GetPetAnalysisByID(ctx context.Context, id uint) (*model.Pet, error)
@@ -79,13 +80,15 @@ func (r *petRepository) UpdatePetDetails(ctx context.Context, petDetails *model.
 	return nil
 }
 
+// UpdatePetDetailsAndPlan creates a new pet detail together with a freshly
+// recalculated plan total/details, and records a history row linking the new
+// detail to the new total. Used for app-calculated (non self_define) plans.
 func (r *petRepository) UpdatePetDetailsAndPlan(ctx context.Context, petID uint, petDetails *model.PetDetail, foodPlanTotal *model.PetFoodPlanTotal, foodPlanDetails []*model.PetFoodPlanDetail) error {
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(petDetails).Error; err != nil {
 			return fmt.Errorf("failed to update pet details : %w", err)
 		}
 
-		foodPlanTotal.PetDetailID = petDetails.ID
 		if err := tx.Create(foodPlanTotal).Error; err != nil {
 			return err
 		}
@@ -100,6 +103,7 @@ func (r *petRepository) UpdatePetDetailsAndPlan(ctx context.Context, petID uint,
 		planHistory := &model.PetFoodPlanHistory{
 			PetID:              petID,
 			PetFoodPlanTotalID: foodPlanTotal.ID,
+			PetDetailID:        petDetails.ID,
 		}
 		if err := tx.Create(planHistory).Error; err != nil {
 			return fmt.Errorf("failed to update new history of food : %w", err)
@@ -112,6 +116,29 @@ func (r *petRepository) UpdatePetDetailsAndPlan(ctx context.Context, petID uint,
 	}
 
 	return nil
+}
+
+// UpdatePetDetailReuseExistingPlanTotal creates a new pet detail and records a
+// history row pointing the new detail at an existing plan total, WITHOUT
+// creating a new total. Used for self_define plans, where a pet detail change
+// must not alter the owner-defined plan total.
+func (r *petRepository) UpdatePetDetailReuseExistingPlanTotal(ctx context.Context, petID uint, petDetails *model.PetDetail, existingPlanTotalID uint) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(petDetails).Error; err != nil {
+			return fmt.Errorf("failed to update pet details : %w", err)
+		}
+
+		planHistory := &model.PetFoodPlanHistory{
+			PetID:              petID,
+			PetFoodPlanTotalID: existingPlanTotalID,
+			PetDetailID:        petDetails.ID,
+		}
+		if err := tx.Create(planHistory).Error; err != nil {
+			return fmt.Errorf("failed to update new history of food : %w", err)
+		}
+
+		return nil
+	})
 }
 
 func (r *petRepository) GetPetInfoByID(ctx context.Context, id uint) (*model.Pet, error) {
@@ -333,7 +360,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SELECT
 				h.id,
 				h.created_at,
-				h.pet_food_plan_total_id
+				h.pet_food_plan_total_id,
+				h.pet_detail_id
 			FROM pets p
 			JOIN pet_food_plan_histories h ON h.pet_id = p.id
 			WHERE p.id = ?
@@ -345,7 +373,8 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 			SELECT
 				h.id,
 				h.created_at,
-				h.pet_food_plan_total_id
+				h.pet_food_plan_total_id,
+				h.pet_detail_id
 			FROM pets p
 			JOIN pet_food_plan_histories h ON h.pet_id = p.id
 			WHERE p.id = ?
@@ -378,7 +407,7 @@ func (r *petRepository) GetPetAnalysisByID(ctx context.Context, id uint) (*model
 				d.bcs
 			FROM relevant_history h
 			JOIN pet_food_plan_totals t ON t.id = h.pet_food_plan_total_id
-			JOIN pet_details d ON d.id = t.pet_detail_id
+			JOIN pet_details d ON d.id = h.pet_detail_id
 		),
 		bounded_intervals AS (
 			SELECT

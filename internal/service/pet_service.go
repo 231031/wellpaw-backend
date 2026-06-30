@@ -254,33 +254,13 @@ func (s *petService) UpdatePetInfo(ctx context.Context, petInfo *model.Pet) *mod
 	}
 }
 
-func (s *petService) mapUpdatePetDetailNotTrigger(plan *model.PetFoodPlan) (*model.PetFoodPlanTotal, []*model.PetFoodPlanDetail, *model.HTTPResponse) {
-	if len(plan.PetFoodPlanTotals) <= 0 {
-		applogger.LogInfo(fmt.Sprintf("plan id %d doesn't have pet food total", plan.ID), serviceLog)
-		return nil, nil, &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToGetMsg + "pet",
-		}
-	}
-
-	foodPlanDetails := []*model.PetFoodPlanDetail{}
-	foodPlanTotal := &model.PetFoodPlanTotal{
-		PetFoodPlanID:      plan.ID,
-		TotalEnergyIntake:  plan.PetFoodPlanTotals[0].TotalEnergyIntake,
-		TotalProteinIntake: plan.PetFoodPlanTotals[0].TotalProteinIntake,
-		TotalFatIntake:     plan.PetFoodPlanTotals[0].TotalFatIntake,
-	}
-
-	for _, d := range plan.PetFoodPlanTotals[0].PetFoodPlanDetails {
-		foodPlanDetails = append(foodPlanDetails, &model.PetFoodPlanDetail{
-			FoodPetFoodPlanID: d.FoodPetFoodPlanID,
-			Amount:            d.Amount,
-			EnergyIntake:      d.EnergyIntake,
-			ProteinIntake:     d.ProteinIntake,
-			FatIntake:         d.FatIntake,
-		})
-	}
-	return foodPlanTotal, foodPlanDetails, nil
+// shouldRecreatePlanTotalOnDetailChange decides whether a pet detail change
+// must (re)create the plan total. App-calculated plans recalculate their total
+// on every detail change; self_define plans are owner-defined, so their total
+// must stay the same and only a new history row (linking the new detail to the
+// existing total) is written.
+func (s *petService) shouldRecreatePlanTotalOnDetailChange(plan *model.PetFoodPlan) bool {
+	return !plan.SelfDefine
 }
 
 func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDetail) *model.HTTPResponse {
@@ -356,17 +336,30 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 		}
 	}
 
-	var foods []model.Food
-	var resp *model.HTTPResponse
-	foodPlanDetails := []*model.PetFoodPlanDetail{}
-	foodPlanTotal := &model.PetFoodPlanTotal{}
+	activePlan := foodsInActivePlan[0].PetFoodPlan
 
-	if foodsInActivePlan[0].PetFoodPlan.SelfDefine {
-		foodPlanTotal, foodPlanDetails, resp = s.mapUpdatePetDetailNotTrigger(foodsInActivePlan[0].PetFoodPlan)
-		if resp != nil {
-			return resp
+	// Validation/decision step: a self_define plan's total must NOT change when
+	// the pet detail changes, so only a new history row pointing the new detail
+	// at the existing total is written. App-calculated plans recalculate and get
+	// a fresh total.
+	if !s.shouldRecreatePlanTotalOnDetailChange(activePlan) {
+		if len(activePlan.PetFoodPlanTotals) <= 0 {
+			applogger.LogInfo(fmt.Sprintf("plan id %d doesn't have pet food total", activePlan.ID), serviceLog)
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToUpdateMsg + "pet detail",
+			}
+		}
+
+		existingPlanTotalID := activePlan.PetFoodPlanTotals[0].ID
+		if err := s.petRepo.UpdatePetDetailReuseExistingPlanTotal(ctx, pet.ID, petDetail, existingPlanTotalID); err != nil {
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToUpdateMsg + "pet detail",
+			}
 		}
 	} else {
+		var foods []model.Food
 		supAmount := map[uint]float64{}
 		for _, fp := range foodsInActivePlan {
 			foods = append(foods, *fp.Food)
@@ -374,19 +367,19 @@ func (s *petService) UpdatePetDetail(ctx context.Context, petDetail *model.PetDe
 				supAmount[fp.FoodID] = fp.PetFoodPlanDetails[0].Amount
 			}
 		}
-		foodPlanDetails = s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)
+		foodPlanDetails := s.calculationService.CalFeedingAmountPerDay(petDetail, foods, supAmount)
 		for idx := range foodsInActivePlan {
 			foodPlanDetails[idx].FoodPetFoodPlanID = foodsInActivePlan[idx].ID
 		}
 
-		foodPlanTotal = s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
+		foodPlanTotal := s.calculationService.CalTotalIntakeFoodPlan(foodPlanDetails)
 		foodPlanTotal.PetFoodPlanID = latestPlanID
-	}
 
-	if err := s.petRepo.UpdatePetDetailsAndPlan(ctx, pet.ID, petDetail, foodPlanTotal, foodPlanDetails); err != nil {
-		return &model.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Message: utils.FailedToUpdateMsg + "pet detail",
+		if err := s.petRepo.UpdatePetDetailsAndPlan(ctx, pet.ID, petDetail, foodPlanTotal, foodPlanDetails); err != nil {
+			return &model.HTTPResponse{
+				Status:  http.StatusInternalServerError,
+				Message: utils.FailedToUpdateMsg + "pet detail",
+			}
 		}
 	}
 
